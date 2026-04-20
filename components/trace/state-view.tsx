@@ -12,6 +12,7 @@ import type { ControlMap } from "@/lib/s/ast"
 import type { State, TraceStep } from "@/lib/s/cek"
 import { EnvView } from "./env-view"
 import { KontView } from "./kont-view"
+import { useLabelHoverBind } from "./label-hover"
 import { ValueView } from "./value-view"
 
 interface Props {
@@ -24,19 +25,22 @@ interface Props {
 /** Panel that summarizes one CEK state: control, environment, kontinuation. */
 export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
   const cmd = ctrl.get(state.label)
+  const hoverBind = useLabelHoverBind(state.label)
 
   return (
-    <ResizablePanelGroup
-      orientation="vertical"
-      className="h-full w-full"
-    >
-      <ResizablePanel defaultSize="25%" minSize="10%">
+    <ResizablePanelGroup orientation="vertical" className="h-full w-full">
+      <ResizablePanel defaultSize="15%" minSize="10%">
         <div className="h-full min-h-0 overflow-auto rounded border bg-card p-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>
               <b>C</b>ontrol (e)
             </span>
-            <Badge variant="outline" className="font-mono text-[10px]">
+            <Badge
+              variant="outline"
+              tabIndex={0}
+              className="cursor-help font-mono text-[10px] focus:ring-2 focus:ring-sky-400 focus:outline-none"
+              {...hoverBind}
+            >
               ℓ={state.label}
             </Badge>
             {nextStep && (
@@ -67,7 +71,7 @@ export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
         </div>
       </ResizablePanel>
       <ResizableHandle className="my-1" />
-      <ResizablePanel defaultSize="37.5%" minSize="10%">
+      <ResizablePanel defaultSize="20%" minSize="10%">
         <div className="h-full min-h-0 overflow-auto rounded border bg-card p-3">
           <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
             <span>
@@ -82,7 +86,7 @@ export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
         </div>
       </ResizablePanel>
       <ResizableHandle className="my-1" />
-      <ResizablePanel defaultSize="37.5%" minSize="10%">
+      <ResizablePanel defaultSize="65%" minSize="10%">
         <div className="h-full min-h-0 overflow-auto rounded border bg-card p-3">
           <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
             <span>

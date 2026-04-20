@@ -7,6 +7,7 @@ import { cmdSummary } from "@/lib/s/ast"
 import type { ControlMap } from "@/lib/s/ast"
 import type { Frame } from "@/lib/s/cek"
 import { EnvView } from "./env-view"
+import { useLabelHoverBind } from "./label-hover"
 
 interface Props {
   kont: Frame[]
@@ -45,6 +46,7 @@ function FrameCard({
   const [open, setOpen] = useState(isTop)
   const cmd = ctrl.get(frame.label)
   const summary = cmd ? cmdSummary(cmd) : `(unknown label ${frame.label})`
+  const hoverBind = useLabelHoverBind(frame.label)
 
   return (
     <div
@@ -63,7 +65,12 @@ function FrameCard({
         <Badge variant="outline" className="px-1 py-0 font-mono text-[10px]">
           {isTop ? "top" : `#${position}`}
         </Badge>
-        <span className="text-muted-foreground">ℓ={frame.label}</span>
+        <span
+          className="cursor-help rounded-sm px-1 text-muted-foreground hover:bg-sky-100/60 dark:hover:bg-sky-900/30"
+          {...hoverBind}
+        >
+          ℓ={frame.label}
+        </span>
         <span className="flex-1 truncate">{summary}</span>
         <span className="text-[10px] text-muted-foreground">
           {open ? "▾" : "▸"}

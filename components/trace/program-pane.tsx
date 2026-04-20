@@ -11,6 +11,7 @@ interface Props {
   locked: boolean
   highlight?: Loc | null
   kontHighlights?: Loc[]
+  hoverHighlight?: Loc | null
 }
 
 /**
@@ -33,6 +34,7 @@ export function ProgramPane({
   locked,
   highlight,
   kontHighlights,
+  hoverHighlight,
 }: Props) {
   const showLocked = locked && runnableSource !== null
 
@@ -43,6 +45,7 @@ export function ProgramPane({
           source={runnableSource}
           highlight={highlight}
           kontHighlights={kontHighlights}
+          hoverHighlight={hoverHighlight}
         />
       ) : (
         <SourceEditor

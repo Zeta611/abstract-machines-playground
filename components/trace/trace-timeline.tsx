@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { cn } from "@/lib/utils"
 import { showVal } from "@/lib/s/values"
-import type { RuleName, Trace, TraceStep } from "@/lib/s/cek"
+import type { State, RuleName, Trace, TraceStep } from "@/lib/s/cek"
+import { useLabelHoverBind } from "./label-hover"
 
 interface Props {
   trace: Trace
@@ -106,56 +107,85 @@ export function TraceTimeline({
             const step: TraceStep | undefined = trace.steps[i - 1]
             const active = i === cursor
             return (
-              <button
+              <TimelineRow
                 key={i}
-                ref={active ? activeRef : undefined}
-                type="button"
-                className={cn(
-                  "flex items-center gap-2 border-b border-border/40 px-2 py-1 text-left",
-                  active ? "bg-muted" : "hover:bg-muted/40"
-                )}
-                onClick={() => setCursor(i)}
-              >
-                <span
-                  className={cn(
-                    "min-w-[2.5em] text-muted-foreground tabular-nums",
-                    active && "font-semibold text-foreground"
-                  )}
-                >
-                  #{i}
-                </span>
-                {step ? (
-                  <span
-                    className={cn(
-                      "rounded px-1.5 py-0.5 font-mono text-[10px]",
-                      RULE_TONE[step.rule]
-                    )}
-                  >
-                    {step.rule}
-                  </span>
-                ) : (
-                  <Badge variant="outline" className="text-[10px]">
-                    start
-                  </Badge>
-                )}
-                <span className="text-muted-foreground">ℓ={s.label}</span>
-                {step?.detail && (
-                  <span className="flex-1 truncate text-foreground/80">
-                    {step.detail}
-                  </span>
-                )}
-                {!step?.detail && <span className="flex-1" />}
-                {step?.value && (
-                  <span className="max-w-[12em] truncate text-[10px] text-muted-foreground">
-                    {showVal(step.value)}
-                  </span>
-                )}
-              </button>
+                index={i}
+                state={s}
+                step={step}
+                active={active}
+                activeRef={active ? activeRef : undefined}
+                onSelect={() => setCursor(i)}
+              />
             )
           })}
         </div>
       </div>
     </div>
+  )
+}
+
+function TimelineRow({
+  index,
+  state,
+  step,
+  active,
+  activeRef,
+  onSelect,
+}: {
+  index: number
+  state: State
+  step: TraceStep | undefined
+  active: boolean
+  activeRef: React.Ref<HTMLButtonElement> | undefined
+  onSelect: () => void
+}) {
+  const hoverBind = useLabelHoverBind(state.label)
+  return (
+    <button
+      ref={activeRef}
+      type="button"
+      className={cn(
+        "flex items-center gap-2 border-b border-border/40 px-2 py-1 text-left",
+        active ? "bg-muted" : "hover:bg-muted/40"
+      )}
+      onClick={onSelect}
+    >
+      <span
+        className={cn(
+          "min-w-[2.5em] text-muted-foreground tabular-nums",
+          active && "font-semibold text-foreground"
+        )}
+      >
+        #{index}
+      </span>
+      <span
+        className={cn(
+          "inline-flex min-w-[3.5rem] justify-center rounded px-1.5 py-0.5 font-mono text-[10px]",
+          step
+            ? RULE_TONE[step.rule]
+            : "border border-border text-muted-foreground"
+        )}
+      >
+        {step ? step.rule : "start"}
+      </span>
+      <span
+        className="inline-block min-w-[2.5rem] cursor-help rounded-sm px-1 text-muted-foreground tabular-nums hover:bg-sky-100/60 dark:hover:bg-sky-900/30"
+        {...hoverBind}
+      >
+        ℓ={state.label}
+      </span>
+      {step?.detail && (
+        <span className="flex-1 truncate text-foreground/80">
+          {step.detail}
+        </span>
+      )}
+      {!step?.detail && <span className="flex-1" />}
+      {step?.value && (
+        <span className="max-w-[12em] truncate text-[10px] text-muted-foreground">
+          {showVal(step.value)}
+        </span>
+      )}
+    </button>
   )
 }
 
