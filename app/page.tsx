@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useReducer, useState } from "react"
-import { EnvEditor } from "@/components/trace/env-editor"
+import { EnvEditor, EnvPreview } from "@/components/trace/env-editor"
 import {
   LabelHoverProvider,
   useLabelHover,
@@ -18,7 +18,6 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { run } from "@/lib/s/cek"
 import type { Trace } from "@/lib/s/cek"
 import { parseEnv } from "@/lib/s/env-parser"
@@ -28,6 +27,7 @@ import type { Loc, Prog } from "@/lib/s/ast"
 
 interface Runnable {
   source: string
+  envText: string
   prog: Prog
   trace: Trace
 }
@@ -82,7 +82,7 @@ function tryCompile(
     const { prog } = parseS(source)
     const env = parseEnv(envText)
     const trace = run(prog, env, { maxSteps: stepLimit })
-    return { r: { source, prog, trace }, err: null }
+    return { r: { source, envText, prog, trace }, err: null }
   } catch (e) {
     if (e instanceof SParseError) {
       return { r: null, err: `parse error: ${e.message} (${e.from}-${e.to})` }
@@ -112,11 +112,28 @@ export default function Page() {
   const [state, dispatch] = useReducer(reducer, undefined, makeInitial)
   const [playing, setPlaying] = useState(false)
 
-  const doRun = () => {
+  const sourceDirty = !state.runnable || state.source !== state.runnable.source
+  const envDirty = !state.runnable || state.envText !== state.runnable.envText
+  const dirty = sourceDirty || envDirty
+  const showLocked = state.locked && state.runnable !== null
+
+  const handleLockToggle = () => {
+    if (showLocked) {
+      dispatch({ t: "setLocked", v: false })
+      return
+    }
     setPlaying(false)
-    const { r, err } = tryCompile(state.source, state.envText, state.stepLimit)
-    if (r) dispatch({ t: "runSuccess", r })
-    else if (err) dispatch({ t: "runFailure", err })
+    if (dirty) {
+      const { r, err } = tryCompile(
+        state.source,
+        state.envText,
+        state.stepLimit
+      )
+      if (r) dispatch({ t: "runSuccess", r })
+      else if (err) dispatch({ t: "runFailure", err })
+    } else {
+      dispatch({ t: "setLocked", v: true })
+    }
   }
 
   // Playback ticker: schedule (not perform) the next cursor advance while
@@ -180,7 +197,8 @@ export default function Page() {
       <Header
         stepLimit={state.stepLimit}
         onStepLimitChange={(v) => dispatch({ t: "setStepLimit", v })}
-        onRun={doRun}
+        showLocked={showLocked}
+        onToggleLock={handleLockToggle}
         error={state.error}
       />
       <LabelHoverProvider>
@@ -243,9 +261,6 @@ function MainArea({
               setEnv={(v) => dispatch({ t: "setEnv", v })}
               runnableSource={state.runnable?.source ?? null}
               locked={state.locked}
-              onToggleLock={() =>
-                dispatch({ t: "setLocked", v: !state.locked })
-              }
               highlight={currentCmd?.loc}
               kontHighlights={kontHighlights}
               hoverHighlight={hoverHighlight}
@@ -299,12 +314,14 @@ function MainArea({
 function Header({
   stepLimit,
   onStepLimitChange,
-  onRun,
+  showLocked,
+  onToggleLock,
   error,
 }: {
   stepLimit: number
   onStepLimitChange: (v: number) => void
-  onRun: () => void
+  showLocked: boolean
+  onToggleLock: () => void
   error: string | null
 }) {
   return (
@@ -331,8 +348,16 @@ function Header({
           className="h-7 w-24 text-xs"
         />
       </div>
-      <Button size="sm" onClick={onRun}>
-        Run
+      <Button
+        size="sm"
+        variant={showLocked ? "default" : "outline"}
+        onClick={onToggleLock}
+        title={showLocked ? "unlock to edit" : "lock to run / re-run"}
+      >
+        <LockIcon open={!showLocked} />
+        <span className="ml-1 text-xs">
+          {showLocked ? "locked" : "unlocked"}
+        </span>
       </Button>
       {error && (
         <div className="min-w-0 flex-1 truncate text-xs text-destructive">
@@ -353,7 +378,6 @@ function LeftPane({
   setEnv,
   runnableSource,
   locked,
-  onToggleLock,
   highlight,
   kontHighlights,
   hoverHighlight,
@@ -366,7 +390,6 @@ function LeftPane({
   setEnv: (v: string) => void
   runnableSource: string | null
   locked: boolean
-  onToggleLock: () => void
   highlight: Loc | undefined
   kontHighlights: Loc[]
   hoverHighlight: Loc | null
@@ -376,25 +399,9 @@ function LeftPane({
   const dirty = runnableSource !== null && source !== runnableSource
   const showLocked = locked && runnableSource !== null
   return (
-    <Tabs defaultValue="source" className="flex h-full min-h-0 flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <TabsList>
-          <TabsTrigger value="source">program</TabsTrigger>
-          <TabsTrigger value="env">initial ρ</TabsTrigger>
-        </TabsList>
-        <Button
-          size="sm"
-          variant={showLocked ? "default" : "outline"}
-          onClick={onToggleLock}
-          title={showLocked ? "unlock to edit" : "lock to see highlights"}
-          className="h-8"
-        >
-          <LockIcon open={!showLocked} />
-          <span className="ml-1 text-xs">
-            {showLocked ? "locked" : "unlocked"}
-          </span>
-        </Button>
-        {dirty && (
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      {dirty && (
+        <div className="flex flex-wrap items-center gap-2">
           <Badge
             variant="outline"
             className="border-amber-500 text-[10px] text-amber-700 dark:text-amber-300"
@@ -402,35 +409,44 @@ function LeftPane({
           >
             source modified
           </Badge>
-        )}
-      </div>
-      <TabsContent
-        value="source"
-        className="min-h-0 flex-1 data-[state=inactive]:hidden"
-      >
-        <ProgramPane
-          sourceText={source}
-          runnableSource={runnableSource}
-          onChange={setSource}
-          locked={locked}
-          highlight={highlight}
-          kontHighlights={kontHighlights}
-          hoverHighlight={hoverHighlight}
-        />
-      </TabsContent>
-      <TabsContent
-        value="env"
-        className="min-h-0 flex-1 overflow-auto data-[state=inactive]:hidden"
-      >
-        <EnvEditor value={envText} onChange={setEnv} />
-      </TabsContent>
-      {terminationKind === "final" && finalValue && (
-        <div className="flex items-center gap-2 rounded border bg-card px-2 py-1 text-xs">
-          <Badge className="bg-emerald-600 hover:bg-emerald-600">result</Badge>
-          <ValueView value={finalValue} />
         </div>
       )}
-    </Tabs>
+      <ResizablePanelGroup orientation="vertical" className="min-h-0 flex-1">
+        <ResizablePanel defaultSize="75%" minSize="25%">
+          <div className="flex h-full min-h-0 flex-col overflow-hidden">
+            <div className="mb-1 text-[10px] tracking-wide text-muted-foreground">
+              Program (P)
+            </div>
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <ProgramPane
+                sourceText={source}
+                runnableSource={runnableSource}
+                onChange={setSource}
+                locked={locked}
+                highlight={highlight}
+                kontHighlights={kontHighlights}
+                hoverHighlight={hoverHighlight}
+              />
+            </div>
+          </div>
+        </ResizablePanel>
+        <ResizableHandle className="my-2" />
+        <ResizablePanel defaultSize="25%" minSize="10%">
+          <div className="flex h-full min-h-0 flex-col overflow-hidden">
+            <div className="mb-1 text-[10px] tracking-wide text-muted-foreground">
+              Initial Environment (ρ)
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto">
+              {showLocked ? (
+                <EnvPreview value={envText} />
+              ) : (
+                <EnvEditor value={envText} onChange={setEnv} />
+              )}
+            </div>
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
   )
 }
 
