@@ -1,5 +1,6 @@
 "use client"
 
+import { useRef } from "react"
 import { cn } from "@/lib/utils"
 
 interface Props {
@@ -11,10 +12,9 @@ interface Props {
 }
 
 /**
- * Minimal monospace code editor with a line-numbered gutter. Fills its
- * flex parent vertically and scrolls the gutter + textarea together so
- * the whole widget stays within its container instead of pushing the
- * page layout taller than the viewport.
+ * Minimal monospace code editor with a line-numbered gutter. The textarea
+ * owns its own scroll (both axes). The gutter's scrollTop is kept in sync
+ * via an onScroll handler — no pixel arithmetic needed.
  */
 export function SourceEditor({
   value,
@@ -24,16 +24,19 @@ export function SourceEditor({
   readOnly,
 }: Props) {
   const lines = Math.max(value.split("\n").length, 1)
+  const gutterRef = useRef<HTMLDivElement>(null)
+
   return (
     <div
       className={cn(
-        "relative flex h-full min-h-0 overflow-auto rounded border bg-background",
+        "relative flex h-full min-h-0 overflow-hidden rounded border bg-background",
         "font-mono text-xs"
       )}
     >
       <div
+        ref={gutterRef}
         aria-hidden
-        className="shrink-0 bg-muted/40 py-2 pr-2 pl-2 text-right text-muted-foreground tabular-nums select-none"
+        className="shrink-0 overflow-hidden bg-muted/40 py-2 pr-2 pl-2 text-right text-muted-foreground tabular-nums select-none"
       >
         {Array.from({ length: lines }, (_, i) => (
           <div key={i} className="leading-5">
@@ -48,11 +51,15 @@ export function SourceEditor({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        rows={lines}
+        wrap="off"
+        onScroll={(e) => {
+          if (gutterRef.current)
+            gutterRef.current.scrollTop = e.currentTarget.scrollTop
+        }}
         className={cn(
           "min-w-0 flex-1 resize-none bg-transparent px-2 py-2 leading-5",
           "outline-none focus-visible:outline-none",
-          "overflow-hidden text-foreground",
+          "overflow-auto text-foreground",
           readOnly && "cursor-default"
         )}
       />
