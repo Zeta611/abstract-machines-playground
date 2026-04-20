@@ -9,6 +9,11 @@ import { ValueView } from "@/components/trace/value-view"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { run } from "@/lib/s/cek"
 import type { Trace } from "@/lib/s/cek"
@@ -174,53 +179,65 @@ export default function Page() {
         onRun={doRun}
         error={state.error}
       />
-      <main className="grid min-h-0 flex-1 grid-cols-12 gap-3 overflow-hidden p-3">
-        <section className="col-span-5 flex min-h-0 flex-col overflow-hidden">
-          <LeftPane
-            source={state.source}
-            setSource={(v) => dispatch({ t: "setSource", v })}
-            envText={state.envText}
-            setEnv={(v) => dispatch({ t: "setEnv", v })}
-            runnableSource={state.runnable?.source ?? null}
-            locked={state.locked}
-            onToggleLock={() => dispatch({ t: "setLocked", v: !state.locked })}
-            highlight={currentCmd?.loc}
-            kontHighlights={kontHighlights}
-            finalValue={
-              trace && trace.end.kind === "final" ? trace.end.value : null
-            }
-            terminationKind={trace?.end.kind}
-          />
-        </section>
-        <section className="col-span-3 flex min-h-0 flex-col overflow-hidden rounded border bg-card px-3 py-2">
-          {trace ? (
-            <TraceTimeline
-              trace={trace}
-              cursor={state.cursor}
-              setCursor={(v) => dispatch({ t: "setCursor", v })}
-              playing={playing}
-              setPlaying={setPlaying}
-            />
-          ) : (
-            <div className="text-xs text-muted-foreground">
-              Run the program to see its trace.
-            </div>
-          )}
-        </section>
-        <section className="col-span-4 min-h-0 overflow-hidden">
-          {trace && prog && current ? (
-            <StateView
-              state={current}
-              ctrl={prog.ctrl}
-              lastStep={lastStep}
-              nextStep={nextStep}
-            />
-          ) : (
-            <div className="p-3 text-xs text-muted-foreground">
-              Parse/run a program to inspect its CEK state.
-            </div>
-          )}
-        </section>
+      <main className="min-h-0 flex-1 overflow-hidden p-3">
+        <ResizablePanelGroup orientation="horizontal" className="h-full w-full">
+          <ResizablePanel defaultSize="42%" minSize="24%">
+            <section className="flex h-full min-h-0 flex-col overflow-hidden">
+              <LeftPane
+                source={state.source}
+                setSource={(v) => dispatch({ t: "setSource", v })}
+                envText={state.envText}
+                setEnv={(v) => dispatch({ t: "setEnv", v })}
+                runnableSource={state.runnable?.source ?? null}
+                locked={state.locked}
+                onToggleLock={() =>
+                  dispatch({ t: "setLocked", v: !state.locked })
+                }
+                highlight={currentCmd?.loc}
+                kontHighlights={kontHighlights}
+                finalValue={
+                  trace && trace.end.kind === "final" ? trace.end.value : null
+                }
+                terminationKind={trace?.end.kind}
+              />
+            </section>
+          </ResizablePanel>
+          <ResizableHandle className="mx-2"/>
+          <ResizablePanel defaultSize="24%" minSize="16%">
+            <section className="flex h-full min-h-0 flex-col overflow-hidden rounded border bg-card px-3 py-2">
+              {trace ? (
+                <TraceTimeline
+                  trace={trace}
+                  cursor={state.cursor}
+                  setCursor={(v) => dispatch({ t: "setCursor", v })}
+                  playing={playing}
+                  setPlaying={setPlaying}
+                />
+              ) : (
+                <div className="text-xs text-muted-foreground">
+                  Run the program to see its trace.
+                </div>
+              )}
+            </section>
+          </ResizablePanel>
+          <ResizableHandle className="mx-2"/>
+          <ResizablePanel defaultSize="34%" minSize="20%">
+            <section className="h-full min-h-0 overflow-hidden">
+              {trace && prog && current ? (
+                <StateView
+                  state={current}
+                  ctrl={prog.ctrl}
+                  lastStep={lastStep}
+                  nextStep={nextStep}
+                />
+              ) : (
+                <div className="p-3 text-xs text-muted-foreground">
+                  Parse/run a program to inspect its CEK state.
+                </div>
+              )}
+            </section>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </main>
     </div>
   )

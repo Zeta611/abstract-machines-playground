@@ -1,6 +1,11 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
 import { Separator } from "@/components/ui/separator"
 import { cmdSummary } from "@/lib/s/ast"
 import type { ControlMap } from "@/lib/s/ast"
@@ -21,44 +26,49 @@ export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
   const cmd = ctrl.get(state.label)
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-hidden">
-      <div className="shrink-0 rounded border bg-card p-3">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>
-            <b>C</b>ontrol (e)
-          </span>
-          <Badge variant="outline" className="font-mono text-[10px]">
-            ℓ={state.label}
-          </Badge>
-          {nextStep && (
-            <Badge variant="secondary" className="text-[10px]">
-              next: {nextStep.rule}
+    <ResizablePanelGroup
+      orientation="vertical"
+      className="h-full w-full"
+    >
+      <ResizablePanel defaultSize="25%" minSize="10%">
+        <div className="h-full min-h-0 overflow-auto rounded border bg-card p-3">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>
+              <b>C</b>ontrol (e)
+            </span>
+            <Badge variant="outline" className="font-mono text-[10px]">
+              ℓ={state.label}
             </Badge>
+            {nextStep && (
+              <Badge variant="secondary" className="text-[10px]">
+                next: {nextStep.rule}
+              </Badge>
+            )}
+            {lastStep && (
+              <Badge variant="outline" className="text-[10px]">
+                prev: {lastStep.rule}
+              </Badge>
+            )}
+          </div>
+          <div className="mt-1 font-mono text-sm">
+            {cmd ? cmdSummary(cmd) : `(no command for label ${state.label})`}
+          </div>
+          {lastStep?.value && (
+            <div className="mt-2 flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">last value</span>
+              <ValueView value={lastStep.value} />
+            </div>
           )}
-          {lastStep && (
-            <Badge variant="outline" className="text-[10px]">
-              prev: {lastStep.rule}
-            </Badge>
+          {lastStep?.detail && (
+            <div className="mt-1 text-[11px] text-muted-foreground italic">
+              {lastStep.detail}
+            </div>
           )}
         </div>
-        <div className="mt-1 font-mono text-sm">
-          {cmd ? cmdSummary(cmd) : `(no command for label ${state.label})`}
-        </div>
-        {lastStep?.value && (
-          <div className="mt-2 flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">last value</span>
-            <ValueView value={lastStep.value} />
-          </div>
-        )}
-        {lastStep?.detail && (
-          <div className="mt-1 text-[11px] text-muted-foreground italic">
-            {lastStep.detail}
-          </div>
-        )}
-      </div>
-
-      <div className="grid min-h-0 flex-1 grid-rows-2 gap-3">
-        <div className="min-h-0 overflow-auto rounded border bg-card p-3">
+      </ResizablePanel>
+      <ResizableHandle className="my-1" />
+      <ResizablePanel defaultSize="37.5%" minSize="10%">
+        <div className="h-full min-h-0 overflow-auto rounded border bg-card p-3">
           <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
             <span>
               <b>E</b>nvironment (ρ)
@@ -70,7 +80,10 @@ export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
           <Separator className="mb-2" />
           <EnvView env={state.env} />
         </div>
-        <div className="min-h-0 overflow-auto rounded border bg-card p-3">
+      </ResizablePanel>
+      <ResizableHandle className="my-1" />
+      <ResizablePanel defaultSize="37.5%" minSize="10%">
+        <div className="h-full min-h-0 overflow-auto rounded border bg-card p-3">
           <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
             <span>
               <b>K</b>ontinuation (κ)
@@ -82,7 +95,7 @@ export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
           <Separator className="mb-2" />
           <KontView kont={state.kont} ctrl={ctrl} />
         </div>
-      </div>
-    </div>
+      </ResizablePanel>
+    </ResizablePanelGroup>
   )
 }
