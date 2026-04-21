@@ -1,6 +1,13 @@
 "use client"
 
-import { useEffect, useMemo, useReducer, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react"
 import { EnvEditor, EnvPreview } from "@/components/trace/env-editor"
 import {
   LabelHoverProvider,
@@ -141,6 +148,21 @@ function makeInitial(): PageState {
 export default function Page() {
   const [state, dispatch] = useReducer(reducer, undefined, makeInitial)
   const [playing, setPlaying] = useState(false)
+  const visibleIndicesRef = useRef<number[]>([])
+
+  const handleVisibleIndicesChange = useCallback((indices: number[]) => {
+    visibleIndicesRef.current = indices
+  }, [])
+
+  // Reset visible indices when trace changes
+  useEffect(() => {
+    if (state.runnable) {
+      visibleIndicesRef.current = Array.from(
+        { length: state.runnable.trace.states.length },
+        (_, i) => i
+      )
+    }
+  }, [state.runnable])
 
   const sourceDirty = !state.runnable || state.source !== state.runnable.source
   const envDirty = !state.runnable || state.envText !== state.runnable.envText
@@ -191,33 +213,52 @@ export default function Page() {
     })
   }
 
-  // Playback ticker: schedule (not perform) the next cursor advance while
-  // `playing` is true. Both the advance and the auto-stop when the cursor
-  // reaches the end are done inside the timeout callback, keeping the
-  // effect body side-effect-free (see react-hooks/set-state-in-effect).
+  // Playback ticker: advance to the next *visible* index while playing.
   useEffect(() => {
     if (!playing || !state.runnable) return
-    const last = state.runnable.trace.states.length - 1
-    if (state.cursor >= last) return
+    const vis = visibleIndicesRef.current
+    let next: number | null = null
+    for (let j = 0; j < vis.length; j++) {
+      if (vis[j] > state.cursor) {
+        next = vis[j]
+        break
+      }
+    }
+    if (next === null) {
+      setPlaying(false)
+      return
+    }
+    const n = next
+    const lastVis = vis[vis.length - 1] ?? 0
     const id = setTimeout(() => {
-      const next = state.cursor + 1
-      dispatch({ t: "setCursor", v: next })
-      if (next >= last) setPlaying(false)
+      dispatch({ t: "setCursor", v: n })
+      if (n >= lastVis) setPlaying(false)
     }, 150)
     return () => clearTimeout(id)
   }, [playing, state.cursor, state.runnable])
 
-  // Keyboard navigation over the trace.
+  // Keyboard navigation over the trace (filter-aware).
   useEffect(() => {
     if (!state.runnable) return
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName
       if (tag === "INPUT" || tag === "TEXTAREA") return
+      const vis = visibleIndicesRef.current
       if (e.key === "ArrowDown" || e.key === "j") {
-        dispatch({ t: "setCursor", v: state.cursor + 1 })
+        for (let j = 0; j < vis.length; j++) {
+          if (vis[j] > state.cursor) {
+            dispatch({ t: "setCursor", v: vis[j] })
+            break
+          }
+        }
         e.preventDefault()
       } else if (e.key === "ArrowUp" || e.key === "k") {
-        dispatch({ t: "setCursor", v: state.cursor - 1 })
+        for (let j = vis.length - 1; j >= 0; j--) {
+          if (vis[j] < state.cursor) {
+            dispatch({ t: "setCursor", v: vis[j] })
+            break
+          }
+        }
         e.preventDefault()
       } else if (e.key === " ") {
         setPlaying((p) => !p)
@@ -272,6 +313,7 @@ export default function Page() {
           nextStep={nextStep}
           currentCmd={currentCmd}
           kontHighlights={kontHighlights}
+          onVisibleIndicesChange={handleVisibleIndicesChange}
         />
       </LabelHoverProvider>
     </div>
@@ -290,6 +332,7 @@ function MainArea({
   nextStep,
   currentCmd,
   kontHighlights,
+  onVisibleIndicesChange,
 }: {
   state: PageState
   dispatch: React.Dispatch<Action>
@@ -302,6 +345,7 @@ function MainArea({
   nextStep: Trace["steps"][number] | undefined
   currentCmd: ReturnType<Prog["ctrl"]["get"]> | undefined
   kontHighlights: Loc[]
+  onVisibleIndicesChange: (indices: number[]) => void
 }) {
   const { hovered } = useLabelHover()
   const hoverHighlight =
@@ -335,6 +379,7 @@ function MainArea({
                 setCursor={(v) => dispatch({ t: "setCursor", v })}
                 playing={playing}
                 setPlaying={setPlaying}
+                onVisibleIndicesChange={onVisibleIndicesChange}
               />
             ) : (
               <div className="text-xs text-muted-foreground">

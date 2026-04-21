@@ -48,7 +48,7 @@ function CtorValue({
       <button
         type="button"
         className={cn(
-          "cursor-pointer text-violet-700 whitespace-nowrap dark:text-violet-300",
+          "cursor-pointer whitespace-nowrap text-violet-700 dark:text-violet-300",
           "hover:underline"
         )}
         onClick={() => setOpen((o) => !o)}
