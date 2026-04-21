@@ -44,11 +44,11 @@ function CtorValue({
   const [open, setOpen] = useState(depth < autoCollapseAt)
   const nestedCount = countNodes(value)
   return (
-    <span className="inline-flex items-start">
+    <span>
       <button
         type="button"
         className={cn(
-          "cursor-pointer text-violet-700 dark:text-violet-300",
+          "cursor-pointer text-violet-700 whitespace-nowrap dark:text-violet-300",
           "hover:underline"
         )}
         onClick={() => setOpen((o) => !o)}
@@ -59,20 +59,18 @@ function CtorValue({
       </button>
       {open && (
         <>
-          <span className="inline-flex flex-wrap gap-x-1">
-            {value.args.map((a, i) => (
-              <span key={i}>
-                <ValueView
-                  value={a}
-                  depth={depth + 1}
-                  autoCollapseAt={autoCollapseAt}
-                />
-                {i < value.args.length - 1 && (
-                  <span className="text-muted-foreground">,</span>
-                )}
-              </span>
-            ))}
-          </span>
+          {value.args.map((a, i) => (
+            <span key={i}>
+              <ValueView
+                value={a}
+                depth={depth + 1}
+                autoCollapseAt={autoCollapseAt}
+              />
+              {i < value.args.length - 1 && (
+                <span className="text-muted-foreground">{", "}</span>
+              )}
+            </span>
+          ))}
           <span className="text-muted-foreground">)</span>
         </>
       )}

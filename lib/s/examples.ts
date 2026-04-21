@@ -17,8 +17,7 @@ lookup(defs, fid) =
   | Defs(f, body, rest) =>
     match f with
     | Fun(fid2) =>
-      let d = sub(fid, fid2) in
-      match iszero(d) with
+      match iszero(sub(fid, fid2)) with
       | true() => body
       | false() => let r = lookup(rest, fid) in r
       end
@@ -67,7 +66,7 @@ export const TRIVIAL = `main(x) =
  * Default initial environment for the playground
  */
 export const INITIAL_ENV = `# A T program computing factorial, encoded as S constructor values.
-#   fact(n) = if n == 0 then 1 else n * fact(n - 1)
+#   fact(n) = ifz n then 1 else n * fact(n - 1)
 # Fun(0) is fact; main applies it to the input arg.
 p = Prog(Defs(Fun(0), Ifz(X(), Int(1), Mul(X(), App(Fun(0), Sub(X(), Int(1))))), Nil()), App(Fun(0), X()))
 arg = 5

@@ -30,7 +30,7 @@ export function EnvView({ env, emptyLabel = "(empty)", highlight }: Props) {
           >
             {k}
           </div>
-          <div className="min-w-0 break-all">
+          <div className="min-w-0 break-words">
             <ValueView value={v} />
           </div>
         </div>
