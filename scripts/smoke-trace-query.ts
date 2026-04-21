@@ -157,10 +157,40 @@ console.log("4. logical operators")
 }
 
 console.log("")
-console.log("5. invalid queries")
+console.log("5. negation")
+{
+  const notGrouped = parseOk("!(rule=Match && l=7)")
+  expect(
+    "not grouped excludes matching row",
+    !traceQueryMatches(notGrouped, rows.matchIfz)
+  )
+  expect(
+    "not grouped keeps non-matching row",
+    traceQueryMatches(notGrouped, rows.matchBranch25)
+  )
+
+  const notEquals = parseOk("rule!=Match || l!=25")
+  expect(
+    "field != excludes row matching both equalities",
+    !traceQueryMatches(notEquals, rows.matchBranch25)
+  )
+  expect(
+    "field != keeps row with different label",
+    traceQueryMatches(notEquals, rows.matchIfz)
+  )
+  expect(
+    "field != keeps row with different rule",
+    traceQueryMatches(notEquals, rows.return25)
+  )
+}
+
+console.log("")
+console.log("6. invalid queries")
 {
   parseBad("rule=")
+  parseBad("rule!=")
   parseBad("rule=Match &&")
+  parseBad("!")
   parseBad("(rule=Match")
   parseBad("foo=bar")
 }

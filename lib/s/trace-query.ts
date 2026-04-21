@@ -5,13 +5,23 @@ export type TraceQueryField = "rule" | "detail" | "l"
 export type TraceQueryAst =
   | { kind: "and"; left: TraceQueryAst; right: TraceQueryAst }
   | { kind: "or"; left: TraceQueryAst; right: TraceQueryAst }
+  | { kind: "not"; expr: TraceQueryAst }
   | { kind: "term"; field: TraceQueryField | null; value: string }
 
 export type TraceQueryParseResult =
   | { ok: true; ast: TraceQueryAst | null }
   | { ok: false; message: string; at: number }
 
-type TokenKind = "word" | "string" | "lparen" | "rparen" | "and" | "or" | "eq"
+type TokenKind =
+  | "word"
+  | "string"
+  | "lparen"
+  | "rparen"
+  | "and"
+  | "or"
+  | "not"
+  | "eq"
+  | "neq"
 
 interface Token {
   kind: TokenKind
@@ -56,13 +66,13 @@ export function parseTraceQuery(input: string): TraceQueryParseResult {
   }
 
   function parseAnd(): TraceQueryParseResult {
-    const first = parsePrimary()
+    const first = parseNot()
     if (!first.ok || first.ast === null) return first
 
     let ast = first.ast
     while (current()?.kind === "and") {
       const op = consume()
-      const right = parsePrimary()
+      const right = parseNot()
       if (!right.ok) return right
       if (right.ast === null) {
         return { ok: false, message: "expected term after &&", at: op.at + 2 }
@@ -70,6 +80,19 @@ export function parseTraceQuery(input: string): TraceQueryParseResult {
       ast = { kind: "and", left: ast, right: right.ast }
     }
     return { ok: true, ast }
+  }
+
+  function parseNot(): TraceQueryParseResult {
+    const tok = current()
+    if (tok?.kind !== "not") return parsePrimary()
+
+    consume()
+    const expr = parseNot()
+    if (!expr.ok) return expr
+    if (expr.ast === null) {
+      return { ok: false, message: "expected term after !", at: tok.at + 1 }
+    }
+    return { ok: true, ast: { kind: "not", expr: expr.ast } }
   }
 
   function parsePrimary(): TraceQueryParseResult {
@@ -106,15 +129,17 @@ export function parseTraceQuery(input: string): TraceQueryParseResult {
         ? "before )"
         : tok.kind === "and"
           ? "before &&"
-          : "before ||"
+          : tok.kind === "or"
+            ? "before ||"
+            : "after !"
     return { ok: false, message: `expected term ${suffix}`, at: tok.at }
   }
 
   function parseTerm(): TraceQueryParseResult {
     const tok = consume()
-    const eq = current()
+    const op = current()
 
-    if (tok.kind === "word" && eq?.kind === "eq") {
+    if (tok.kind === "word" && (op?.kind === "eq" || op?.kind === "neq")) {
       const field = tok.text.toLowerCase()
       if (!isTraceQueryField(field)) {
         return { ok: false, message: `unknown field ${tok.text}`, at: tok.at }
@@ -125,7 +150,7 @@ export function parseTraceQuery(input: string): TraceQueryParseResult {
       if (!value || (value.kind !== "word" && value.kind !== "string")) {
         return {
           ok: false,
-          message: `expected value after ${tok.text}=`,
+          message: `expected value after ${tok.text}${op.text}`,
           at: value?.at ?? input.length,
         }
       }
@@ -133,11 +158,14 @@ export function parseTraceQuery(input: string): TraceQueryParseResult {
       if (value.text.length === 0) {
         return {
           ok: false,
-          message: `expected value after ${tok.text}=`,
+          message: `expected value after ${tok.text}${op.text}`,
           at: value.at,
         }
       }
-      return { ok: true, ast: { kind: "term", field, value: value.text } }
+      const term: TraceQueryAst = { kind: "term", field, value: value.text }
+      if (op.kind === "neq")
+        return { ok: true, ast: { kind: "not", expr: term } }
+      return { ok: true, ast: term }
     }
 
     if (tok.text.length === 0) {
@@ -181,6 +209,8 @@ export function traceQueryMatches(
       return (
         traceQueryMatches(ast.left, row) || traceQueryMatches(ast.right, row)
       )
+    case "not":
+      return !traceQueryMatches(ast.expr, row)
     case "term":
       return termMatches(ast, row)
   }
@@ -248,6 +278,17 @@ function tokenize(
       continue
     }
 
+    if (ch === "!") {
+      if (input[i + 1] === "=") {
+        tokens.push({ kind: "neq", text: "!=", at: i })
+        i += 2
+        continue
+      }
+      tokens.push({ kind: "not", text: "!", at: i })
+      i++
+      continue
+    }
+
     if (ch === "&" || ch === "|") {
       const next = input[i + 1]
       if (ch === "&" && next === "&") {
@@ -299,6 +340,7 @@ function tokenize(
         q === "(" ||
         q === ")" ||
         q === "=" ||
+        q === "!" ||
         q === "&" ||
         q === "|"
       ) {

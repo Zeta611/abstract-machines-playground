@@ -65,15 +65,18 @@ const QUERY_SUGGESTIONS = [
     items: [
       { label: "&&", insert: " && " },
       { label: "||", insert: " || " },
+      { label: "!", insert: "!" },
+      { label: "!=", insert: "!=" },
     ],
   },
   {
     group: "Examples",
     items: [
       { label: "rule=Match", insert: "rule=Match" },
+      { label: "rule!=Match || l!=3", insert: "rule!=Match || l!=3" },
       {
-        label: "rule=LetCall && detail=eval",
-        insert: "rule=LetCall && detail=eval",
+        label: "!(rule=Match && l=3)",
+        insert: "!(rule=Match && l=3)",
       },
       {
         label: "(rule=Match || rule=Return) && l=25",
@@ -362,8 +365,8 @@ function QueryHelp({ onInsert }: { onInsert: (value: string) => void }) {
         </div>
       ))}
       <div className="border-t px-2 py-2 text-[10px] leading-4 text-muted-foreground">
-        Use &&, ||, and parentheses. Plain words search rule, detail, value, and
-        label.
+        Use !, !=, &&, ||, and parentheses. Plain words search rule, detail,
+        value, and label.
       </div>
     </div>
   )
@@ -397,7 +400,7 @@ function highlightQuery(query: string) {
     }
 
     const op = query.slice(i, i + 2)
-    if (op === "&&" || op === "||") {
+    if (op === "&&" || op === "||" || op === "!=") {
       nodes.push(
         <span key={i} className="text-muted-foreground">
           {op}
@@ -408,7 +411,7 @@ function highlightQuery(query: string) {
     }
 
     const ch = query[i]
-    if (ch === "(" || ch === ")" || ch === "=") {
+    if (ch === "(" || ch === ")" || ch === "=" || ch === "!") {
       nodes.push(
         <span key={i} className="text-muted-foreground">
           {ch}
@@ -429,7 +432,7 @@ function readRuleTerm(
   query: string,
   start: number
 ): { text: string; prefix: string; ruleText: string; rule: RuleName } | null {
-  const match = /^rule\s*=\s*([A-Za-z]+)/i.exec(query.slice(start))
+  const match = /^rule\s*!?=\s*([A-Za-z]+)/i.exec(query.slice(start))
   if (!match) return null
 
   const text = match[0]
