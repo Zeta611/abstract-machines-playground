@@ -290,7 +290,11 @@ export function TraceTimeline({
                 <RiQuestionLine />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" align="end">
+            <PopoverContent
+              className="w-80 p-0"
+              align="end"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
               <QueryHelp onInsert={insertSuggestion} />
             </PopoverContent>
           </Popover>
