@@ -61,8 +61,8 @@ CallArgs { "(" (Exp ("," Exp)*)? ")" }
 kw<term> { @specialize[@name={term}]<LowerIdent, term> }
 
 @tokens {
-  LowerIdent { $[a-z_] $[a-zA-Z0-9_]* }
-  UpperIdent { $[A-Z] $[a-zA-Z0-9_]* }
+  LowerIdent { $[a-z_] $[a-zA-Z0-9_']* }
+  UpperIdent { $[A-Z] $[a-zA-Z0-9_']* }
   Integer { "-"? $[0-9]+ }
   LineComment { "#" ![\n]* }
   space { $[ \\t\\n\\r]+ }
