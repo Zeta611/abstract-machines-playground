@@ -198,10 +198,10 @@ function termMatches(
   const needle = normalize(term.value)
   const label = String(row.label)
 
-  if (term.field === "rule") return normalize(row.rule ?? "").includes(needle)
+  if (term.field === "rule") return normalize(row.rule ?? "") === needle
   if (term.field === "detail")
     return normalize(row.detail ?? "").includes(needle)
-  if (term.field === "l") return normalize(label).includes(needle)
+  if (term.field === "l") return normalize(label) === needle
 
   return normalize(
     [row.rule ?? "", row.detail ?? "", row.value ?? "", label].join(" ")

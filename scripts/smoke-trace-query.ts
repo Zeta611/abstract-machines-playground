@@ -59,6 +59,12 @@ const rows = {
     value: "Z()",
     label: 25,
   },
+  assert5: {
+    index: 41,
+    rule: "Assert" as RuleName,
+    value: "true()",
+    label: 5,
+  },
   return25: {
     index: 31,
     rule: "Return" as RuleName,
@@ -86,6 +92,14 @@ console.log("2. field filters")
   const rule = parseOk("rule=Match")
   expect("rule=Match matches Match", traceQueryMatches(rule, rows.matchIfz))
   expect("rule=Match excludes Return", !traceQueryMatches(rule, rows.return25))
+  expect(
+    "rule=match is case-insensitive",
+    traceQueryMatches(parseOk("rule=match"), rows.matchIfz)
+  )
+  expect(
+    "rule=mat does not partial-match Match",
+    !traceQueryMatches(parseOk("rule=mat"), rows.matchIfz)
+  )
 
   const detail = parseOk("detail=branch && rule=Match")
   expect(
@@ -109,9 +123,13 @@ console.log("3. plain text and labels")
     !traceQueryMatches(text, rows.letCall)
   )
 
-  const label = parseOk("l=2")
-  expect("label contains match", traceQueryMatches(label, rows.matchBranch25))
-  expect("label contains excludes", !traceQueryMatches(label, rows.matchIfz))
+  const label = parseOk("l=5")
+  expect("label exact match", traceQueryMatches(label, rows.assert5))
+  expect(
+    "label exact excludes 25",
+    !traceQueryMatches(label, rows.matchBranch25)
+  )
+  expect("label exact excludes 7", !traceQueryMatches(label, rows.matchIfz))
 }
 
 console.log("")
