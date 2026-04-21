@@ -213,10 +213,10 @@ export default function Page() {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName
       if (tag === "INPUT" || tag === "TEXTAREA") return
-      if (e.key === "ArrowRight" || e.key === "l") {
+      if (e.key === "ArrowDown" || e.key === "j") {
         dispatch({ t: "setCursor", v: state.cursor + 1 })
         e.preventDefault()
-      } else if (e.key === "ArrowLeft" || e.key === "h") {
+      } else if (e.key === "ArrowUp" || e.key === "k") {
         dispatch({ t: "setCursor", v: state.cursor - 1 })
         e.preventDefault()
       } else if (e.key === " ") {
