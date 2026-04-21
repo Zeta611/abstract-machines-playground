@@ -1,6 +1,13 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,7 +33,13 @@ interface Props {
   onVisibleIndicesChange?: (indices: number[]) => void
 }
 
-const ALL_RULES: RuleName[] = ["LetExp", "LetCall", "Match", "Assert", "Return"]
+const RULE_NAMES: RuleName[] = [
+  "LetExp",
+  "LetCall",
+  "Match",
+  "Assert",
+  "Return",
+]
 
 const RULE_TONE: Record<RuleName, string> = {
   LetExp: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
@@ -84,6 +97,7 @@ export function TraceTimeline({
 
   const [queryText, setQueryText] = useState("")
   const [queryHelpOpen, setQueryHelpOpen] = useState(false)
+  const [queryScrollLeft, setQueryScrollLeft] = useState(0)
 
   const queryParse = useMemo(() => parseTraceQuery(queryText), [queryText])
 
@@ -124,27 +138,15 @@ export function TraceTimeline({
   }, [visibleIndices, onVisibleIndicesChange])
 
   const replaceQuerySelection = useCallback(
-    (insert: string, smartAnd = false) => {
+    (insert: string) => {
       const input = queryInputRef.current
       const start = input?.selectionStart ?? queryText.length
       const end = input?.selectionEnd ?? start
       const before = queryText.slice(0, start)
       const after = queryText.slice(end)
-      const hasSelection = end > start
-      let text = insert
 
-      if (smartAnd && queryText.trim() !== "" && !hasSelection) {
-        const beforeTrimmed = before.trimEnd()
-        const needsAnd =
-          beforeTrimmed !== "" &&
-          !beforeTrimmed.endsWith("(") &&
-          !beforeTrimmed.endsWith("&&") &&
-          !beforeTrimmed.endsWith("||")
-        text = `${needsAnd ? " && " : ""}${insert}`
-      }
-
-      const next = before + text + after
-      const nextCursor = before.length + text.length
+      const next = before + insert + after
+      const nextCursor = before.length + insert.length
       setQueryText(next)
       requestAnimationFrame(() => {
         queryInputRef.current?.focus()
@@ -152,22 +154,6 @@ export function TraceTimeline({
       })
     },
     [queryText]
-  )
-
-  const insertRuleQuery = useCallback(
-    (rule: RuleName) => {
-      if (queryText.trim() === "") {
-        const next = `rule=${rule}`
-        setQueryText(next)
-        requestAnimationFrame(() => {
-          queryInputRef.current?.focus()
-          queryInputRef.current?.setSelectionRange(next.length, next.length)
-        })
-        return
-      }
-      replaceQuerySelection(`rule=${rule}`, true)
-    },
-    [queryText, replaceQuerySelection]
   )
 
   const insertSuggestion = useCallback(
@@ -273,14 +259,24 @@ export function TraceTimeline({
       <div className="flex shrink-0 flex-col gap-1.5">
         <div className="flex items-center gap-1.5">
           <div className="relative min-w-0 flex-1">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-0 h-7 overflow-hidden border border-transparent px-2.5 py-1 font-mono text-xs tracking-normal whitespace-pre md:text-xs"
+            >
+              <div style={{ transform: `translateX(-${queryScrollLeft}px)` }}>
+                {highlightQuery(queryText)}
+              </div>
+            </div>
             <Input
               ref={queryInputRef}
               placeholder="rule=Match && (detail=branch || l=25)"
               value={queryText}
               onChange={(e) => setQueryText(e.target.value)}
+              onScroll={(e) => setQueryScrollLeft(e.currentTarget.scrollLeft)}
               onFocus={() => setQueryHelpOpen(true)}
               aria-invalid={!queryParse.ok}
-              className="h-7 pr-2 font-mono text-[11px]"
+              spellCheck={false}
+              className="relative z-10 h-7 bg-transparent pr-2 font-mono text-xs tracking-normal text-transparent caret-foreground placeholder:text-muted-foreground md:text-xs"
             />
           </div>
           <Popover open={queryHelpOpen} onOpenChange={setQueryHelpOpen}>
@@ -312,22 +308,6 @@ export function TraceTimeline({
             </span>
           )}
         </div>
-      </div>
-
-      <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-        {ALL_RULES.map((rule) => (
-          <button
-            key={rule}
-            type="button"
-            onClick={() => insertRuleQuery(rule)}
-            className={cn(
-              "inline-flex items-center rounded px-1.5 py-0.5 font-mono text-[10px] transition-opacity hover:opacity-80",
-              RULE_TONE[rule]
-            )}
-          >
-            {rule}
-          </button>
-        ))}
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto rounded border bg-card">
@@ -383,6 +363,84 @@ function QueryHelp({ onInsert }: { onInsert: (value: string) => void }) {
       </div>
     </div>
   )
+}
+
+function highlightQuery(query: string) {
+  const nodes: ReactNode[] = []
+  let i = 0
+
+  while (i < query.length) {
+    const ruleTerm = readRuleTerm(query, i)
+    if (ruleTerm) {
+      const valueStart = i + ruleTerm.prefix.length
+      if (ruleTerm.prefix.length > 0) {
+        nodes.push(
+          <span key={i} className="text-muted-foreground">
+            {ruleTerm.prefix}
+          </span>
+        )
+      }
+      nodes.push(
+        <span
+          key={valueStart}
+          className={cn("rounded-sm bg-clip-padding", RULE_TONE[ruleTerm.rule])}
+        >
+          {ruleTerm.ruleText}
+        </span>
+      )
+      i += ruleTerm.text.length
+      continue
+    }
+
+    const op = query.slice(i, i + 2)
+    if (op === "&&" || op === "||") {
+      nodes.push(
+        <span key={i} className="text-muted-foreground">
+          {op}
+        </span>
+      )
+      i += 2
+      continue
+    }
+
+    const ch = query[i]
+    if (ch === "(" || ch === ")" || ch === "=") {
+      nodes.push(
+        <span key={i} className="text-muted-foreground">
+          {ch}
+        </span>
+      )
+      i++
+      continue
+    }
+
+    nodes.push(<span key={i}>{ch}</span>)
+    i++
+  }
+
+  return nodes
+}
+
+function readRuleTerm(
+  query: string,
+  start: number
+): { text: string; prefix: string; ruleText: string; rule: RuleName } | null {
+  const match = /^rule\s*=\s*([A-Za-z]+)/i.exec(query.slice(start))
+  if (!match) return null
+
+  const text = match[0]
+  const ruleText = match[1]
+  const rule = RULE_NAMES.find(
+    (candidate) => candidate.toLowerCase() === ruleText.toLowerCase()
+  )
+  if (!rule) return null
+
+  return {
+    text,
+    prefix: text.slice(0, text.length - ruleText.length),
+    ruleText,
+    rule,
+  }
 }
 
 function TimelineRow({
