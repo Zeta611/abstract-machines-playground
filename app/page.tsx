@@ -445,7 +445,7 @@ function Header({
         </div>
       )}
       <div className="ml-auto text-[11px] text-muted-foreground">
-        ←/→ step · space = play/pause
+        ↓/↑ or j/k step · space = play/pause
       </div>
     </header>
   )
