@@ -73,3 +73,109 @@ export const INITIAL_ENV = `# A sample T program, encoded as S constructor value
 p = Prog(Nil(), Sub(X(), Int(1)))
 arg = 0
 `
+
+export interface ProgramPreset {
+  id: string
+  name: string
+  source: string
+  envText: string
+}
+
+export const DEFAULT_PRESET_ID = "definitional-interpreter"
+
+const FACTORIAL = `fact(n) =
+  match iszero(n) with
+  | true() => 1
+  | false() =>
+    let m = fact(sub(n, 1)) in
+    mul(n, m)
+  end
+`
+
+const FACTORIAL_ENV = `n = 10
+`
+
+const FIBONACCI = `fib(n) =
+  match iszero(n) with
+  | true() => 0
+  | false() =>
+    match iszero(sub(n, 1)) with
+    | true() => 1
+    | false() =>
+      let a = fib(sub(n, 1)) in
+      let b = fib(sub(n, 2)) in
+      add(a, b)
+    end
+  end
+`
+
+const FIBONACCI_ENV = `n = 7
+`
+
+const MUTUAL_PARITY = `even(n) =
+  match iszero(n) with
+  | true() => true()
+  | false() =>
+    let r = odd(sub(n, 1)) in r
+  end
+
+odd(n) =
+  match iszero(n) with
+  | true() => false()
+  | false() =>
+    let r = even(sub(n, 1)) in r
+  end
+
+main(n) =
+  let r = even(n) in r
+`
+
+const MUTUAL_PARITY_ENV = `n = 7
+`
+
+const PEANO_ADDITION = `addPeano(pair) =
+  match pair with
+  | Pair(x, y) =>
+    match x with
+    | Z() => y
+    | S(x1) =>
+      let r = addPeano(Pair(x1, S(y))) in r
+    end
+  end
+`
+
+const PEANO_ADDITION_ENV = `pair = Pair(S(S(S(Z()))), S(S(Z())))
+`
+
+export const PROGRAM_PRESETS: ProgramPreset[] = [
+  {
+    id: DEFAULT_PRESET_ID,
+    name: "definitional interpreter",
+    source: INTERPRETER_S_T,
+    envText: INITIAL_ENV,
+  },
+  {
+    id: "factorial",
+    name: "factorial",
+    source: FACTORIAL,
+    envText: FACTORIAL_ENV,
+  },
+  {
+    id: "fibonacci",
+    name: "fibonacci",
+    source: FIBONACCI,
+    envText: FIBONACCI_ENV,
+  },
+  {
+    id: "mutual-parity",
+    name: "mutual parity",
+    source: MUTUAL_PARITY,
+    envText: MUTUAL_PARITY_ENV,
+  },
+  {
+    id: "peano-addition",
+    name: "Peano addition",
+    source: PEANO_ADDITION,
+    envText: PEANO_ADDITION_ENV,
+  },
+]

@@ -8,7 +8,12 @@
 
 import { run } from "../lib/s/cek"
 import { parseEnv, parseValue1 } from "../lib/s/env-parser"
-import { INITIAL_ENV, INTERPRETER_S_T, TRIVIAL } from "../lib/s/examples"
+import {
+  INITIAL_ENV,
+  INTERPRETER_S_T,
+  PROGRAM_PRESETS,
+  TRIVIAL,
+} from "../lib/s/examples"
 import { parseS } from "../lib/s/parser"
 import { showVal, valEq, vInt } from "../lib/s/values"
 import type { Val } from "../lib/s/values"
@@ -147,7 +152,32 @@ console.log("7. Stuck: bad match surfaces cleanly")
 }
 
 console.log("")
-console.log("8. Env parser: nested T program literal")
+console.log("8. Presets all parse and terminate")
+{
+  const expected: Record<string, Val> = {
+    "definitional-interpreter": vInt(-1),
+    factorial: vInt(3628800),
+    fibonacci: vInt(13),
+    "mutual-parity": parseValue1("false()"),
+    "peano-addition": parseValue1("S(S(S(S(S(Z())))))"),
+  }
+
+  for (const preset of PROGRAM_PRESETS) {
+    const { prog } = parseS(preset.source)
+    const env = parseEnv(preset.envText)
+    const trace = run(prog, env, { maxSteps: 5_000 })
+    expect(`${preset.name} terminates`, trace.end.kind === "final")
+    if (trace.end.kind === "final") {
+      expectVal(`${preset.name} value`, trace.end.value, expected[preset.id])
+    }
+    console.log(
+      `   ${preset.id}: states=${trace.states.length}, steps=${trace.steps.length}, end=${trace.end.kind}`
+    )
+  }
+}
+
+console.log("")
+console.log("9. Env parser: nested T program literal")
 {
   const v = parseValue1(
     "Prog(Defs(Fun(0), Sub(X(), Int(1)), Nil()), App(Fun(0), Int(5)))"

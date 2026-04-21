@@ -9,7 +9,6 @@ import {
 import { ProgramPane } from "@/components/trace/program-pane"
 import { StateView } from "@/components/trace/state-view"
 import { TraceTimeline } from "@/components/trace/trace-timeline"
-import { ValueView } from "@/components/trace/value-view"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,10 +17,21 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { run } from "@/lib/s/cek"
 import type { Trace } from "@/lib/s/cek"
 import { parseEnv } from "@/lib/s/env-parser"
-import { INITIAL_ENV, INTERPRETER_S_T } from "@/lib/s/examples"
+import {
+  DEFAULT_PRESET_ID,
+  PROGRAM_PRESETS,
+  type ProgramPreset,
+} from "@/lib/s/examples"
 import { parseS, SParseError } from "@/lib/s/parser"
 import type { Loc, Prog } from "@/lib/s/ast"
 
@@ -50,6 +60,13 @@ type Action =
   | { t: "setLocked"; v: boolean }
   | { t: "runSuccess"; r: Runnable }
   | { t: "runFailure"; err: string }
+  | {
+      t: "replaceAndRun"
+      source: string
+      envText: string
+      r: Runnable | null
+      err: string | null
+    }
 
 function reducer(s: PageState, a: Action): PageState {
   switch (a.t) {
@@ -70,6 +87,16 @@ function reducer(s: PageState, a: Action): PageState {
       return { ...s, runnable: a.r, cursor: 0, error: null, locked: true }
     case "runFailure":
       return { ...s, error: a.err }
+    case "replaceAndRun":
+      return {
+        ...s,
+        source: a.source,
+        envText: a.envText,
+        runnable: a.r,
+        cursor: 0,
+        error: a.err,
+        locked: a.r !== null,
+      }
   }
 }
 
@@ -93,8 +120,11 @@ function tryCompile(
 }
 
 function makeInitial(): PageState {
-  const source = INTERPRETER_S_T
-  const envText = INITIAL_ENV
+  const preset =
+    PROGRAM_PRESETS.find((p) => p.id === DEFAULT_PRESET_ID) ??
+    PROGRAM_PRESETS[0]
+  const source = preset.source
+  const envText = preset.envText
   const stepLimit = 5000
   const { r, err } = tryCompile(source, envText, stepLimit)
   return {
@@ -116,6 +146,10 @@ export default function Page() {
   const envDirty = !state.runnable || state.envText !== state.runnable.envText
   const dirty = sourceDirty || envDirty
   const showLocked = state.locked && state.runnable !== null
+  const activePresetId =
+    PROGRAM_PRESETS.find(
+      (p) => p.source === state.source && p.envText === state.envText
+    )?.id ?? "custom"
 
   const handleLockToggle = () => {
     if (showLocked) {
@@ -134,6 +168,27 @@ export default function Page() {
     } else {
       dispatch({ t: "setLocked", v: true })
     }
+  }
+
+  const handlePresetChange = (id: string) => {
+    const preset = PROGRAM_PRESETS.find((p) => p.id === id)
+    if (!preset) return
+
+    setPlaying(false)
+
+    const { r, err } = tryCompile(
+      preset.source,
+      preset.envText,
+      state.stepLimit
+    )
+
+    dispatch({
+      t: "replaceAndRun",
+      source: preset.source,
+      envText: preset.envText,
+      r,
+      err,
+    })
   }
 
   // Playback ticker: schedule (not perform) the next cursor advance while
@@ -195,6 +250,9 @@ export default function Page() {
   return (
     <div className="flex h-svh flex-col overflow-hidden bg-muted/20">
       <Header
+        activePresetId={activePresetId}
+        presets={PROGRAM_PRESETS}
+        onPresetChange={handlePresetChange}
         stepLimit={state.stepLimit}
         onStepLimitChange={(v) => dispatch({ t: "setStepLimit", v })}
         showLocked={showLocked}
@@ -264,10 +322,6 @@ function MainArea({
               highlight={currentCmd?.loc}
               kontHighlights={kontHighlights}
               hoverHighlight={hoverHighlight}
-              finalValue={
-                trace && trace.end.kind === "final" ? trace.end.value : null
-              }
-              terminationKind={trace?.end.kind}
             />
           </section>
         </ResizablePanel>
@@ -312,12 +366,18 @@ function MainArea({
 }
 
 function Header({
+  activePresetId,
+  presets,
+  onPresetChange,
   stepLimit,
   onStepLimitChange,
   showLocked,
   onToggleLock,
   error,
 }: {
+  activePresetId: string
+  presets: ProgramPreset[]
+  onPresetChange: (id: string) => void
   stepLimit: number
   onStepLimitChange: (v: number) => void
   showLocked: boolean
@@ -331,6 +391,26 @@ function Header({
         <Badge variant="outline" className="text-[10px]">
           CEK
         </Badge>
+      </div>
+      <div className="ml-2 flex items-center gap-2 text-xs">
+        <span className="text-muted-foreground">preset</span>
+        <Select value={activePresetId} onValueChange={onPresetChange}>
+          <SelectTrigger size="sm" className="w-48 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {activePresetId === "custom" && (
+              <SelectItem value="custom" disabled>
+                custom
+              </SelectItem>
+            )}
+            {presets.map((preset) => (
+              <SelectItem key={preset.id} value={preset.id}>
+                {preset.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="ml-2 flex items-center gap-2 text-xs">
         <label htmlFor="step-limit" className="text-muted-foreground">
@@ -381,8 +461,6 @@ function LeftPane({
   highlight,
   kontHighlights,
   hoverHighlight,
-  finalValue,
-  terminationKind,
 }: {
   source: string
   setSource: (v: string) => void
@@ -393,8 +471,6 @@ function LeftPane({
   highlight: Loc | undefined
   kontHighlights: Loc[]
   hoverHighlight: Loc | null
-  finalValue: import("@/lib/s/values").Val | null
-  terminationKind: Trace["end"]["kind"] | undefined
 }) {
   const dirty = runnableSource !== null && source !== runnableSource
   const showLocked = locked && runnableSource !== null
