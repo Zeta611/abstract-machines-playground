@@ -9,7 +9,7 @@ export const INTERPRETER_S_T = `# Interpreter I_S^T for language T.
 # T syntax (encoded as S constructor values):
 #   prog  ::= Prog(defs, exp)
 #   defs  ::= Defs(Fun(int), exp, defs) | Nil()
-#   exp   ::= Int(int) | X() | Sub(exp, exp)
+#   exp   ::= Int(int) | X() | Sub(exp, exp) | Mul(exp, exp)
 #           | App(Fun(int), exp) | Ifz(exp, exp, exp)
 
 lookup(defs, fid) =
@@ -25,36 +25,37 @@ lookup(defs, fid) =
     end
   end
 
-evalExp(e, arg, defs) =
+eval(e, arg, defs) =
   match e with
   | Int(n) => n
   | X() => arg
   | Sub(e1, e2) =>
-    let v1 = evalExp(e1, arg, defs) in
-    let v2 = evalExp(e2, arg, defs) in
+    let v1 = eval(e1, arg, defs) in
+    let v2 = eval(e2, arg, defs) in
     sub(v1, v2)
+  | Mul(e1, e2) =>
+    let v1 = eval(e1, arg, defs) in
+    let v2 = eval(e2, arg, defs) in
+    mul(v1, v2)
   | App(f, e1) =>
     match f with
     | Fun(fid) =>
-      let v = evalExp(e1, arg, defs) in
+      let v = eval(e1, arg, defs) in
       let body = lookup(defs, fid) in
-      let r = evalExp(body, v, defs) in r
+      let r = eval(body, v, defs) in r
     end
   | Ifz(e1, e2, e3) =>
-    let v1 = evalExp(e1, arg, defs) in
+    let v1 = eval(e1, arg, defs) in
     match iszero(v1) with
-    | true() => let r = evalExp(e2, arg, defs) in r
-    | false() => let r = evalExp(e3, arg, defs) in r
+    | true() => let r = eval(e2, arg, defs) in r
+    | false() => let r = eval(e3, arg, defs) in r
     end
-  end
-
-eval(p, arg) =
-  match p with
-  | Prog(defs, e) => let r = evalExp(e, arg, defs) in r
   end
 
 main(p, arg) =
-  let r = eval(p, arg) in r
+  match p with
+  | Prog(defs, e) => let r = eval(e, arg, defs) in r
+  end
 `
 
 /** A trivial S program used for sanity checks. */
@@ -63,15 +64,13 @@ export const TRIVIAL = `main(x) =
 `
 
 /**
- * Default initial environment for the playground: a tiny T program that
- * computes \`x - 1\` and the argument \`0\`.
- *
- * In T: \`p = Prog(Nil, Sub(X, Int(1)))\`, applied to arg=0, should yield -1.
+ * Default initial environment for the playground
  */
-export const INITIAL_ENV = `# A sample T program, encoded as S constructor values.
-
-p = Prog(Nil(), Sub(X(), Int(1)))
-arg = 0
+export const INITIAL_ENV = `# A T program computing factorial, encoded as S constructor values.
+#   fact(n) = if n == 0 then 1 else n * fact(n - 1)
+# Fun(0) is fact; main applies it to the input arg.
+p = Prog(Defs(Fun(0), Ifz(X(), Int(1), Mul(X(), App(Fun(0), Sub(X(), Int(1))))), Nil()), App(Fun(0), X()))
+arg = 5
 `
 
 export interface ProgramPreset {

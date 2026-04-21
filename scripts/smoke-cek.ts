@@ -61,7 +61,7 @@ console.log("2. I_S^T on a T program")
   const trace = run(prog, env, { maxSteps: 2_000 })
   expect("terminates", trace.end.kind === "final")
   if (trace.end.kind === "final") {
-    expectVal("evaluates (0 - 1) to -1", trace.end.value, vInt(-1))
+    expectVal("evaluates fact(5) to 120", trace.end.value, vInt(120))
   }
   console.log(
     `   states=${trace.states.length}, steps=${trace.steps.length}, end=${trace.end.kind}`
@@ -155,7 +155,7 @@ console.log("")
 console.log("8. Presets all parse and terminate")
 {
   const expected: Record<string, Val> = {
-    "definitional-interpreter": vInt(-1),
+    "definitional-interpreter": vInt(120),
     factorial: vInt(3628800),
     fibonacci: vInt(13),
     "mutual-parity": parseValue1("false()"),
