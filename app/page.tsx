@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import {
   useCallback,
   useEffect,
@@ -432,7 +433,15 @@ function Header({
 }) {
   return (
     <header className="flex flex-wrap items-center gap-3 border-b bg-background/70 px-3 py-2 backdrop-blur">
-      <div className="flex items-baseline gap-2">
+      <div className="flex min-w-0 items-center gap-2">
+        <Image
+          src="/logo.png"
+          width={24}
+          height={24}
+          alt=""
+          aria-hidden="true"
+          className="size-6 shrink-0 rounded"
+        />
         <span className="font-semibold">Abstract Machines Playground</span>
         <Badge variant="outline" className="text-[10px]">
           CEK

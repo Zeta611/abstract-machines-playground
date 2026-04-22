@@ -1,16 +1,24 @@
-# 🛝 Abstract Machines Playground
-
-An interactive environment for studying and testing [abstract machines](https://en.wikipedia.org/wiki/Abstract_machine) such as CEK machines by inspecting program execution traces.
-
-The first machine shipped here is a CEK machine for a small language **S** (features ANF with constructor values, global mutually recursive functions, first-order pattern matching, and label-based control). Programs in another language **T** can be fed to an S-level definitional interpreter `I_S^T` by supplying T-ASTs as S constructor-value literals in the initial environment; the CEK trace is then a faithful small-step witness of running `I_S^T` on that T program.
+<span style="display: flex; align-items: flex-end; gap: 1em; padding-bottom: 0.5em;">
+  <img
+    src="public/logo.png"
+    alt="Abstract Machines Playground logo"
+    width="100"
+    style="vertical-align: bottom; padding-bottom: 0.8em;"
+  />
+  <span style="font-size: 2em; font-weight: bold;">Abstract Machines Playground</span>
+</span>
 
 <p align="center">
   <img
-    src="https://github.com/user-attachments/assets/95dd1adf-a8e2-4590-9be1-8e54424e99c4"
+    src="public/screenshot.png"
     alt="screenshot"
     width="100%"
   />
 </p>
+
+An interactive environment for studying and testing [abstract machines](https://en.wikipedia.org/wiki/Abstract_machine) such as CEK machines by inspecting program execution traces.
+
+The first machine shipped here is a CEK machine for a small language **S** (features ANF with constructor values, global mutually recursive functions, first-order pattern matching, and label-based control). Programs in another language **T** can be fed to an S-level definitional interpreter `I_S^T` by supplying T-ASTs as S constructor-value literals in the initial environment; the CEK trace is then a faithful small-step witness of running `I_S^T` on that T program.
 
 ## Quick start
 

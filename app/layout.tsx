@@ -1,4 +1,5 @@
-import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google"
+import type { Metadata } from "next"
+import { Geist, JetBrains_Mono } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -13,6 +14,11 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 })
+
+export const metadata: Metadata = {
+  title: "Abstract Machines Playground",
+  description: "Inspect traces of abstract machines.",
+}
 
 export default function RootLayout({
   children,
