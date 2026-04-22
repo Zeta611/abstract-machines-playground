@@ -205,16 +205,6 @@ export default function Page() {
     visibleIndicesRef.current = indices
   }, [])
 
-  // Reset visible indices when trace changes
-  useEffect(() => {
-    if (state.runnable) {
-      visibleIndicesRef.current = Array.from(
-        { length: state.runnable.trace.states.length },
-        (_, i) => i
-      )
-    }
-  }, [state.runnable])
-
   const sourceDirty = !state.runnable || state.source !== state.runnable.source
   const envDirty = !state.runnable || state.envText !== state.runnable.envText
   const dirty = sourceDirty || envDirty

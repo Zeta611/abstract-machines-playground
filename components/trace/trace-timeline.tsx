@@ -162,7 +162,7 @@ export function TraceTimeline({
         queryInputRef.current?.setSelectionRange(nextCursor, nextCursor)
       })
     },
-    [queryText]
+    [queryText, setQueryText]
   )
 
   const insertSuggestion = useCallback(
