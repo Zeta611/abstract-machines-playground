@@ -114,20 +114,19 @@ export function TraceTimeline({
     }
 
     if (!queryParse.ok) {
-      return [0]
+      return []
     }
 
-    const result: number[] = [0]
-    for (let i = 1; i < trace.states.length; i++) {
+    const result: number[] = []
+    for (let i = 0; i < trace.states.length; i++) {
       const step = trace.steps[i - 1]
-      if (!step) continue
       const state = trace.states[i]
       if (
         traceQueryMatches(queryParse.ast, {
           index: i,
-          rule: step.rule,
-          detail: step.detail,
-          value: step.value ? showVal(step.value) : undefined,
+          rule: step?.rule,
+          detail: step?.detail,
+          value: step?.value ? showVal(step.value) : undefined,
           label: state.label,
         })
       ) {
@@ -172,8 +171,8 @@ export function TraceTimeline({
   )
 
   // --- filtered navigation helpers ---
-  const firstVisible = visibleIndices[0] ?? 0
-  const lastVisible = visibleIndices[visibleIndices.length - 1] ?? lastIdx
+  const firstVisible = visibleIndices[0] ?? null
+  const lastVisible = visibleIndices[visibleIndices.length - 1] ?? null
 
   const prevVisibleIdx = useMemo(() => {
     for (let j = visibleIndices.length - 1; j >= 0; j--) {
@@ -207,8 +206,8 @@ export function TraceTimeline({
         <Button
           size="sm"
           variant="outline"
-          onClick={() => setCursor(firstVisible)}
-          disabled={cursor <= firstVisible}
+          onClick={() => firstVisible !== null && setCursor(firstVisible)}
+          disabled={firstVisible === null || cursor <= firstVisible}
         >
           «
         </Button>
@@ -239,8 +238,8 @@ export function TraceTimeline({
         <Button
           size="sm"
           variant="outline"
-          onClick={() => setCursor(lastVisible)}
-          disabled={cursor >= lastVisible}
+          onClick={() => lastVisible !== null && setCursor(lastVisible)}
+          disabled={lastVisible === null || cursor >= lastVisible}
         >
           »
         </Button>
@@ -310,7 +309,7 @@ export function TraceTimeline({
           {queryParse.ok ? (
             <span className="text-muted-foreground tabular-nums">
               {filterActive
-                ? `${visibleIndices.length} visible`
+                ? `${visibleIndices.length} / ${trace.states.length} visible`
                 : "query all steps"}
             </span>
           ) : (

@@ -147,6 +147,24 @@ function makeInitial(): PageState {
   }
 }
 
+function nextVisibleAfter(indices: number[], cursor: number): number | null {
+  for (const index of indices) {
+    if (index > cursor) return index
+  }
+  return null
+}
+
+function previousVisibleBefore(
+  indices: number[],
+  cursor: number
+): number | null {
+  for (let j = indices.length - 1; j >= 0; j--) {
+    const index = indices[j]
+    if (index < cursor) return index
+  }
+  return null
+}
+
 export default function Page() {
   const [state, dispatch] = useReducer(reducer, undefined, makeInitial)
   const [playing, setPlaying] = useState(false)
@@ -218,23 +236,16 @@ export default function Page() {
   // Playback ticker: advance to the next *visible* index while playing.
   useEffect(() => {
     if (!playing || !state.runnable) return
-    const vis = visibleIndicesRef.current
-    let next: number | null = null
-    for (let j = 0; j < vis.length; j++) {
-      if (vis[j] > state.cursor) {
-        next = vis[j]
-        break
-      }
-    }
-    if (next === null) {
-      setPlaying(false)
-      return
-    }
-    const n = next
-    const lastVis = vis[vis.length - 1] ?? 0
     const id = setTimeout(() => {
-      dispatch({ t: "setCursor", v: n })
-      if (n >= lastVis) setPlaying(false)
+      const vis = visibleIndicesRef.current
+      const next = nextVisibleAfter(vis, state.cursor)
+      if (next === null) {
+        setPlaying(false)
+        return
+      }
+
+      dispatch({ t: "setCursor", v: next })
+      if (next >= (vis[vis.length - 1] ?? 0)) setPlaying(false)
     }, 150)
     return () => clearTimeout(id)
   }, [playing, state.cursor, state.runnable])
@@ -247,23 +258,20 @@ export default function Page() {
       if (tag === "INPUT" || tag === "TEXTAREA") return
       const vis = visibleIndicesRef.current
       if (e.key === "ArrowDown" || e.key === "j") {
-        for (let j = 0; j < vis.length; j++) {
-          if (vis[j] > state.cursor) {
-            dispatch({ t: "setCursor", v: vis[j] })
-            break
-          }
-        }
+        const next = nextVisibleAfter(vis, state.cursor)
+        if (next !== null) dispatch({ t: "setCursor", v: next })
         e.preventDefault()
       } else if (e.key === "ArrowUp" || e.key === "k") {
-        for (let j = vis.length - 1; j >= 0; j--) {
-          if (vis[j] < state.cursor) {
-            dispatch({ t: "setCursor", v: vis[j] })
-            break
-          }
-        }
+        const previous = previousVisibleBefore(vis, state.cursor)
+        if (previous !== null) dispatch({ t: "setCursor", v: previous })
         e.preventDefault()
       } else if (e.key === " ") {
-        setPlaying((p) => !p)
+        setPlaying((p) => {
+          if (p) return false
+          return (
+            nextVisibleAfter(visibleIndicesRef.current, state.cursor) !== null
+          )
+        })
         e.preventDefault()
       }
     }
