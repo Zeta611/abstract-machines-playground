@@ -18,6 +18,17 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Abstract Machines Playground",
   description: "Inspect traces of abstract machines.",
+  openGraph: {
+    title: "Abstract Machines Playground",
+    description: "Inspect traces of abstract machines.",
+    images: [{ url: "/title.png" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Abstract Machines Playground",
+    description: "Inspect traces of abstract machines.",
+    images: ["/title.png"],
+  },
 }
 
 export default function RootLayout({
