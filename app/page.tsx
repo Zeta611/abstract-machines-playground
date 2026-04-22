@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react"
+import { RiGithubFill } from "@remixicon/react"
 import { EnvEditor, EnvPreview } from "@/components/trace/env-editor"
 import {
   LabelHoverProvider,
@@ -489,8 +490,22 @@ function Header({
           {error}
         </div>
       )}
-      <div className="ml-auto text-[11px] text-muted-foreground">
-        ↓/↑ or j/k step · space = play/pause
+      <div className="ml-auto flex items-center gap-2">
+        <div className="text-[11px] text-muted-foreground">
+          ↓/↑ or j/k step · space = play/pause
+        </div>
+        <Button asChild size="sm" variant="outline">
+          <a
+            href="https://github.com/Zeta611/abstract-machines-playground"
+            target="_blank"
+            rel="noreferrer"
+            title="Open GitHub repository"
+            aria-label="Open GitHub repository"
+          >
+            <RiGithubFill />
+            <span className="text-xs">GitHub</span>
+          </a>
+        </Button>
       </div>
     </header>
   )
