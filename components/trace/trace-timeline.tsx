@@ -31,6 +31,8 @@ interface Props {
   playing: boolean
   setPlaying: (p: boolean) => void
   onVisibleIndicesChange?: (indices: number[]) => void
+  queryText: string
+  setQueryText: (v: string) => void
 }
 
 const RULE_NAMES: RuleName[] = [
@@ -97,12 +99,13 @@ export function TraceTimeline({
   playing,
   setPlaying,
   onVisibleIndicesChange,
+  queryText,
+  setQueryText,
 }: Props) {
   const lastIdx = Math.max(0, trace.states.length - 1)
   const activeRef = useRef<HTMLButtonElement>(null)
   const queryInputRef = useRef<HTMLInputElement>(null)
 
-  const [queryText, setQueryText] = useState("")
   const [queryHelpOpen, setQueryHelpOpen] = useState(false)
   const [queryScrollLeft, setQueryScrollLeft] = useState(0)
 

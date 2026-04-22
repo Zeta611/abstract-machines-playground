@@ -8,8 +8,15 @@ import {
   useReducer,
   useRef,
   useState,
+  type ChangeEvent,
 } from "react"
-import { RiGithubFill } from "@remixicon/react"
+import {
+  RiDownload2Line,
+  RiGithubFill,
+  RiLockLine,
+  RiLockUnlockLine,
+  RiUpload2Line,
+} from "@remixicon/react"
 import { EnvEditor, EnvPreview } from "@/components/trace/env-editor"
 import {
   LabelHoverProvider,
@@ -54,6 +61,7 @@ interface Runnable {
 interface PageState {
   source: string
   envText: string
+  queryText: string
   stepLimit: number
   runnable: Runnable | null
   cursor: number
@@ -64,6 +72,7 @@ interface PageState {
 type Action =
   | { t: "setSource"; v: string }
   | { t: "setEnv"; v: string }
+  | { t: "setQuery"; v: string }
   | { t: "setStepLimit"; v: number }
   | { t: "setCursor"; v: number }
   | { t: "setLocked"; v: boolean }
@@ -76,6 +85,14 @@ type Action =
       r: Runnable | null
       err: string | null
     }
+  | {
+      t: "importSettings"
+      source: string
+      envText: string
+      queryText: string
+      r: Runnable | null
+      err: string | null
+    }
 
 function reducer(s: PageState, a: Action): PageState {
   switch (a.t) {
@@ -83,6 +100,8 @@ function reducer(s: PageState, a: Action): PageState {
       return { ...s, source: a.v }
     case "setEnv":
       return { ...s, envText: a.v }
+    case "setQuery":
+      return { ...s, queryText: a.v }
     case "setStepLimit":
       return { ...s, stepLimit: a.v }
     case "setCursor": {
@@ -101,6 +120,17 @@ function reducer(s: PageState, a: Action): PageState {
         ...s,
         source: a.source,
         envText: a.envText,
+        runnable: a.r,
+        cursor: 0,
+        error: a.err,
+        locked: a.r !== null,
+      }
+    case "importSettings":
+      return {
+        ...s,
+        source: a.source,
+        envText: a.envText,
+        queryText: a.queryText,
         runnable: a.r,
         cursor: 0,
         error: a.err,
@@ -139,6 +169,7 @@ function makeInitial(): PageState {
   return {
     source,
     envText,
+    queryText: "",
     stepLimit,
     runnable: r,
     cursor: 0,
@@ -211,6 +242,61 @@ export default function Page() {
       dispatch({ t: "setLocked", v: true })
     }
   }
+
+  const handleExport = useCallback(() => {
+    const data = JSON.stringify(
+      {
+        source: state.source,
+        envText: state.envText,
+        filterQuery: state.queryText,
+      },
+      null,
+      2
+    )
+    const blob = new Blob([data], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "snapshot.json"
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [state.source, state.envText, state.queryText])
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImport = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result as string)
+          const source = typeof data.source === "string" ? data.source : ""
+          const envText = typeof data.envText === "string" ? data.envText : ""
+          const queryText =
+            typeof data.filterQuery === "string" ? data.filterQuery : ""
+
+          setPlaying(false)
+          const { r, err } = tryCompile(source, envText, state.stepLimit)
+          dispatch({
+            t: "importSettings",
+            source,
+            envText,
+            queryText,
+            r,
+            err,
+          })
+        } catch {
+          dispatch({ t: "runFailure", err: "Failed to parse imported JSON" })
+        }
+      }
+      reader.readAsText(file)
+      // Reset so the same file can be re-imported
+      e.target.value = ""
+    },
+    [state.stepLimit]
+  )
 
   const handlePresetChange = (id: string) => {
     const preset = PROGRAM_PRESETS.find((p) => p.id === id)
@@ -309,6 +395,9 @@ export default function Page() {
         showLocked={showLocked}
         onToggleLock={handleLockToggle}
         error={state.error}
+        onExport={handleExport}
+        fileInputRef={fileInputRef}
+        onImport={handleImport}
       />
       <LabelHoverProvider>
         <MainArea
@@ -324,6 +413,8 @@ export default function Page() {
           currentCmd={currentCmd}
           kontHighlights={kontHighlights}
           onVisibleIndicesChange={handleVisibleIndicesChange}
+          queryText={state.queryText}
+          setQueryText={(v) => dispatch({ t: "setQuery", v })}
         />
       </LabelHoverProvider>
     </div>
@@ -343,6 +434,8 @@ function MainArea({
   currentCmd,
   kontHighlights,
   onVisibleIndicesChange,
+  queryText,
+  setQueryText,
 }: {
   state: PageState
   dispatch: React.Dispatch<Action>
@@ -356,6 +449,8 @@ function MainArea({
   currentCmd: ReturnType<Prog["ctrl"]["get"]> | undefined
   kontHighlights: Loc[]
   onVisibleIndicesChange: (indices: number[]) => void
+  queryText: string
+  setQueryText: (v: string) => void
 }) {
   const { hovered } = useLabelHover()
   const hoverHighlight =
@@ -390,6 +485,8 @@ function MainArea({
                 playing={playing}
                 setPlaying={setPlaying}
                 onVisibleIndicesChange={onVisibleIndicesChange}
+                queryText={queryText}
+                setQueryText={setQueryText}
               />
             ) : (
               <div className="text-xs text-muted-foreground">
@@ -429,6 +526,9 @@ function Header({
   showLocked,
   onToggleLock,
   error,
+  onExport,
+  fileInputRef,
+  onImport: onImportFile,
 }: {
   activePresetId: string
   presets: ProgramPreset[]
@@ -438,6 +538,9 @@ function Header({
   showLocked: boolean
   onToggleLock: () => void
   error: string | null
+  onExport: () => void
+  fileInputRef: React.RefObject<HTMLInputElement | null>
+  onImport: (e: ChangeEvent<HTMLInputElement>) => void
 }) {
   return (
     <header className="flex flex-wrap items-center gap-3 border-b bg-background/70 px-3 py-2 backdrop-blur">
@@ -475,6 +578,25 @@ function Header({
           </SelectContent>
         </Select>
       </div>
+      <Button size="sm" variant="outline" onClick={onExport}>
+        <RiUpload2Line className="size-3.5" aria-hidden />
+        <span className="text-xs">Export</span>
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <RiDownload2Line className="size-3.5" aria-hidden />
+        <span className="text-xs">Import</span>
+      </Button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        className="hidden"
+        onChange={onImportFile}
+      />
       <div className="ml-2 flex items-center gap-2 text-xs">
         <label htmlFor="step-limit" className="text-muted-foreground">
           step limit
@@ -497,7 +619,11 @@ function Header({
         onClick={onToggleLock}
         title={showLocked ? "unlock to edit" : "lock to run / re-run"}
       >
-        <LockIcon open={!showLocked} />
+        {showLocked ? (
+          <RiLockLine className="size-3.5" aria-hidden />
+        ) : (
+          <RiLockUnlockLine className="size-3.5" aria-hidden />
+        )}
         <span className="ml-1 text-xs">
           {showLocked ? "locked" : "unlocked"}
         </span>
@@ -600,28 +726,5 @@ function LeftPane({
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
-  )
-}
-
-function LockIcon({ open }: { open: boolean }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="size-3.5"
-      aria-hidden
-    >
-      <rect x="3" y="11" width="18" height="11" rx="2" />
-      {open ? (
-        <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-      ) : (
-        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-      )}
-    </svg>
   )
 }
