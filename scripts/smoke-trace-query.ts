@@ -45,6 +45,10 @@ function parseBad(query: string): void {
 }
 
 const rows = {
+  start0: {
+    index: 0,
+    label: 0,
+  },
   matchIfz: {
     index: 7,
     rule: "Match" as RuleName,
@@ -130,10 +134,54 @@ console.log("3. plain text and labels")
     !traceQueryMatches(label, rows.matchBranch25)
   )
   expect("label exact excludes 7", !traceQueryMatches(label, rows.matchIfz))
+
+  const labelEqAlias = parseOk("l == 5")
+  expect(
+    "label == alias matches",
+    traceQueryMatches(labelEqAlias, rows.assert5)
+  )
 }
 
 console.log("")
-console.log("4. logical operators")
+console.log("4. numeric comparisons")
+{
+  const inclusive = parseOk("l >= 0 && l <= 3")
+  expect(
+    "inclusive range matches lower bound",
+    traceQueryMatches(inclusive, rows.start0)
+  )
+  expect(
+    "inclusive range excludes values above upper bound",
+    !traceQueryMatches(inclusive, rows.assert5)
+  )
+
+  const negated = parseOk("!(l >= 0 && l <= 3)")
+  expect(
+    "negated range excludes values inside range",
+    !traceQueryMatches(negated, rows.start0)
+  )
+  expect(
+    "negated range keeps values outside range",
+    traceQueryMatches(negated, rows.assert5)
+  )
+
+  const strict = parseOk("l > 5 && l < 25")
+  expect(
+    "strict range matches middle value",
+    traceQueryMatches(strict, rows.matchIfz)
+  )
+  expect(
+    "strict range excludes lower bound",
+    !traceQueryMatches(strict, rows.assert5)
+  )
+  expect(
+    "strict range excludes upper bound",
+    !traceQueryMatches(strict, rows.return25)
+  )
+}
+
+console.log("")
+console.log("5. logical operators")
 {
   const or = parseOk("rule=Match || rule=Return")
   expect("or matches left side", traceQueryMatches(or, rows.matchIfz))
@@ -157,7 +205,7 @@ console.log("4. logical operators")
 }
 
 console.log("")
-console.log("5. negation")
+console.log("6. negation")
 {
   const notGrouped = parseOk("!(rule=Match && l=7)")
   expect(
@@ -185,7 +233,7 @@ console.log("5. negation")
 }
 
 console.log("")
-console.log("6. invalid queries")
+console.log("7. invalid queries")
 {
   parseBad("rule=")
   parseBad("rule!=")
@@ -193,6 +241,10 @@ console.log("6. invalid queries")
   parseBad("!")
   parseBad("(rule=Match")
   parseBad("foo=bar")
+  parseBad("rule>Match")
+  parseBad("detail<=branch")
+  parseBad("l>foo")
+  parseBad("l>=3.5")
 }
 
 console.log("")

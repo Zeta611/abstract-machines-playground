@@ -1,12 +1,18 @@
 import type { RuleName } from "./cek"
 
 export type TraceQueryField = "rule" | "detail" | "l"
+export type TraceQueryComparisonOp = "eq" | "gt" | "gte" | "lt" | "lte"
 
 export type TraceQueryAst =
   | { kind: "and"; left: TraceQueryAst; right: TraceQueryAst }
   | { kind: "or"; left: TraceQueryAst; right: TraceQueryAst }
   | { kind: "not"; expr: TraceQueryAst }
-  | { kind: "term"; field: TraceQueryField | null; value: string }
+  | {
+      kind: "term"
+      field: TraceQueryField | null
+      op: TraceQueryComparisonOp
+      value: string
+    }
 
 export type TraceQueryParseResult =
   | { ok: true; ast: TraceQueryAst | null }
@@ -22,6 +28,10 @@ type TokenKind =
   | "not"
   | "eq"
   | "neq"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
 
 interface Token {
   kind: TokenKind
@@ -131,7 +141,14 @@ export function parseTraceQuery(input: string): TraceQueryParseResult {
           ? "before &&"
           : tok.kind === "or"
             ? "before ||"
-            : "after !"
+            : tok.kind === "eq" ||
+                tok.kind === "neq" ||
+                tok.kind === "gt" ||
+                tok.kind === "gte" ||
+                tok.kind === "lt" ||
+                tok.kind === "lte"
+              ? `before ${tok.text}`
+              : "after !"
     return { ok: false, message: `expected term ${suffix}`, at: tok.at }
   }
 
@@ -139,7 +156,7 @@ export function parseTraceQuery(input: string): TraceQueryParseResult {
     const tok = consume()
     const op = current()
 
-    if (tok.kind === "word" && (op?.kind === "eq" || op?.kind === "neq")) {
+    if (tok.kind === "word" && isTraceQueryOperator(op)) {
       const field = tok.text.toLowerCase()
       if (!isTraceQueryField(field)) {
         return { ok: false, message: `unknown field ${tok.text}`, at: tok.at }
@@ -162,16 +179,48 @@ export function parseTraceQuery(input: string): TraceQueryParseResult {
           at: value.at,
         }
       }
-      const term: TraceQueryAst = { kind: "term", field, value: value.text }
-      if (op.kind === "neq")
+
+      if (op.kind === "neq") {
+        const term: TraceQueryAst = {
+          kind: "term",
+          field,
+          op: "eq",
+          value: value.text,
+        }
         return { ok: true, ast: { kind: "not", expr: term } }
-      return { ok: true, ast: term }
+      }
+
+      const compareOp = comparisonOpForToken(op)
+      if (compareOp !== "eq") {
+        if (field !== "l") {
+          return {
+            ok: false,
+            message: `field ${tok.text} does not support ${op.text}`,
+            at: op.at,
+          }
+        }
+        if (parseIntegerLiteral(value.text) === null) {
+          return {
+            ok: false,
+            message: `expected integer after ${tok.text}${op.text}`,
+            at: value.at,
+          }
+        }
+      }
+
+      return {
+        ok: true,
+        ast: { kind: "term", field, op: compareOp, value: value.text },
+      }
     }
 
     if (tok.text.length === 0) {
       return { ok: false, message: "expected term", at: tok.at }
     }
-    return { ok: true, ast: { kind: "term", field: null, value: tok.text } }
+    return {
+      ok: true,
+      ast: { kind: "term", field: null, op: "eq", value: tok.text },
+    }
   }
 
   const parsed = parseOr()
@@ -231,11 +280,27 @@ function termMatches(
   if (term.field === "rule") return normalize(row.rule ?? "") === needle
   if (term.field === "detail")
     return normalize(row.detail ?? "").includes(needle)
-  if (term.field === "l") return normalize(label) === needle
+  if (term.field === "l") return labelMatches(term, row.label)
 
   return normalize(
     [row.rule ?? "", row.detail ?? "", row.value ?? "", label].join(" ")
   ).includes(needle)
+}
+
+function labelMatches(
+  term: Extract<TraceQueryAst, { kind: "term" }>,
+  label: number
+): boolean {
+  if (term.op === "eq") return String(label) === term.value
+
+  const value = parseIntegerLiteral(term.value)
+  if (value === null) return false
+
+  if (term.op === "gt") return label > value
+  if (term.op === "gte") return label >= value
+  if (term.op === "lt") return label < value
+  if (term.op === "lte") return label <= value
+  return false
 }
 
 function normalize(value: string): string {
@@ -244,6 +309,35 @@ function normalize(value: string): string {
 
 function isTraceQueryField(value: string): value is TraceQueryField {
   return FIELD_NAMES.has(value as TraceQueryField)
+}
+
+function isTraceQueryOperator(token: Token | undefined): token is Token & {
+  kind: "eq" | "neq" | "gt" | "gte" | "lt" | "lte"
+} {
+  return (
+    token?.kind === "eq" ||
+    token?.kind === "neq" ||
+    token?.kind === "gt" ||
+    token?.kind === "gte" ||
+    token?.kind === "lt" ||
+    token?.kind === "lte"
+  )
+}
+
+function comparisonOpForToken(
+  token: Token & { kind: "eq" | "neq" | "gt" | "gte" | "lt" | "lte" }
+): TraceQueryComparisonOp {
+  if (token.kind === "gt") return "gt"
+  if (token.kind === "gte") return "gte"
+  if (token.kind === "lt") return "lt"
+  if (token.kind === "lte") return "lte"
+  return "eq"
+}
+
+function parseIntegerLiteral(value: string): number | null {
+  if (!/^-?\d+$/.test(value)) return null
+  const n = Number(value)
+  return Number.isSafeInteger(n) ? n : null
 }
 
 function tokenize(
@@ -273,6 +367,11 @@ function tokenize(
     }
 
     if (ch === "=") {
+      if (input[i + 1] === "=") {
+        tokens.push({ kind: "eq", text: "==", at: i })
+        i += 2
+        continue
+      }
       tokens.push({ kind: "eq", text: ch, at: i })
       i++
       continue
@@ -285,6 +384,23 @@ function tokenize(
         continue
       }
       tokens.push({ kind: "not", text: "!", at: i })
+      i++
+      continue
+    }
+
+    if (ch === ">" || ch === "<") {
+      const next = input[i + 1]
+      if (ch === ">" && next === "=") {
+        tokens.push({ kind: "gte", text: ">=", at: i })
+        i += 2
+        continue
+      }
+      if (ch === "<" && next === "=") {
+        tokens.push({ kind: "lte", text: "<=", at: i })
+        i += 2
+        continue
+      }
+      tokens.push({ kind: ch === ">" ? "gt" : "lt", text: ch, at: i })
       i++
       continue
     }
@@ -341,6 +457,8 @@ function tokenize(
         q === ")" ||
         q === "=" ||
         q === "!" ||
+        q === ">" ||
+        q === "<" ||
         q === "&" ||
         q === "|"
       ) {
