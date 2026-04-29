@@ -234,8 +234,14 @@ console.log("9. Presets all parse and terminate")
 console.log("")
 console.log("10. S grammar rejects removed constructs")
 {
-  expectParseFails("assert construct no longer parses", "main() = assert True() in 1")
-  expectUnknownPrimitive("lowercase true is a primitive call", "main() = true()")
+  expectParseFails(
+    "assert construct no longer parses",
+    "main() = assert True() in 1"
+  )
+  expectUnknownPrimitive(
+    "lowercase true is a primitive call",
+    "main() = true()"
+  )
   expectUnknownPrimitive(
     "lowercase false is a primitive call",
     "main() = false()"

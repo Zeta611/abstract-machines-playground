@@ -707,7 +707,7 @@ function LeftPane({
             </div>
             <div className="min-h-0 flex-1 overflow-auto">
               {showLocked ? (
-                <EnvPreview value={envText} />
+                <EnvPreview value={envText} copyLabel="initial environment" />
               ) : (
                 <EnvEditor value={envText} onChange={setEnv} />
               )}

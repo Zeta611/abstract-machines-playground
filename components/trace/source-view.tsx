@@ -5,12 +5,14 @@ import type { SyntaxNode } from "@lezer/common"
 import { cn } from "@/lib/utils"
 import type { Loc } from "@/lib/s/ast"
 import { sParser } from "@/lib/s/grammar"
+import { CopyButton } from "./copy-button"
 
 interface Props {
   source: string
   highlight?: Loc | null
   kontHighlights?: Loc[]
   hoverHighlight?: Loc | null
+  copyLabel?: string
 }
 
 /**
@@ -26,6 +28,7 @@ export function SourceView({
   highlight,
   kontHighlights = [],
   hoverHighlight,
+  copyLabel,
 }: Props) {
   const highlightRef = useRef<HTMLSpanElement>(null)
   const hoverRef = useRef<HTMLSpanElement>(null)
@@ -60,70 +63,78 @@ export function SourceView({
   return (
     <div
       className={cn(
-        "relative flex h-full min-h-0 overflow-auto rounded border bg-background/40",
+        "group relative h-full min-h-0 overflow-hidden rounded border bg-background/40",
         "font-mono text-xs leading-5"
       )}
     >
-      <div
-        aria-hidden
-        className="shrink-0 bg-muted/40 py-2 pr-2 pl-2 text-right text-muted-foreground tabular-nums select-none"
-      >
-        {Array.from({ length: lines }, (_, i) => (
-          <div key={i} className="leading-5">
-            {i + 1}
-          </div>
-        ))}
+      <div className="flex h-full min-h-0 overflow-auto">
+        <div
+          aria-hidden
+          className="shrink-0 bg-muted/40 py-2 pr-2 pl-2 text-right text-muted-foreground tabular-nums select-none"
+        >
+          {Array.from({ length: lines }, (_, i) => (
+            <div key={i} className="leading-5">
+              {i + 1}
+            </div>
+          ))}
+        </div>
+        <pre className="m-0 min-w-0 flex-1 py-2 pr-9 pl-2 whitespace-pre">
+          {traceRanges.map((r, i) => {
+            const children = renderSyntaxSpans(
+              source,
+              syntaxRanges,
+              r.from,
+              r.to
+            )
+            switch (r.kind) {
+              case "plain":
+                return <span key={i}>{children}</span>
+              case "kont":
+                return (
+                  <span
+                    key={i}
+                    className={cn(
+                      "rounded-sm",
+                      "bg-amber-100/60 dark:bg-amber-900/30",
+                      "ring-1 ring-amber-300/50 dark:ring-amber-800/40"
+                    )}
+                  >
+                    {children}
+                  </span>
+                )
+              case "hover":
+                return (
+                  <span
+                    key={i}
+                    ref={hoverRef}
+                    className={cn(
+                      "rounded-sm",
+                      "bg-sky-100/70 dark:bg-sky-900/40",
+                      "ring-1 ring-sky-400/70 dark:ring-sky-500/50"
+                    )}
+                  >
+                    {children}
+                  </span>
+                )
+              case "current":
+                return (
+                  <span
+                    key={i}
+                    ref={highlightRef}
+                    className={cn(
+                      "rounded-sm",
+                      "bg-emerald-100/80 dark:bg-emerald-900/40",
+                      "ring-1 ring-emerald-400/70 dark:ring-emerald-500/50"
+                    )}
+                  >
+                    {children}
+                  </span>
+                )
+            }
+          })}
+        </pre>
       </div>
-      <pre className="m-0 min-w-0 flex-1 px-2 py-2 whitespace-pre">
-        {traceRanges.map((r, i) => {
-          const children = renderSyntaxSpans(source, syntaxRanges, r.from, r.to)
-          switch (r.kind) {
-            case "plain":
-              return <span key={i}>{children}</span>
-            case "kont":
-              return (
-                <span
-                  key={i}
-                  className={cn(
-                    "rounded-sm",
-                    "bg-amber-100/60 dark:bg-amber-900/30",
-                    "ring-1 ring-amber-300/50 dark:ring-amber-800/40"
-                  )}
-                >
-                  {children}
-                </span>
-              )
-            case "hover":
-              return (
-                <span
-                  key={i}
-                  ref={hoverRef}
-                  className={cn(
-                    "rounded-sm",
-                    "bg-sky-100/70 dark:bg-sky-900/40",
-                    "ring-1 ring-sky-400/70 dark:ring-sky-500/50"
-                  )}
-                >
-                  {children}
-                </span>
-              )
-            case "current":
-              return (
-                <span
-                  key={i}
-                  ref={highlightRef}
-                  className={cn(
-                    "rounded-sm",
-                    "bg-emerald-100/80 dark:bg-emerald-900/40",
-                    "ring-1 ring-emerald-400/70 dark:ring-emerald-500/50"
-                  )}
-                >
-                  {children}
-                </span>
-              )
-          }
-        })}
-      </pre>
+      {copyLabel ? <CopyButton text={source} label={copyLabel} /> : null}
     </div>
   )
 }

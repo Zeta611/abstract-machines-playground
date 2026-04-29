@@ -2,6 +2,7 @@
 
 import { useRef } from "react"
 import { cn } from "@/lib/utils"
+import { CopyButton } from "./copy-button"
 
 interface Props {
   value: string
@@ -9,6 +10,7 @@ interface Props {
   placeholder?: string
   ariaLabel?: string
   readOnly?: boolean
+  copyLabel?: string
 }
 
 /**
@@ -22,6 +24,7 @@ export function SourceEditor({
   placeholder,
   ariaLabel,
   readOnly,
+  copyLabel,
 }: Props) {
   const lines = Math.max(value.split("\n").length, 1)
   const gutterRef = useRef<HTMLDivElement>(null)
@@ -29,7 +32,7 @@ export function SourceEditor({
   return (
     <div
       className={cn(
-        "relative flex h-full min-h-0 overflow-hidden rounded border bg-background",
+        "group relative flex h-full min-h-0 overflow-hidden rounded border bg-background",
         "font-mono text-xs"
       )}
     >
@@ -57,12 +60,13 @@ export function SourceEditor({
             gutterRef.current.scrollTop = e.currentTarget.scrollTop
         }}
         className={cn(
-          "min-w-0 flex-1 resize-none bg-transparent px-2 py-2 leading-5",
+          "min-w-0 flex-1 resize-none bg-transparent py-2 pr-9 pl-2 leading-5",
           "outline-none focus-visible:outline-none",
           "overflow-auto text-foreground",
           readOnly && "cursor-default"
         )}
       />
+      {copyLabel ? <CopyButton text={value} label={copyLabel} /> : null}
     </div>
   )
 }

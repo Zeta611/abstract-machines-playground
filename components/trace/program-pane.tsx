@@ -46,12 +46,14 @@ export function ProgramPane({
           highlight={highlight}
           kontHighlights={kontHighlights}
           hoverHighlight={hoverHighlight}
+          copyLabel="program"
         />
       ) : (
         <SourceEditor
           value={sourceText}
           onChange={onChange}
           ariaLabel="S source"
+          copyLabel="program"
         />
       )}
     </div>
