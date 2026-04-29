@@ -62,10 +62,10 @@ export const PRIMS: Record<string, Prim> = {
   not: (args) => {
     expectArity("not", args, 1)
     const v = args[0]
-    if (v.kind !== "ctor" || (v.tag !== "true" && v.tag !== "false")) {
+    if (v.kind !== "ctor" || (v.tag !== "True" && v.tag !== "False")) {
       throw new PrimError(`primitive not: expected boolean, got non-boolean`)
     }
-    return v.tag === "true" ? V_FALSE : V_TRUE
+    return v.tag === "True" ? V_FALSE : V_TRUE
   },
 }
 

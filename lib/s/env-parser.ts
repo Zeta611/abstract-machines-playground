@@ -11,7 +11,7 @@ import type { Env, Val } from "./values"
  * where <value-literal> is:
  *
  *   Integer                  e.g. 42, -3
- *   Tag ( <values>? )        e.g. true(), Fun(0), Cons(Int(1), Nil())
+ *   Tag ( <values>? )        e.g. True(), Fun(0), Cons(Int(1), Nil())
  *
  * Blank lines and `#`-comments are ignored.
  */
@@ -105,7 +105,6 @@ class Lexer {
 }
 
 function isTagName(name: string): boolean {
-  if (name === "true" || name === "false") return true
   return name.length > 0 && name[0] >= "A" && name[0] <= "Z"
 }
 
@@ -117,7 +116,7 @@ function parseValue(lex: Lexer): Val {
   const name = lex.readIdent()
   if (!isTagName(name)) {
     throw new EnvParseError(
-      `expected integer or constructor tag (UpperCase or true/false), got '${name}'`,
+      `expected integer or constructor tag (UpperCase), got '${name}'`,
       lex.pos() - name.length
     )
   }

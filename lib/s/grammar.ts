@@ -5,8 +5,8 @@ import type { LRParser } from "@lezer/lr"
  * Lezer grammar for language S.
  *
  * Conventions used to disambiguate the grammar:
- *  - Uppercase identifiers (and the keyword-tags `true` / `false`) are
- *    constructor tags. `t<e>` is written `Tag(e, ...)`.
+ *  - Uppercase identifiers are constructor tags. `t<e>` is written
+ *    `Tag(e, ...)`.
  *  - Lowercase identifiers followed by `(...)` are either function calls
  *    or primitive applications. The AST builder disambiguates this based
  *    on whether the name is a top-level function `def`.
@@ -27,7 +27,7 @@ FunName { LowerIdent }
 
 ParamList { "(" (LowerIdent ("," LowerIdent)*)? ")" }
 
-Cmd { LetCmd | MatchCmd | AssertCmd | ReturnCmd }
+Cmd { LetCmd | MatchCmd | ReturnCmd }
 
 LetCmd { kw<"let"> LowerIdent "=" Exp kw<"in"> Cmd }
 
@@ -39,8 +39,6 @@ Pattern { Tag PatternArgs }
 
 PatternArgs { "(" (LowerIdent ("," LowerIdent)*)? ")" }
 
-AssertCmd { kw<"assert"> Exp kw<"in"> Cmd }
-
 ReturnCmd { Exp }
 
 Exp { Integer | App | Var }
@@ -51,10 +49,7 @@ App { Name CallArgs }
 
 Name { LowerIdent | Tag }
 
-Tag { UpperIdent | True | False }
-
-True { @specialize<LowerIdent, "true"> }
-False { @specialize<LowerIdent, "false"> }
+Tag { UpperIdent }
 
 CallArgs { "(" (Exp ("," Exp)*)? ")" }
 

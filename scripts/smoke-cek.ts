@@ -39,6 +39,35 @@ function expectVal(name: string, got: Val | undefined, want: Val): void {
   )
 }
 
+function expectParseFails(name: string, src: string): void {
+  try {
+    parseS(src)
+    expect(name, false, "parsed successfully")
+  } catch {
+    expect(name, true)
+  }
+}
+
+function expectValueParseFails(name: string, src: string): void {
+  try {
+    parseValue1(src)
+    expect(name, false, "parsed successfully")
+  } catch {
+    expect(name, true)
+  }
+}
+
+function expectUnknownPrimitive(name: string, src: string): void {
+  const { prog } = parseS(src)
+  const trace = run(prog, new Map(), { maxSteps: 10 })
+  expect(
+    name,
+    trace.end.kind === "stuck" &&
+      trace.end.reason.startsWith("unknown primitive"),
+    trace.end.kind === "stuck" ? trace.end.reason : trace.end.kind
+  )
+}
+
 console.log("1. trivial: main(x) = let y = sub(x, 1) in y, x=3 -> 2")
 {
   const { prog } = parseS(TRIVIAL)
@@ -73,7 +102,10 @@ console.log("3. I_S^T: Ifz(X, Int(10), Int(20)) at X=0 -> 10")
 {
   const { prog } = parseS(INTERPRETER_S_T)
   const env = new Map<string, Val>([
-    ["p", parseValue1("Prog(Nil(), Ifz(X(), Int(10), Int(20)))")],
+    [
+      "p",
+      parseValue1("Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"),
+    ],
     ["arg", vInt(0)],
   ])
   const trace = run(prog, env, { maxSteps: 5_000 })
@@ -88,7 +120,10 @@ console.log("4. I_S^T: Ifz at X=5 -> 20 (else branch)")
 {
   const { prog } = parseS(INTERPRETER_S_T)
   const env = new Map<string, Val>([
-    ["p", parseValue1("Prog(Nil(), Ifz(X(), Int(10), Int(20)))")],
+    [
+      "p",
+      parseValue1("Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"),
+    ],
     ["arg", vInt(5)],
   ])
   const trace = run(prog, env, { maxSteps: 5_000 })
@@ -103,13 +138,13 @@ console.log("5. I_S^T: recursive T function (identity-ish)")
 {
   // T program:
   //   f(x) = if x == 0 then 0 else f(x - 1) + 1 ... but T only has Sub and Ifz.
-  //   Use: f(x) = Ifz(X, Int(0), App(Fun(0), Sub(X, Int(1)))).  Then f(3) = 0.
+  //   Use: f(x) = Ifz(x, Int(0), App(Fun(0), Sub(x, Int(1)))).  Then f(3) = 0.
   const { prog } = parseS(INTERPRETER_S_T)
   const env = new Map<string, Val>([
     [
       "p",
       parseValue1(
-        "Prog(Defs(Fun(0), Ifz(X(), Int(0), App(Fun(0), Sub(X(), Int(1)))), Nil()), App(Fun(0), Int(3)))"
+        "Prog(Defs(Fun(0), Ifz(0, Var(1, 0), Int(2, 0), App(3, Fun(0), Sub(4, Var(5, 0), Int(6, 1)))), Nil()), App(7, Fun(0), Int(8, 3)))"
       ),
     ],
     ["arg", vInt(0)],
@@ -125,7 +160,27 @@ console.log("5. I_S^T: recursive T function (identity-ish)")
 }
 
 console.log("")
-console.log("6. Stuck: undefined variable surfaces as trace.end = stuck")
+console.log("6. I_S^T: Let binds T variables by xid")
+{
+  const { prog } = parseS(INTERPRETER_S_T)
+  const env = new Map<string, Val>([
+    [
+      "p",
+      parseValue1(
+        "Prog(Nil(), Let(0, Var(1, 1), Int(2, 7), Sub(3, Var(4, 1), Var(5, 0))))"
+      ),
+    ],
+    ["arg", vInt(2)],
+  ])
+  const trace = run(prog, env, { maxSteps: 5_000 })
+  expect("terminates", trace.end.kind === "final")
+  if (trace.end.kind === "final") {
+    expectVal("yields 5", trace.end.value, vInt(5))
+  }
+}
+
+console.log("")
+console.log("7. Stuck: undefined variable surfaces as trace.end = stuck")
 {
   const { prog } = parseS(`main() = let y = nope in y`)
   const trace = run(prog, new Map(), { maxSteps: 10 })
@@ -136,7 +191,7 @@ console.log("6. Stuck: undefined variable surfaces as trace.end = stuck")
 }
 
 console.log("")
-console.log("7. Stuck: bad match surfaces cleanly")
+console.log("8. Stuck: bad match surfaces cleanly")
 {
   const { prog } = parseS(`main(x) =
   match x with
@@ -152,13 +207,13 @@ console.log("7. Stuck: bad match surfaces cleanly")
 }
 
 console.log("")
-console.log("8. Presets all parse and terminate")
+console.log("9. Presets all parse and terminate")
 {
   const expected: Record<string, Val> = {
     "definitional-interpreter": vInt(120),
     factorial: vInt(3628800),
     fibonacci: vInt(13),
-    "mutual-parity": parseValue1("false()"),
+    "mutual-parity": parseValue1("False()"),
     "peano-addition": parseValue1("S(S(S(S(S(Z())))))"),
   }
 
@@ -177,10 +232,23 @@ console.log("8. Presets all parse and terminate")
 }
 
 console.log("")
-console.log("9. Env parser: nested T program literal")
+console.log("10. S grammar rejects removed constructs")
+{
+  expectParseFails("assert construct no longer parses", "main() = assert True() in 1")
+  expectUnknownPrimitive("lowercase true is a primitive call", "main() = true()")
+  expectUnknownPrimitive(
+    "lowercase false is a primitive call",
+    "main() = false()"
+  )
+  expectValueParseFails("env lowercase true is rejected", "true()")
+  expectValueParseFails("env lowercase false is rejected", "false()")
+}
+
+console.log("")
+console.log("11. Env parser: nested T program literal")
 {
   const v = parseValue1(
-    "Prog(Defs(Fun(0), Sub(X(), Int(1)), Nil()), App(Fun(0), Int(5)))"
+    "Prog(Defs(Fun(0), Sub(0, Var(1, 0), Int(2, 1)), Nil()), App(3, Fun(0), Int(4, 5)))"
   )
   expect(
     "shape",

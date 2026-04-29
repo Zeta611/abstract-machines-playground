@@ -35,20 +35,13 @@ interface Props {
   setQueryText: (v: string) => void
 }
 
-const RULE_NAMES: RuleName[] = [
-  "LetExp",
-  "LetCall",
-  "Match",
-  "Assert",
-  "Return",
-]
+const RULE_NAMES: RuleName[] = ["LetExp", "LetCall", "Match", "Return"]
 
 const RULE_TONE: Record<RuleName, string> = {
   LetExp: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
   LetCall:
     "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/40 dark:text-fuchsia-200",
   Match: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
-  Assert: "bg-lime-100 text-lime-800 dark:bg-lime-900/40 dark:text-lime-200",
   Return:
     "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200",
 }

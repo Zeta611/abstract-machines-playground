@@ -113,8 +113,8 @@ function buildExp(node: SyntaxNode, ctx: BuildCtx): Exp {
 /**
  * Build an App node in an expression position. Inside any Exp, a
  * LowerIdent application is ALWAYS a primitive (per PDF grammar:
- * function calls only appear as `let x = f(e) in c`). Uppercase /
- * true / false names are always constructors.
+ * function calls only appear as `let x = f(e) in c`). Uppercase names
+ * are always constructors.
  */
 function buildAppAsExp(app: SyntaxNode, ctx: BuildCtx): Exp {
   const nameNode = requireChild(app, "Name", ctx.src)
@@ -141,7 +141,7 @@ function parseCallArgs(callArgs: SyntaxNode, ctx: BuildCtx): Exp[] {
 // -- Command ------------------------------------------------------------------
 
 function buildCmd(node: SyntaxNode, ctx: BuildCtx): Cmd {
-  // Cmd = LetCmd | MatchCmd | AssertCmd | ReturnCmd
+  // Cmd = LetCmd | MatchCmd | ReturnCmd
   const inner = node.firstChild
   if (!inner) {
     throw new SParseError("empty Cmd node", node.from, node.to)
@@ -151,8 +151,6 @@ function buildCmd(node: SyntaxNode, ctx: BuildCtx): Cmd {
       return buildLet(inner, ctx)
     case "MatchCmd":
       return buildMatch(inner, ctx)
-    case "AssertCmd":
-      return buildAssert(inner, ctx)
     case "ReturnCmd":
       return buildReturn(inner, ctx)
     default:
@@ -215,18 +213,6 @@ function buildLet(node: SyntaxNode, ctx: BuildCtx): Cmd {
     x,
     exp: buildExp(exp, ctx),
     body,
-    loc: loc(node),
-  })
-}
-
-function buildAssert(node: SyntaxNode, ctx: BuildCtx): Cmd {
-  const exp = requireChild(node, "Exp", ctx.src)
-  const cmd = requireChild(node, "Cmd", ctx.src)
-  return record(ctx, {
-    kind: "Assert",
-    label: fresh(ctx),
-    exp: buildExp(exp, ctx),
-    body: buildCmd(cmd, ctx),
     loc: loc(node),
   })
 }

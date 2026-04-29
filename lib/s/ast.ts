@@ -7,7 +7,6 @@
  *           | let x = e in c
  *           | let x = f(e) in c
  *           | match e with b
- *           | assert e in c
  *   Branch b ::= t<x> => c
  *
  * Every command carries a unique Label.
@@ -53,13 +52,6 @@ export type Cmd =
       branches: Branch[]
       loc: Loc
     }
-  | {
-      kind: "Assert"
-      label: Label
-      exp: Exp
-      body: Cmd
-      loc: Loc
-    }
 
 export interface Branch {
   tag: string
@@ -97,8 +89,6 @@ export function cmdSummary(c: Cmd): string {
       return `let ${c.x} = ${c.fn}(${c.args.map(expSummary).join(", ")}) in ...`
     case "Match":
       return `match ${expSummary(c.scrutinee)} with ...`
-    case "Assert":
-      return `assert ${expSummary(c.exp)} in ...`
   }
 }
 

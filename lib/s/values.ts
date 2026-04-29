@@ -2,7 +2,7 @@
  * Runtime values of language S:
  *   Val v ::= n | t<v...>
  *
- * Booleans are encoded as the 0-ary constructors `true()` and `false()`.
+ * Booleans are encoded as the 0-ary constructors `True()` and `False()`.
  */
 
 export type Val =
@@ -17,11 +17,11 @@ export function vCtor(tag: string, args: Val[] = []): Val {
   return { kind: "ctor", tag, args }
 }
 
-export const V_TRUE: Val = vCtor("true", [])
-export const V_FALSE: Val = vCtor("false", [])
+export const V_TRUE: Val = vCtor("True", [])
+export const V_FALSE: Val = vCtor("False", [])
 
 export function isTrue(v: Val): boolean {
-  return v.kind === "ctor" && v.tag === "true" && v.args.length === 0
+  return v.kind === "ctor" && v.tag === "True" && v.args.length === 0
 }
 
 export function valEq(a: Val, b: Val): boolean {

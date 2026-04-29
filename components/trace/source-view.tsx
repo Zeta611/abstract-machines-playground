@@ -201,7 +201,7 @@ function buildTraceRanges(
   return out
 }
 
-const KEYWORD_NODES = new Set(["let", "in", "match", "with", "end", "assert"])
+const KEYWORD_NODES = new Set(["let", "in", "match", "with", "end"])
 const OPERATOR_NODES = new Set(["=", "=>", "|"])
 const PUNCTUATION_NODES = new Set(["(", ")", ","])
 
@@ -230,8 +230,6 @@ function syntaxKind(node: SyntaxNode): SyntaxKind | null {
     case "Integer":
       return "number"
     case "UpperIdent":
-    case "True":
-    case "False":
       return "constructor"
     case "LowerIdent": {
       const parent = node.parent?.name

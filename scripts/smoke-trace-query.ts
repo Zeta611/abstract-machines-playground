@@ -63,10 +63,10 @@ const rows = {
     value: "Z()",
     label: 25,
   },
-  assert5: {
+  letExp5: {
     index: 41,
-    rule: "Assert" as RuleName,
-    value: "true()",
+    rule: "LetExp" as RuleName,
+    value: "True()",
     label: 5,
   },
   return25: {
@@ -128,7 +128,7 @@ console.log("3. plain text and labels")
   )
 
   const label = parseOk("l=5")
-  expect("label exact match", traceQueryMatches(label, rows.assert5))
+  expect("label exact match", traceQueryMatches(label, rows.letExp5))
   expect(
     "label exact excludes 25",
     !traceQueryMatches(label, rows.matchBranch25)
@@ -138,7 +138,7 @@ console.log("3. plain text and labels")
   const labelEqAlias = parseOk("l == 5")
   expect(
     "label == alias matches",
-    traceQueryMatches(labelEqAlias, rows.assert5)
+    traceQueryMatches(labelEqAlias, rows.letExp5)
   )
 }
 
@@ -152,7 +152,7 @@ console.log("4. numeric comparisons")
   )
   expect(
     "inclusive range excludes values above upper bound",
-    !traceQueryMatches(inclusive, rows.assert5)
+    !traceQueryMatches(inclusive, rows.letExp5)
   )
 
   const negated = parseOk("!(l >= 0 && l <= 3)")
@@ -162,7 +162,7 @@ console.log("4. numeric comparisons")
   )
   expect(
     "negated range keeps values outside range",
-    traceQueryMatches(negated, rows.assert5)
+    traceQueryMatches(negated, rows.letExp5)
   )
 
   const strict = parseOk("l > 5 && l < 25")
@@ -172,7 +172,7 @@ console.log("4. numeric comparisons")
   )
   expect(
     "strict range excludes lower bound",
-    !traceQueryMatches(strict, rows.assert5)
+    !traceQueryMatches(strict, rows.letExp5)
   )
   expect(
     "strict range excludes upper bound",

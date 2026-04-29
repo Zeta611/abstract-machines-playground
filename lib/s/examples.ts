@@ -9,51 +9,80 @@ export const INTERPRETER_S_T = `# Interpreter I_S^T for language T.
 # T syntax (encoded as S constructor values):
 #   prog  ::= Prog(defs, exp)
 #   defs  ::= Defs(Fun(int), exp, defs) | Nil()
-#   exp   ::= Int(int) | X() | Sub(exp, exp) | Mul(exp, exp)
-#           | App(Fun(int), exp) | Ifz(exp, exp, exp)
+#   env   ::= Env(Var(int, int), int, env) | Nil()
+#   exp   ::= Int(int, int) | Var(int, int) | Sub(int, exp, exp) | Mul(int, exp, exp)
+#           | Let(int, Var(int, int), exp, exp) | App(int, Fun(int), exp)
+#           | Ifz(int, exp, exp, exp)
 
-lookup(defs, fid) =
+fundef(defs, fid) =
   match defs with
   | Defs(f, body, rest) =>
     match f with
     | Fun(fid2) =>
       match iszero(sub(fid, fid2)) with
-      | true() => body
-      | false() => let r = lookup(rest, fid) in r
+      | True() => body
+      | False() => let r = fundef(rest, fid) in r
       end
     end
   end
 
-eval(e, arg, defs) =
+lookup(env, xid) =
+  match env with
+  | Env(x, val, rest) =>
+    match x with
+    | Var(l, xid2) =>
+      match iszero(sub(xid, xid2)) with
+      | True() => val
+      | False() => let r = lookup(rest, xid) in r
+      end
+    end
+  end
+
+extend(env, x, val) =
+  let r = Env(x, val, env) in r
+
+eval(e, env, defs) =
   match e with
-  | Int(n) => n
-  | X() => arg
-  | Sub(e1, e2) =>
-    let v1 = eval(e1, arg, defs) in
-    let v2 = eval(e2, arg, defs) in
+  | Int(l, n) => n
+  | Var(l, xid) =>
+    let v = lookup(env, xid) in v
+  | Sub(l, e1, e2) =>
+    let v1 = eval(e1, env, defs) in
+    let v2 = eval(e2, env, defs) in
     sub(v1, v2)
-  | Mul(e1, e2) =>
-    let v1 = eval(e1, arg, defs) in
-    let v2 = eval(e2, arg, defs) in
+  | Mul(l, e1, e2) =>
+    let v1 = eval(e1, env, defs) in
+    let v2 = eval(e2, env, defs) in
     mul(v1, v2)
-  | App(f, e1) =>
+  | Let(l, x, e1, e2) =>
+    let v1 = eval(e1, env, defs) in
+    let new_env = extend(env, x, v1) in
+    let r = eval(e2, new_env, defs) in r
+  | App(l, f, e1) =>
     match f with
     | Fun(fid) =>
-      let v = eval(e1, arg, defs) in
-      let body = lookup(defs, fid) in
-      let r = eval(body, v, defs) in r
+      let v = eval(e1, env, defs) in
+      let body = fundef(defs, fid) in
+      let empty_env = Nil() in
+      let x = Var(0, 0) in
+      let call_env = extend(empty_env, x, v) in
+      let r = eval(body, call_env, defs) in r
     end
-  | Ifz(e1, e2, e3) =>
-    let v1 = eval(e1, arg, defs) in
+  | Ifz(l, e1, e2, e3) =>
+    let v1 = eval(e1, env, defs) in
     match iszero(v1) with
-    | true() => let r = eval(e2, arg, defs) in r
-    | false() => let r = eval(e3, arg, defs) in r
+    | True() => let r = eval(e2, env, defs) in r
+    | False() => let r = eval(e3, env, defs) in r
     end
   end
 
 main(p, arg) =
   match p with
-  | Prog(defs, e) => let r = eval(e, arg, defs) in r
+  | Prog(defs, e) =>
+    let empty_env = Nil() in
+    let x = Var(0, 0) in
+    let initial_env = extend(empty_env, x, arg) in
+    let r = eval(e, initial_env, defs) in r
   end
 `
 
@@ -68,7 +97,7 @@ export const TRIVIAL = `main(x) =
 export const INITIAL_ENV = `# A T program computing factorial, encoded as S constructor values.
 #   fact(n) = ifz n then 1 else n * fact(n - 1)
 # Fun(0) is fact; main applies it to the input arg.
-p = Prog(Defs(Fun(0), Ifz(X(), Int(1), Mul(X(), App(Fun(0), Sub(X(), Int(1))))), Nil()), App(Fun(0), X()))
+p = Prog(Defs(Fun(0), Ifz(10, Var(11, 0), Int(12, 1), Mul(13, Var(14, 0), App(15, Fun(0), Sub(16, Var(17, 0), Int(18, 1))))), Nil()), App(20, Fun(0), Var(21, 0)))
 arg = 5
 `
 
@@ -83,8 +112,8 @@ export const DEFAULT_PRESET_ID = "definitional-interpreter"
 
 const FACTORIAL = `fact(n) =
   match iszero(n) with
-  | true() => 1
-  | false() =>
+  | True() => 1
+  | False() =>
     let m = fact(sub(n, 1)) in
     mul(n, m)
   end
@@ -95,11 +124,11 @@ const FACTORIAL_ENV = `n = 10
 
 const FIBONACCI = `fib(n) =
   match iszero(n) with
-  | true() => 0
-  | false() =>
+  | True() => 0
+  | False() =>
     match iszero(sub(n, 1)) with
-    | true() => 1
-    | false() =>
+    | True() => 1
+    | False() =>
       let a = fib(sub(n, 1)) in
       let b = fib(sub(n, 2)) in
       add(a, b)
@@ -112,15 +141,15 @@ const FIBONACCI_ENV = `n = 7
 
 const MUTUAL_PARITY = `even(n) =
   match iszero(n) with
-  | true() => true()
-  | false() =>
+  | True() => True()
+  | False() =>
     let r = odd(sub(n, 1)) in r
   end
 
 odd(n) =
   match iszero(n) with
-  | true() => false()
-  | false() =>
+  | True() => False()
+  | False() =>
     let r = even(sub(n, 1)) in r
   end
 

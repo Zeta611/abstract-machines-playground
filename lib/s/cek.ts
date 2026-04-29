@@ -1,6 +1,6 @@
 import type { Cmd, Label, Prog } from "./ast"
 import { EvalError, evalExp } from "./eval-exp"
-import { envExtend, envExtendMany, isTrue } from "./values"
+import { envExtend, envExtendMany } from "./values"
 import type { Env, Val } from "./values"
 
 /**
@@ -11,9 +11,9 @@ import type { Env, Val } from "./values"
  *   rho    : environment
  *   kappa  : continuation, a list of suspended-call frames <ell_call, rho'>
  *
- * The machine implements five transition kinds corresponding to the four
- * reduction rules, plus [Return] which is triggered when control is at
- * a bare-expression ("return") command with a non-empty continuation.
+ * The machine implements transition kinds for let-expressions, let-calls,
+ * matches, and [Return], which is triggered when control is at a
+ * bare-expression ("return") command with a non-empty continuation.
  */
 
 export interface Frame {
@@ -27,11 +27,11 @@ export interface State {
   kont: Frame[]
 }
 
-export type RuleName = "LetExp" | "LetCall" | "Match" | "Assert" | "Return"
+export type RuleName = "LetExp" | "LetCall" | "Match" | "Return"
 
 export interface TraceStep {
   rule: RuleName
-  /** Short human-readable annotation, e.g. "| true() matched at branch 0". */
+  /** Short human-readable annotation, e.g. "| True() matched at branch 0". */
   detail?: string
   /** Any intermediate value produced (bound by let, returned, matched, ...). */
   value?: Val
@@ -83,8 +83,6 @@ export function step(
         return stepLetCall(s, cmd, prog)
       case "Match":
         return stepMatch(s, cmd)
-      case "Assert":
-        return stepAssert(s, cmd)
     }
   } catch (err) {
     if (err instanceof EvalError) {
@@ -192,24 +190,6 @@ function stepMatch(
     kind: "stuck",
     reason: `no branch matched tag '${v.tag}'`,
   }
-}
-
-function stepAssert(
-  s: State,
-  cmd: Extract<Cmd, { kind: "Assert" }>
-):
-  | { kind: "step"; next: State; record: TraceStep }
-  | { kind: "stuck"; reason: string } {
-  const v = evalExp(cmd.exp, s.env)
-  if (!isTrue(v)) {
-    return { kind: "stuck", reason: `assertion failed (value is not true())` }
-  }
-  const next: State = {
-    label: cmd.body.label,
-    env: s.env,
-    kont: s.kont,
-  }
-  return { kind: "step", next, record: { rule: "Assert", value: v } }
 }
 
 function stepReturn(
