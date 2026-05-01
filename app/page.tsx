@@ -49,7 +49,7 @@ import {
   type ProgramPreset,
 } from "@/lib/s/examples"
 import { parseS, SParseError } from "@/lib/s/parser"
-import type { Loc, Prog } from "@/lib/s/ast"
+import type { Cmd, Loc, Prog } from "@/lib/s/ast"
 
 interface Runnable {
   source: string
@@ -364,12 +364,12 @@ export default function Page() {
       ? trace.steps[state.cursor]
       : undefined
 
-  const currentCmd = current && prog ? prog.ctrl.get(current.label) : undefined
+  const currentCmd = current && prog ? prog.ctrl[current.label] : undefined
 
   const kontHighlights = useMemo(() => {
     if (!current || !prog) return []
     return current.kont
-      .map((f) => prog.ctrl.get(f.label))
+      .map((f) => prog.ctrl[f.label])
       .filter((c): c is NonNullable<typeof c> => !!c)
       .map((c) => c.loc)
   }, [current, prog])
@@ -436,7 +436,7 @@ function MainArea({
   current: Trace["states"][number] | undefined
   lastStep: Trace["steps"][number] | undefined
   nextStep: Trace["steps"][number] | undefined
-  currentCmd: ReturnType<Prog["ctrl"]["get"]> | undefined
+  currentCmd: Cmd | undefined
   kontHighlights: Loc[]
   onVisibleIndicesChange: (indices: number[]) => void
   queryText: string
@@ -444,7 +444,7 @@ function MainArea({
 }) {
   const { hovered } = useLabelHover()
   const hoverHighlight =
-    prog && hovered !== null ? (prog.ctrl.get(hovered)?.loc ?? null) : null
+    prog && hovered !== null ? (prog.ctrl[hovered]?.loc ?? null) : null
 
   return (
     <main className="min-h-0 flex-1 overflow-hidden p-3">

@@ -24,7 +24,7 @@ interface Props {
 
 /** Panel that summarizes one CEK state: control, environment, kontinuation. */
 export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
-  const cmd = ctrl.get(state.label)
+  const cmd = ctrl[state.label]
   const hoverBind = useLabelHoverBind(state.label)
 
   return (

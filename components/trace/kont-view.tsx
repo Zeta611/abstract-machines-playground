@@ -44,7 +44,7 @@ function FrameCard({
   isTop: boolean
 }) {
   const [open, setOpen] = useState(isTop)
-  const cmd = ctrl.get(frame.label)
+  const cmd = ctrl[frame.label]
   const summary = cmd ? cmdSummary(cmd) : `(unknown label ${frame.label})`
   const hoverBind = useLabelHoverBind(frame.label)
 

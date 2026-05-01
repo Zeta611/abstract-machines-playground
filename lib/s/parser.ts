@@ -74,7 +74,7 @@ function fresh(ctx: BuildCtx): Label {
 }
 
 function record<T extends Cmd>(ctx: BuildCtx, c: T): T {
-  ctx.ctrl.set(c.label, c)
+  ctx.ctrl[c.label] = c
   return c
 }
 
@@ -313,33 +313,33 @@ export function parseS(src: string): ParseResult {
   const funNames = collectFunNames(tree, src)
   const ctx: BuildCtx = {
     src,
-    ctrl: new Map(),
+    ctrl: {},
     nextLabel: 0,
     funNames,
   }
 
-  const defs = new Map<string, Def>()
+  const defs : Record<string, Def> = {}
+  let lastName : string | null = null
   const top = tree.topNode
   const funDefs = childrenOf(top, "FunDef")
   for (const d of funDefs) {
     const def = buildDef(d, ctx)
-    if (defs.has(def.name)) {
+    if (defs[def.name]) {
       throw new SParseError(
         `duplicate function definition '${def.name}'`,
         d.from,
         d.to
       )
     }
-    defs.set(def.name, def)
+    defs[def.name] = def
+    lastName = def.name
   }
-  if (defs.size === 0) {
+  if (lastName === null) {
     throw new SParseError("program has no function definitions", 0, src.length)
   }
-  const mainName = defs.has("main")
+  const mainName = defs["main"]
     ? "main"
-    : funDefs[funDefs.length - 1]
-      ? [...defs.keys()].pop()!
-      : "main"
+    : lastName
 
   return {
     prog: {

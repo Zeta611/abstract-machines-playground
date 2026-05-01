@@ -50,7 +50,7 @@ export interface Trace {
 
 /** Construct the initial state for program P with main(x_i) supplied by `rho`. */
 export function inject(prog: Prog, rho: Env): State {
-  const main = prog.defs.get(prog.mainName)
+  const main = prog.defs[prog.mainName]
   if (!main) {
     throw new Error(`program has no entry function '${prog.mainName}'`)
   }
@@ -68,7 +68,7 @@ export function step(
   | { kind: "step"; next: State; record: TraceStep }
   | { kind: "final"; value: Val }
   | { kind: "stuck"; reason: string } {
-  const cmd = prog.ctrl.get(s.label)
+  const cmd = prog.ctrl[s.label]
   if (!cmd) {
     return { kind: "stuck", reason: `no command for label ${s.label}` }
   }
@@ -118,7 +118,7 @@ function stepLetCall(
 ):
   | { kind: "step"; next: State; record: TraceStep }
   | { kind: "stuck"; reason: string } {
-  const def = prog.defs.get(cmd.fn)
+  const def = prog.defs[cmd.fn]
   if (!def) {
     return { kind: "stuck", reason: `undefined function '${cmd.fn}'` }
   }
@@ -205,7 +205,7 @@ function stepReturn(
     return { kind: "final", value: v }
   }
   const [top, ...rest] = s.kont
-  const suspended = prog.ctrl.get(top.label)
+  const suspended = prog.ctrl[top.label]
   if (!suspended || suspended.kind !== "LetCall") {
     return {
       kind: "stuck",

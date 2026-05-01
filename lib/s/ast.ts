@@ -68,10 +68,10 @@ export interface Def {
 }
 
 /** Static control map: label -> command node. */
-export type ControlMap = Map<Label, Cmd>
+export type ControlMap = Record<Label, Cmd>
 
 export interface Prog {
-  defs: Map<string, Def>
+  defs: Record<string, Def>
   /** Name of the designated entry point (conventionally "main"). */
   mainName: string
   /** Auxiliary info built during parsing. */
