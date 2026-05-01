@@ -1,4 +1,12 @@
-import type { Cmd, Label, Prog } from "./ast"
+import {
+  cmdLabel,
+  withCmd,
+  type Branch,
+  type Cmd,
+  type Exp,
+  type Label,
+  type Prog,
+} from "@/lib/libamp/ast"
 import { EvalError, evalExp } from "./eval-exp"
 import { envExtend, envExtendMany } from "./values"
 import type { Env, Val } from "./values"
@@ -48,6 +56,11 @@ export interface Trace {
   end: TraceEnd
 }
 
+type StepResult =
+  | { kind: "step"; next: State; record: TraceStep }
+  | { kind: "final"; value: Val }
+  | { kind: "stuck"; reason: string }
+
 /** Construct the initial state for program P with main(x_i) supplied by `rho`. */
 export function inject(prog: Prog, rho: Env): State {
   const main = prog.defs[prog.mainName]
@@ -56,34 +69,24 @@ export function inject(prog: Prog, rho: Env): State {
   }
   // Main's formal params are looked up by name in `rho`; missing ones only
   // surface as EvalError('undefined variable ...') if actually referenced.
-  return { label: main.body.label, env: rho, kont: [] }
+  return { label: cmdLabel(main.body), env: rho, kont: [] }
 }
 
 /** Do one small-step. Returns the successor state and the step record, or
  *  a terminal result when no transition applies. */
-export function step(
-  s: State,
-  prog: Prog
-):
-  | { kind: "step"; next: State; record: TraceStep }
-  | { kind: "final"; value: Val }
-  | { kind: "stuck"; reason: string } {
+export function step(s: State, prog: Prog): StepResult {
   const cmd = prog.ctrl[s.label]
   if (!cmd) {
     return { kind: "stuck", reason: `no command for label ${s.label}` }
   }
 
   try {
-    switch (cmd.kind) {
-      case "Return":
-        return stepReturn(s, cmd, prog)
-      case "Let":
-        return stepLet(s, cmd)
-      case "LetCall":
-        return stepLetCall(s, cmd, prog)
-      case "Match":
-        return stepMatch(s, cmd)
-    }
+    return withCmd(cmd, {
+      return: (payload, _loc) => stepReturn(s, payload, prog),
+      let_: (payload, _loc) => stepLet(s, payload),
+      letCall: (payload, _loc) => stepLetCall(s, payload, prog),
+      match_: (payload, _loc) => stepMatch(s, payload),
+    })
   } catch (err) {
     if (err instanceof EvalError) {
       return { kind: "stuck", reason: err.message }
@@ -94,13 +97,13 @@ export function step(
 
 function stepLet(
   s: State,
-  cmd: Extract<Cmd, { kind: "Let" }>
+  cmd: { label: Label; x: string; exp: Exp; body: Cmd }
 ):
   | { kind: "step"; next: State; record: TraceStep }
   | { kind: "stuck"; reason: string } {
   const v = evalExp(cmd.exp, s.env)
   const next: State = {
-    label: cmd.body.label,
+    label: cmdLabel(cmd.body),
     env: envExtend(s.env, cmd.x, v),
     kont: s.kont,
   }
@@ -113,7 +116,7 @@ function stepLet(
 
 function stepLetCall(
   s: State,
-  cmd: Extract<Cmd, { kind: "LetCall" }>,
+  cmd: { label: Label; x: string; fn: string; args: Exp[]; body: Cmd },
   prog: Prog
 ):
   | { kind: "step"; next: State; record: TraceStep }
@@ -134,7 +137,7 @@ function stepLetCall(
 
   const frame: Frame = { label: cmd.label, env: s.env }
   const next: State = {
-    label: def.body.label,
+    label: cmdLabel(def.body),
     env: calleeEnv,
     kont: [frame, ...s.kont],
   }
@@ -150,7 +153,7 @@ function stepLetCall(
 
 function stepMatch(
   s: State,
-  cmd: Extract<Cmd, { kind: "Match" }>
+  cmd: { label: Label; scrutinee: Exp; branches: Branch[] }
 ):
   | { kind: "step"; next: State; record: TraceStep }
   | { kind: "stuck"; reason: string } {
@@ -172,7 +175,7 @@ function stepMatch(
     }
     const bindings: [string, Val][] = b.vars.map((x, j) => [x, v.args[j]])
     const next: State = {
-      label: b.body.label,
+      label: cmdLabel(b.body),
       env: envExtendMany(s.env, bindings),
       kont: s.kont,
     }
@@ -194,7 +197,7 @@ function stepMatch(
 
 function stepReturn(
   s: State,
-  cmd: Extract<Cmd, { kind: "Return" }>,
+  cmd: { label: Label; exp: Exp },
   prog: Prog
 ):
   | { kind: "step"; next: State; record: TraceStep }
@@ -206,26 +209,42 @@ function stepReturn(
   }
   const [top, ...rest] = s.kont
   const suspended = prog.ctrl[top.label]
-  if (!suspended || suspended.kind !== "LetCall") {
+  if (!suspended) {
     return {
       kind: "stuck",
-      reason: `continuation head is not a let-call (found ${suspended?.kind ?? "<unknown>"})`,
+      reason: "continuation head is not a let-call (found <unknown>)",
     }
   }
-  const next: State = {
-    label: suspended.body.label,
-    env: envExtend(top.env, suspended.x, v),
-    kont: rest,
-  }
-  return {
-    kind: "step",
-    next,
-    record: {
-      rule: "Return",
-      value: v,
-      detail: `return into ${suspended.x}`,
+  return withCmd<StepResult>(suspended, {
+    letCall: ({ x, body }, _loc) => {
+      const next: State = {
+        label: cmdLabel(body),
+        env: envExtend(top.env, x, v),
+        kont: rest,
+      }
+      return {
+        kind: "step",
+        next,
+        record: {
+          rule: "Return",
+          value: v,
+          detail: `return into ${x}`,
+        },
+      }
     },
-  }
+    return: (_payload, _loc) => ({
+      kind: "stuck",
+      reason: "continuation head is not a let-call (found Return)",
+    }),
+    let_: (_payload, _loc) => ({
+      kind: "stuck",
+      reason: "continuation head is not a let-call (found Let)",
+    }),
+    match_: (_payload, _loc) => ({
+      kind: "stuck",
+      reason: "continuation head is not a let-call (found Match)",
+    }),
+  })
 }
 
 export interface RunOptions {

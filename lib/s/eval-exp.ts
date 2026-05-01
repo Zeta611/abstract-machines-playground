@@ -1,4 +1,4 @@
-import type { Exp } from "./ast"
+import { withExp, type Exp } from "@/lib/libamp/ast"
 import { PRIMS, PrimError } from "./prims"
 import { vCtor, vInt } from "./values"
 import type { Env, Val } from "./values"
@@ -24,35 +24,34 @@ export class EvalError extends Error {
 }
 
 export function evalExp(e: Exp, rho: Env): Val {
-  switch (e.kind) {
-    case "Num":
-      return vInt(e.n)
-    case "Var": {
-      const v = rho.get(e.name)
+  return withExp(e, {
+    num: ({ n }, _loc) => vInt(n),
+    var: ({ name }, _loc) => {
+      const v = rho.get(name)
       if (v === undefined) {
-        throw new EvalError(`undefined variable '${e.name}'`, e)
+        throw new EvalError(`undefined variable '${name}'`, e)
       }
       return v
-    }
-    case "Ctor":
-      return vCtor(
-        e.tag,
-        e.args.map((a) => evalExp(a, rho))
-      )
-    case "Prim": {
-      const fn = PRIMS[e.op]
+    },
+    ctor: ({ tag, args }, _loc) =>
+      vCtor(
+        tag,
+        args.map((a) => evalExp(a, rho))
+      ),
+    prim: ({ op, args }, _loc) => {
+      const fn = PRIMS[op]
       if (!fn) {
-        throw new EvalError(`unknown primitive '${e.op}'`, e)
+        throw new EvalError(`unknown primitive '${op}'`, e)
       }
-      const args = e.args.map((a) => evalExp(a, rho))
+      const vals = args.map((a) => evalExp(a, rho))
       try {
-        return fn(args)
+        return fn(vals)
       } catch (err) {
         if (err instanceof PrimError) {
           throw new EvalError(err.message, e)
         }
         throw err
       }
-    }
-  }
+    },
+  })
 }

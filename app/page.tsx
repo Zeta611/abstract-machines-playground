@@ -49,7 +49,7 @@ import {
   type ProgramPreset,
 } from "@/lib/s/examples"
 import { parseS, SParseError } from "@/lib/s/parser"
-import type { Cmd, Loc, Prog } from "@/lib/s/ast"
+import { cmdLoc, type Cmd, type Loc, type Prog } from "@/lib/libamp/ast"
 
 interface Runnable {
   source: string
@@ -371,7 +371,7 @@ export default function Page() {
     return current.kont
       .map((f) => prog.ctrl[f.label])
       .filter((c): c is NonNullable<typeof c> => !!c)
-      .map((c) => c.loc)
+      .map((c) => cmdLoc(c))
   }, [current, prog])
 
   return (
@@ -444,7 +444,9 @@ function MainArea({
 }) {
   const { hovered } = useLabelHover()
   const hoverHighlight =
-    prog && hovered !== null ? (prog.ctrl[hovered]?.loc ?? null) : null
+    prog && hovered !== null && prog.ctrl[hovered]
+      ? cmdLoc(prog.ctrl[hovered])
+      : null
 
   return (
     <main className="min-h-0 flex-1 overflow-hidden p-3">
@@ -458,7 +460,7 @@ function MainArea({
               setEnv={(v) => dispatch({ t: "setEnv", v })}
               runnableSource={state.runnable?.source ?? null}
               locked={state.locked}
-              highlight={currentCmd?.loc}
+              highlight={currentCmd ? cmdLoc(currentCmd) : undefined}
               kontHighlights={kontHighlights}
               hoverHighlight={hoverHighlight}
             />

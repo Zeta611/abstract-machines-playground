@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
-import type { Loc } from "@/lib/s/ast"
+import type { Loc } from "@/lib/libamp/ast"
 import {
   buildSyntaxRanges,
   type SyntaxKind,

@@ -1,6 +1,24 @@
 import type { SyntaxNode, Tree } from "@lezer/common"
 import { sParser } from "./grammar"
-import type { Branch, Cmd, ControlMap, Def, Exp, Label, Loc, Prog } from "./ast"
+import {
+  cmdLabel,
+  ctor,
+  let_ as letCmd,
+  letCall,
+  match_ as matchCmd,
+  num,
+  prim,
+  return_ as returnCmd,
+  var_ as varExp,
+  type Branch,
+  type Cmd,
+  type ControlMap,
+  type Def,
+  type Exp,
+  type Label,
+  type Loc,
+  type Prog,
+} from "@/lib/libamp/ast"
 
 /**
  * Build a labeled AST `Prog` (plus a `ControlMap`) from S source text.
@@ -74,7 +92,7 @@ function fresh(ctx: BuildCtx): Label {
 }
 
 function record<T extends Cmd>(ctx: BuildCtx, c: T): T {
-  ctx.ctrl[c.label] = c
+  ctx.ctrl[cmdLabel(c)] = c
   return c
 }
 
@@ -93,11 +111,11 @@ function buildExp(node: SyntaxNode, ctx: BuildCtx): Exp {
       if (!Number.isFinite(n)) {
         throw new SParseError(`invalid integer ${t}`, inner.from, inner.to)
       }
-      return { kind: "Num", n, loc: loc(inner) }
+      return num({ n }, loc(inner))
     }
     case "Var": {
       const ident = requireChild(inner, "LowerIdent", ctx.src)
-      return { kind: "Var", name: text(ident, ctx.src), loc: loc(inner) }
+      return varExp({ name: text(ident, ctx.src) }, loc(inner))
     }
     case "App":
       return buildAppAsExp(inner, ctx)
@@ -124,14 +142,14 @@ function buildAppAsExp(app: SyntaxNode, ctx: BuildCtx): Exp {
   const tagChild = firstChild(nameNode, "Tag")
   if (tagChild) {
     const tagText = text(tagChild, ctx.src)
-    return { kind: "Ctor", tag: tagText, args, loc: loc(app) }
+    return ctor({ tag: tagText, args }, loc(app))
   }
   const lower = firstChild(nameNode, "LowerIdent")
   if (!lower) {
     throw new SParseError("App has no Name", app.from, app.to)
   }
   const op = text(lower, ctx.src)
-  return { kind: "Prim", op, args, loc: loc(app) }
+  return prim({ op, args }, loc(app))
 }
 
 function parseCallArgs(callArgs: SyntaxNode, ctx: BuildCtx): Exp[] {
@@ -164,12 +182,10 @@ function buildCmd(node: SyntaxNode, ctx: BuildCtx): Cmd {
 
 function buildReturn(node: SyntaxNode, ctx: BuildCtx): Cmd {
   const exp = requireChild(node, "Exp", ctx.src)
-  return record(ctx, {
-    kind: "Return",
-    label: fresh(ctx),
-    exp: buildExp(exp, ctx),
-    loc: loc(node),
-  })
+  return record(
+    ctx,
+    returnCmd({ label: fresh(ctx), exp: buildExp(exp, ctx) }, loc(node))
+  )
 }
 
 function buildLet(node: SyntaxNode, ctx: BuildCtx): Cmd {
@@ -194,40 +210,31 @@ function buildLet(node: SyntaxNode, ctx: BuildCtx): Cmd {
       if (ctx.funNames.has(fn)) {
         const callArgs = requireChild(appInside, "CallArgs", ctx.src)
         const args = parseCallArgs(callArgs, ctx)
-        return record(ctx, {
-          kind: "LetCall",
-          label: fresh(ctx),
-          x,
-          fn,
-          args,
-          body,
-          loc: loc(node),
-        })
+        return record(
+          ctx,
+          letCall({ label: fresh(ctx), x, fn, args, body }, loc(node))
+        )
       }
     }
   }
 
-  return record(ctx, {
-    kind: "Let",
-    label: fresh(ctx),
-    x,
-    exp: buildExp(exp, ctx),
-    body,
-    loc: loc(node),
-  })
+  return record(
+    ctx,
+    letCmd({ label: fresh(ctx), x, exp: buildExp(exp, ctx), body }, loc(node))
+  )
 }
 
 function buildMatch(node: SyntaxNode, ctx: BuildCtx): Cmd {
   const exp = requireChild(node, "Exp", ctx.src)
   const branchNodes = childrenOf(node, "Branch")
   const branches: Branch[] = branchNodes.map((b) => buildBranch(b, ctx))
-  return record(ctx, {
-    kind: "Match",
-    label: fresh(ctx),
-    scrutinee: buildExp(exp, ctx),
-    branches,
-    loc: loc(node),
-  })
+  return record(
+    ctx,
+    matchCmd(
+      { label: fresh(ctx), scrutinee: buildExp(exp, ctx), branches },
+      loc(node)
+    )
+  )
 }
 
 function buildBranch(node: SyntaxNode, ctx: BuildCtx): Branch {
@@ -318,8 +325,8 @@ export function parseS(src: string): ParseResult {
     funNames,
   }
 
-  const defs : Record<string, Def> = {}
-  let lastName : string | null = null
+  const defs: Record<string, Def> = {}
+  let lastName: string | null = null
   const top = tree.topNode
   const funDefs = childrenOf(top, "FunDef")
   for (const d of funDefs) {
@@ -337,9 +344,7 @@ export function parseS(src: string): ParseResult {
   if (lastName === null) {
     throw new SParseError("program has no function definitions", 0, src.length)
   }
-  const mainName = defs["main"]
-    ? "main"
-    : lastName
+  const mainName = defs["main"] ? "main" : lastName
 
   return {
     prog: {

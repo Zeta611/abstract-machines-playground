@@ -7,8 +7,8 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { Separator } from "@/components/ui/separator"
-import { cmdSummary } from "@/lib/s/ast"
-import type { ControlMap } from "@/lib/s/ast"
+import { cmdSummary } from "@/lib/libamp/ast"
+import type { ControlMap } from "@/lib/libamp/ast"
 import type { State, TraceStep } from "@/lib/s/cek"
 import { EnvView } from "./env-view"
 import { KontView } from "./kont-view"

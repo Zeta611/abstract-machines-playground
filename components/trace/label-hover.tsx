@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import type { Label } from "@/lib/s/ast"
+import type { Label } from "@/lib/libamp/ast"
 
 interface LabelHoverCtx {
   hovered: Label | null

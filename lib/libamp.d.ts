@@ -1,0 +1,111 @@
+declare module "@/lib/libamp/foo" {
+  export function bar(x: string): string
+}
+
+declare module "@/lib/libamp/libamp" {}
+
+declare module "@/lib/libamp/ast" {
+  export type Label = number
+
+  export interface Loc {
+    from: number
+    to: number
+  }
+
+  declare const expBrand: unique symbol
+  declare const cmdBrand: unique symbol
+
+  export type Exp = { readonly [expBrand]: never }
+  export type Cmd = { readonly [cmdBrand]: never }
+
+  export interface Branch {
+    tag: string
+    vars: string[]
+    body: Cmd
+    loc: Loc
+  }
+
+  export interface Def {
+    name: string
+    params: string[]
+    body: Cmd
+    loc: Loc
+  }
+
+  export type ControlMap = Record<Label, Cmd>
+
+  export interface Prog {
+    defs: Record<string, Def>
+    mainName: string
+    ctrl: ControlMap
+  }
+
+  export function num(payload: { n: number }, loc: Loc): Exp
+  export function var_(payload: { name: string }, loc: Loc): Exp
+  export function ctor(payload: { tag: string; args: Exp[] }, loc: Loc): Exp
+  export function prim(payload: { op: string; args: Exp[] }, loc: Loc): Exp
+
+  export function return_(payload: { label: Label; exp: Exp }, loc: Loc): Cmd
+  export { return_ as return }
+  export function let_(
+    payload: { label: Label; x: string; exp: Exp; body: Cmd },
+    loc: Loc
+  ): Cmd
+  export { let_ as let }
+  export function letCall(
+    payload: {
+      label: Label
+      x: string
+      fn: string
+      args: Exp[]
+      body: Cmd
+    },
+    loc: Loc
+  ): Cmd
+  export function match_(
+    payload: { label: Label; scrutinee: Exp; branches: Branch[] },
+    loc: Loc
+  ): Cmd
+  export { match_ as match }
+
+  export function cmdLabel(cmd: Cmd): Label
+  export function cmdLoc(cmd: Cmd): Loc
+
+  export function withExp<T>(
+    exp: Exp,
+    visitor: {
+      num: (payload: { n: number }, loc: Loc) => T
+      var: (payload: { name: string }, loc: Loc) => T
+      ctor: (payload: { tag: string; args: Exp[] }, loc: Loc) => T
+      prim: (payload: { op: string; args: Exp[] }, loc: Loc) => T
+    }
+  ): T
+
+  export function withCmd<T>(
+    cmd: Cmd,
+    visitor: {
+      return: (payload: { label: Label; exp: Exp }, loc: Loc) => T
+      let_: (
+        payload: { label: Label; x: string; exp: Exp; body: Cmd },
+        loc: Loc
+      ) => T
+      letCall: (
+        payload: {
+          label: Label
+          x: string
+          fn: string
+          args: Exp[]
+          body: Cmd
+        },
+        loc: Loc
+      ) => T
+      match_: (
+        payload: { label: Label; scrutinee: Exp; branches: Branch[] },
+        loc: Loc
+      ) => T
+    }
+  ): T
+
+  export function expSummary(exp: Exp): string
+  export function cmdSummary(cmd: Cmd): string
+}
