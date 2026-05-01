@@ -301,7 +301,6 @@ function collectParseErrors(tree: Tree, src: string): SParseError | null {
 
 export interface ParseResult {
   prog: Prog
-  tree: Tree
 }
 
 export function parseS(src: string): ParseResult {
@@ -348,6 +347,5 @@ export function parseS(src: string): ParseResult {
       mainName,
       ctrl: ctx.ctrl,
     },
-    tree,
   }
 }
