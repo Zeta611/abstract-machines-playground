@@ -15,8 +15,14 @@ import {
   TRIVIAL,
 } from "../lib/s/examples"
 import { parseS } from "../lib/s/parser"
-import { showVal, valEq, vInt } from "../lib/s/values"
-import type { Val } from "../lib/s/values"
+import {
+  envFromEntries,
+  showVal,
+  valEq,
+  vInt,
+  withVal,
+  type Val,
+} from "@/lib/libamp/values"
 
 let failed = 0
 
@@ -59,7 +65,7 @@ function expectValueParseFails(name: string, src: string): void {
 
 function expectUnknownPrimitive(name: string, src: string): void {
   const { prog } = parseS(src)
-  const trace = run(prog, new Map(), { maxSteps: 10 })
+  const trace = run(prog, envFromEntries([]), { maxSteps: 10 })
   expect(
     name,
     trace.end.kind === "stuck" &&
@@ -101,7 +107,7 @@ console.log("")
 console.log("3. I_S^T: Ifz(X, Int(10), Int(20)) at X=0 -> 10")
 {
   const { prog } = parseS(INTERPRETER_S_T)
-  const env = new Map<string, Val>([
+  const env = envFromEntries([
     [
       "p",
       parseValue1("Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"),
@@ -119,7 +125,7 @@ console.log("")
 console.log("4. I_S^T: Ifz at X=5 -> 20 (else branch)")
 {
   const { prog } = parseS(INTERPRETER_S_T)
-  const env = new Map<string, Val>([
+  const env = envFromEntries([
     [
       "p",
       parseValue1("Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"),
@@ -140,7 +146,7 @@ console.log("5. I_S^T: recursive T function (identity-ish)")
   //   f(x) = if x == 0 then 0 else f(x - 1) + 1 ... but T only has Sub and Ifz.
   //   Use: f(x) = Ifz(x, Int(0), App(Fun(0), Sub(x, Int(1)))).  Then f(3) = 0.
   const { prog } = parseS(INTERPRETER_S_T)
-  const env = new Map<string, Val>([
+  const env = envFromEntries([
     [
       "p",
       parseValue1(
@@ -163,7 +169,7 @@ console.log("")
 console.log("6. I_S^T: Let binds T variables by xid")
 {
   const { prog } = parseS(INTERPRETER_S_T)
-  const env = new Map<string, Val>([
+  const env = envFromEntries([
     [
       "p",
       parseValue1(
@@ -183,7 +189,7 @@ console.log("")
 console.log("7. Stuck: undefined variable surfaces as trace.end = stuck")
 {
   const { prog } = parseS(`main() = let y = nope in y`)
-  const trace = run(prog, new Map(), { maxSteps: 10 })
+  const trace = run(prog, envFromEntries([]), { maxSteps: 10 })
   expect("stuck", trace.end.kind === "stuck")
   if (trace.end.kind === "stuck") {
     console.log(`   reason: ${trace.end.reason}`)
@@ -258,7 +264,10 @@ console.log("11. Env parser: nested T program literal")
   )
   expect(
     "shape",
-    v.kind === "ctor" && v.tag === "Prog" && v.args.length === 2,
+    withVal(v, {
+      int: () => false,
+      ctor: ({ tag, args }) => tag === "Prog" && args.length === 2,
+    }),
     `got ${showVal(v)}`
   )
 }

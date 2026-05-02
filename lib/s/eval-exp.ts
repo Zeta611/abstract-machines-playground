@@ -1,7 +1,6 @@
 import { withExp, type Exp } from "@/lib/libamp/ast"
+import { envGet, vCtor, vInt, type Env, type Val } from "@/lib/libamp/values"
 import { PRIMS, PrimError } from "./prims"
-import { vCtor, vInt } from "./values"
-import type { Env, Val } from "./values"
 
 /**
  * Pure expression interpretation from PDF Section 4.1:
@@ -27,17 +26,16 @@ export function evalExp(e: Exp, rho: Env): Val {
   return withExp(e, {
     num: ({ n }, _loc) => vInt(n),
     var: ({ name }, _loc) => {
-      const v = rho.get(name)
+      const v = envGet(rho, name)
       if (v === undefined) {
         throw new EvalError(`undefined variable '${name}'`, e)
       }
       return v
     },
-    ctor: ({ tag, args }, _loc) =>
-      vCtor(
-        tag,
-        args.map((a) => evalExp(a, rho))
-      ),
+    ctor: ({ tag, args }, _loc) => vCtor(
+      tag,
+      args.map((a) => evalExp(a, rho))
+    ),
     prim: ({ op, args }, _loc) => {
       const fn = PRIMS[op]
       if (!fn) {

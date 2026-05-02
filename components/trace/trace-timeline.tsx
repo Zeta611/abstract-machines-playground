@@ -19,7 +19,7 @@ import {
 import { Slider } from "@/components/ui/slider"
 import { cn } from "@/lib/utils"
 import { parseTraceQuery, traceQueryMatches } from "@/lib/s/trace-query"
-import { showVal } from "@/lib/s/values"
+import { showVal } from "@/lib/libamp/values"
 import type { State, RuleName, Trace, TraceStep } from "@/lib/s/cek"
 import { RiQuestionLine } from "@remixicon/react"
 import { useLabelHoverBind } from "./label-hover"

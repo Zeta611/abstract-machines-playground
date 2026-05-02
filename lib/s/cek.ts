@@ -7,9 +7,15 @@ import {
   type Label,
   type Prog,
 } from "@/lib/libamp/ast"
+import {
+  envExtend,
+  envExtendMany,
+  envFromEntries,
+  withVal,
+  type Env,
+  type Val,
+} from "@/lib/libamp/values"
 import { EvalError, evalExp } from "./eval-exp"
-import { envExtend, envExtendMany } from "./values"
-import type { Env, Val } from "./values"
 
 /**
  * CEK machine for language S.
@@ -95,12 +101,10 @@ export function step(s: State, prog: Prog): StepResult {
   }
 }
 
-function stepLet(
+const stepLet = (
   s: State,
   cmd: { label: Label; x: string; exp: Exp; body: Cmd }
-):
-  | { kind: "step"; next: State; record: TraceStep }
-  | { kind: "stuck"; reason: string } {
+): StepResult => {
   const v = evalExp(cmd.exp, s.env)
   const next: State = {
     label: cmdLabel(cmd.body),
@@ -114,13 +118,11 @@ function stepLet(
   }
 }
 
-function stepLetCall(
+const stepLetCall = (
   s: State,
   cmd: { label: Label; x: string; fn: string; args: Exp[]; body: Cmd },
   prog: Prog
-):
-  | { kind: "step"; next: State; record: TraceStep }
-  | { kind: "stuck"; reason: string } {
+): StepResult => {
   const def = prog.defs[cmd.fn]
   if (!def) {
     return { kind: "stuck", reason: `undefined function '${cmd.fn}'` }
@@ -132,8 +134,7 @@ function stepLetCall(
     }
   }
   const argVals = cmd.args.map((a) => evalExp(a, s.env))
-  const calleeEnv: Env = new Map()
-  def.params.forEach((p, i) => calleeEnv.set(p, argVals[i]))
+  const calleeEnv = envFromEntries(def.params.map((p, i) => [p, argVals[i]]))
 
   const frame: Frame = { label: cmd.label, env: s.env }
   const next: State = {
@@ -151,58 +152,55 @@ function stepLetCall(
   }
 }
 
-function stepMatch(
+const stepMatch = (
   s: State,
   cmd: { label: Label; scrutinee: Exp; branches: Branch[] }
-):
-  | { kind: "step"; next: State; record: TraceStep }
-  | { kind: "stuck"; reason: string } {
+): StepResult => {
   const v = evalExp(cmd.scrutinee, s.env)
-  if (v.kind !== "ctor") {
-    return {
+  return withVal<StepResult>(v, {
+    int: ({ n }) => ({
       kind: "stuck",
-      reason: `match on non-constructor value (got int ${v.n})`,
-    }
-  }
-  for (let i = 0; i < cmd.branches.length; i++) {
-    const b = cmd.branches[i]
-    if (b.tag !== v.tag) continue
-    if (b.vars.length !== v.args.length) {
+      reason: `match on non-constructor value (got int ${n})`,
+    }),
+    ctor: ({ tag, args }) => {
+      for (let i = 0; i < cmd.branches.length; i++) {
+        const b = cmd.branches[i]
+        if (b.tag !== tag) continue
+        if (b.vars.length !== args.length) {
+          return {
+            kind: "stuck",
+            reason: `branch '${b.tag}' arity ${b.vars.length} vs value arity ${args.length}`,
+          }
+        }
+        const bindings: [string, Val][] = b.vars.map((x, j) => [x, args[j]])
+        const next: State = {
+          label: cmdLabel(b.body),
+          env: envExtendMany(s.env, bindings),
+          kont: s.kont,
+        }
+        return {
+          kind: "step",
+          next,
+          record: {
+            rule: "Match",
+            value: v,
+            detail: `| ${b.tag}(${b.vars.join(", ")}) matched (branch ${i})`,
+          },
+        }
+      }
       return {
         kind: "stuck",
-        reason: `branch '${b.tag}' arity ${b.vars.length} vs value arity ${v.args.length}`,
+        reason: `no branch matched tag '${tag}'`,
       }
-    }
-    const bindings: [string, Val][] = b.vars.map((x, j) => [x, v.args[j]])
-    const next: State = {
-      label: cmdLabel(b.body),
-      env: envExtendMany(s.env, bindings),
-      kont: s.kont,
-    }
-    return {
-      kind: "step",
-      next,
-      record: {
-        rule: "Match",
-        value: v,
-        detail: `| ${b.tag}(${b.vars.join(", ")}) matched (branch ${i})`,
-      },
-    }
-  }
-  return {
-    kind: "stuck",
-    reason: `no branch matched tag '${v.tag}'`,
-  }
+    },
+  })
 }
 
-function stepReturn(
+const stepReturn = (
   s: State,
   cmd: { label: Label; exp: Exp },
   prog: Prog
-):
-  | { kind: "step"; next: State; record: TraceStep }
-  | { kind: "final"; value: Val }
-  | { kind: "stuck"; reason: string } {
+): StepResult => {
   const v = evalExp(cmd.exp, s.env)
   if (s.kont.length === 0) {
     return { kind: "final", value: v }

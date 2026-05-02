@@ -1,5 +1,11 @@
-import { vCtor, vInt } from "./values"
-import type { Env, Val } from "./values"
+import {
+  envFromEntries,
+  vCtor,
+  vInt,
+  type EnvEntry,
+  type Env,
+  type Val,
+} from "@/lib/libamp/values"
 
 /**
  * Tiny parser for initial environments.
@@ -162,7 +168,7 @@ export function parseBinding(line: string): [string, Val] {
 /** Parse a multi-line env text. Lines beginning with `#` (after optional
  * whitespace) and blank lines are skipped. */
 export function parseEnv(src: string): Env {
-  const env: Env = new Map()
+  const bindings: EnvEntry[] = []
   const lines = src.split(/\r?\n/)
   for (let li = 0; li < lines.length; li++) {
     const raw = lines[li]
@@ -171,7 +177,7 @@ export function parseEnv(src: string): Env {
     if (trimmed.startsWith("#")) continue
     try {
       const [name, v] = parseBinding(raw)
-      env.set(name, v)
+      bindings.push([name, v])
     } catch (err) {
       if (err instanceof EnvParseError) {
         throw new EnvParseError(`line ${li + 1}: ${err.message}`, err.pos)
@@ -179,5 +185,5 @@ export function parseEnv(src: string): Env {
       throw err
     }
   }
-  return env
+  return envFromEntries(bindings)
 }

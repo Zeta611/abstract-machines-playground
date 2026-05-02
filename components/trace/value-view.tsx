@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { withVal, type CtorPayload, type Val } from "@/lib/libamp/values"
 import { cn } from "@/lib/utils"
-import type { Val } from "@/lib/s/values"
 
 interface Props {
   value: Val
@@ -12,24 +12,27 @@ interface Props {
 
 /** Renders a constructor / integer value as an inline, collapsible tree. */
 export function ValueView({ value, depth = 0, autoCollapseAt = 4 }: Props) {
-  if (value.kind === "int") {
-    return (
-      <span className="text-sky-700 tabular-nums dark:text-sky-300">
-        {value.n}
-      </span>
-    )
-  }
-  if (value.args.length === 0) {
-    return (
-      <span className="text-violet-700 dark:text-violet-300">
-        {value.tag}
-        <span className="text-muted-foreground">()</span>
-      </span>
-    )
-  }
-  return (
-    <CtorValue value={value} depth={depth} autoCollapseAt={autoCollapseAt} />
-  )
+  return withVal(value, {
+    int: ({ n }) => (
+      <span className="text-sky-700 tabular-nums dark:text-sky-300">{n}</span>
+    ),
+    ctor: (payload) =>
+      (payload.args.length === 0) ?
+        (
+          <span className="text-violet-700 dark:text-violet-300">
+            {payload.tag}
+            <span className="text-muted-foreground">()</span>
+          </span>
+        )
+      :
+      (
+        <CtorValue
+          value={payload}
+          depth={depth}
+          autoCollapseAt={autoCollapseAt}
+        />
+      )
+  })
 }
 
 function CtorValue({
@@ -37,12 +40,12 @@ function CtorValue({
   depth,
   autoCollapseAt,
 }: {
-  value: Extract<Val, { kind: "ctor" }>
+  value: CtorPayload
   depth: number
   autoCollapseAt: number
 }) {
   const [open, setOpen] = useState(depth < autoCollapseAt)
-  const nestedCount = countNodes(value)
+  const nestedCount = countCtorNodes(value)
   return (
     <span>
       <button
@@ -79,8 +82,12 @@ function CtorValue({
 }
 
 function countNodes(v: Val): number {
-  if (v.kind === "int") return 1
-  let n = 1
-  for (const a of v.args) n += countNodes(a)
-  return n
+  return withVal(v, {
+    int: () => 1,
+    ctor: countCtorNodes,
+  })
+}
+
+function countCtorNodes({ args }: CtorPayload): number {
+  return 1 + args.map(countNodes).reduce((a, b) => a + b, 0)
 }

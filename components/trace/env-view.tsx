@@ -1,7 +1,7 @@
 "use client"
 
+import { envEntries, type Env } from "@/lib/libamp/values"
 import { ValueView } from "./value-view"
-import type { Env } from "@/lib/s/values"
 
 interface Props {
   env: Env
@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function EnvView({ env, emptyLabel = "(empty)", highlight }: Props) {
-  const entries = [...env.entries()]
+  const entries = envEntries(env)
   if (entries.length === 0) {
     return (
       <div className="text-xs text-muted-foreground italic">{emptyLabel}</div>

@@ -1,5 +1,11 @@
-import { V_FALSE, V_TRUE, vInt, valEq } from "./values"
-import type { Val } from "./values"
+import {
+  vFalse,
+  vInt,
+  vTrue,
+  valEq,
+  withVal,
+  type Val,
+} from "@/lib/libamp/values"
 
 /**
  * Primitive registry. Corresponds to `O[[-]] : Prim -> Val* -> Val`.
@@ -16,12 +22,14 @@ export class PrimError extends Error {
 export type Prim = (args: Val[]) => Val
 
 function expectInt(v: Val, op: string, idx: number): number {
-  if (v.kind !== "int") {
-    throw new PrimError(
-      `primitive ${op}: argument ${idx} expected int, got ${v.kind === "ctor" ? v.tag + "(...)" : "?"}`
-    )
-  }
-  return v.n
+  return withVal(v, {
+    int: ({ n }) => n,
+    ctor: ({ tag }) => {
+      throw new PrimError(
+        `primitive ${op}: argument ${idx} expected int, got ${tag}(...)`
+      )
+    },
+  })
 }
 
 function expectArity(op: string, args: Val[], n: number): void {
@@ -47,25 +55,33 @@ export const PRIMS: Record<string, Prim> = {
   },
   iszero: (args) => {
     expectArity("iszero", args, 1)
-    return expectInt(args[0], "iszero", 0) === 0 ? V_TRUE : V_FALSE
+    return expectInt(args[0], "iszero", 0) === 0 ? vTrue : vFalse
   },
   eq: (args) => {
     expectArity("eq", args, 2)
-    return valEq(args[0], args[1]) ? V_TRUE : V_FALSE
+    return valEq(args[0], args[1]) ? vTrue : vFalse
   },
   lt: (args) => {
     expectArity("lt", args, 2)
     return expectInt(args[0], "lt", 0) < expectInt(args[1], "lt", 1)
-      ? V_TRUE
-      : V_FALSE
+      ? vTrue
+      : vFalse
   },
   not: (args) => {
     expectArity("not", args, 1)
-    const v = args[0]
-    if (v.kind !== "ctor" || (v.tag !== "True" && v.tag !== "False")) {
-      throw new PrimError(`primitive not: expected boolean, got non-boolean`)
-    }
-    return v.tag === "True" ? V_FALSE : V_TRUE
+    return withVal(args[0], {
+      int: () => {
+        throw new PrimError(`primitive not: expected boolean, got non-boolean`)
+      },
+      ctor: ({ tag }) => {
+        if (tag !== "True" && tag !== "False") {
+          throw new PrimError(
+            `primitive not: expected boolean, got non-boolean`
+          )
+        }
+        return tag === "True" ? vFalse : vTrue
+      },
+    })
   },
 }
 

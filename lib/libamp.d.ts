@@ -4,6 +4,50 @@ declare module "@/lib/libamp/foo" {
 
 declare module "@/lib/libamp/libamp" {}
 
+declare module "@/lib/libamp/values" {
+  declare const valBrand: unique symbol
+  declare const envBrand: unique symbol
+
+  export type Val = { readonly [valBrand]: never }
+
+  export interface IntPayload {
+    n: number
+  }
+
+  export interface CtorPayload {
+    tag: string
+    args: Val[]
+  }
+
+  export type Env = { readonly [envBrand]: never }
+  export type EnvEntry = [string, Val]
+
+  export function vInt(n: number): Val
+  export function vCtor(tag: string, args: Val[]): Val
+
+  export const vTrue: Val
+  export const vFalse: Val
+
+  export function withVal<T>(
+    value: Val,
+    visitor: {
+      int: (payload: IntPayload) => T
+      ctor: (payload: CtorPayload) => T
+    }
+  ): T
+
+  export function isTrue(value: Val): boolean
+  export function valEq(a: Val, b: Val): boolean
+  export function showVal(value: Val): string
+
+  export function envGet(env: Env, name: string): Val | undefined
+  export function envEntries(env: Env): EnvEntry[]
+  export function envSize(env: Env): number
+  export function envExtend(env: Env, name: string, value: Val): Env
+  export function envExtendMany(env: Env, bindings: EnvEntry[]): Env
+  export function envFromEntries(bindings: EnvEntry[]): Env
+}
+
 declare module "@/lib/libamp/ast" {
   export type Label = number
 

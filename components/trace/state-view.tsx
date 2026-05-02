@@ -9,6 +9,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { cmdSummary } from "@/lib/libamp/ast"
 import type { ControlMap } from "@/lib/libamp/ast"
+import { envSize } from "@/lib/libamp/values"
 import type { State, TraceStep } from "@/lib/s/cek"
 import { EnvView } from "./env-view"
 import { KontView } from "./kont-view"
@@ -26,6 +27,7 @@ interface Props {
 export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
   const cmd = ctrl[state.label]
   const hoverBind = useLabelHoverBind(state.label)
+  const bindingCount = envSize(state.env)
 
   return (
     <ResizablePanelGroup orientation="vertical" className="h-full w-full">
@@ -78,7 +80,7 @@ export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
               <b>E</b>nvironment (ρ)
             </span>
             <Badge variant="outline" className="text-[10px]">
-              {state.env.size} binding{state.env.size === 1 ? "" : "s"}
+              {bindingCount} binding{bindingCount === 1 ? "" : "s"}
             </Badge>
           </div>
           <Separator className="mb-2" />
