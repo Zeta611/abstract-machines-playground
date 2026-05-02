@@ -1,1 +1,0 @@
-let bar (x : string) : string = x
