@@ -1,5 +1,5 @@
 {
-open Parser
+open Grammar
 }
 
 let digit = ['0'-'9']
@@ -33,9 +33,9 @@ rule token = parse
         failwith ("Integer literal out of range: " ^ i)
     }
 
-  (* Identifiers: distinguish by first char case *)
-  | lower ident_char* as id { LOWERIDENT id }
-  | upper ident_char* as id { UPPERIDENT id }
+  (* Identifiers: start with lower or upper, followed by ident_char *)
+  | lower ident_char* as id { IDENT id }
+  | upper ident_char* as id { IDENT id }
 
   | eof { EOF }
 
