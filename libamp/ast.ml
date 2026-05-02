@@ -1,5 +1,4 @@
 type loc = { from : int; to_ : int }
-
 type 'a located = { payload : 'a; loc : loc }
 
 [@@@warning "-30"]
@@ -17,17 +16,11 @@ and cmd =
   | Match of match_payload located
 
 and branch = { tag : string; vars : string array; body : cmd; loc : loc }
-
 and num_payload = { n : int }
-
 and var_payload = { name : string }
-
 and app_payload = { tag : string; args : exp array }
-
 and prim_payload = { op : string; args : exp array }
-
 and return_payload = { label : int; exp : exp }
-
 and let_payload = { label : int; x : string; exp : exp; body : cmd }
 
 and let_call_payload = {
@@ -43,12 +36,7 @@ and match_payload = { label : int; scrutinee : exp; branches : branch array }
 [@@@warning "+30"]
 
 type def = { name : string; params : string array; body : cmd; loc : loc }
-
-type prog = {
-  defs : def Js.Dict.t;
-  mainName : string;
-  ctrl : cmd Js.Dict.t;
-}
+type prog = { defs : def Js.Dict.t; mainName : string; ctrl : cmd Js.Dict.t }
 
 type 'a exp_visitor = {
   num : num_payload -> loc -> 'a;
@@ -104,9 +92,13 @@ let rec expSummary e =
   | Num { payload = { n }; _ } -> string_of_int n
   | Var { payload = { name }; _ } -> name
   | Ctor { payload = { tag; args }; _ } ->
-      tag ^ "(" ^ (args |> Array.map expSummary |> Array.to_list |> String.concat ", ") ^ ")"
+      tag ^ "("
+      ^ (args |> Array.map expSummary |> Array.to_list |> String.concat ", ")
+      ^ ")"
   | Prim { payload = { op; args }; _ } ->
-      op ^ "(" ^ (args |> Array.map expSummary |> Array.to_list |> String.concat ", ") ^ ")"
+      op ^ "("
+      ^ (args |> Array.map expSummary |> Array.to_list |> String.concat ", ")
+      ^ ")"
 
 let cmdSummary c =
   match c with
