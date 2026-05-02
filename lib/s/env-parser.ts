@@ -1,11 +1,11 @@
 import {
-  envFromEntries,
   vCtor,
   vInt,
   type EnvEntry,
   type Env,
   type Val,
 } from "@/lib/libamp/values"
+import * as StringMap from "@/lib/libamp/stringMap"
 
 /**
  * Tiny parser for initial environments.
@@ -32,7 +32,7 @@ export class EnvParseError extends Error {
 
 class Lexer {
   private i = 0
-  constructor(private readonly src: string) {}
+  constructor(private readonly src: string) { }
 
   pos(): number {
     return this.i
@@ -185,5 +185,5 @@ export function parseEnv(src: string): Env {
       throw err
     }
   }
-  return envFromEntries(bindings)
+  return StringMap.of_array(bindings)
 }

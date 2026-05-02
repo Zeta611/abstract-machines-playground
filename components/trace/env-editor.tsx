@@ -1,11 +1,12 @@
 "use client"
 
 import { useMemo } from "react"
-import { envEntries, envSize, type Env } from "@/lib/libamp/values"
+import type { Val, Env } from "@/lib/libamp/values"
 import { cn } from "@/lib/utils"
 import { EnvParseError, parseEnv } from "@/lib/s/env-parser"
 import { ValueView } from "./value-view"
 import { CopyButton } from "./copy-button"
+import * as StringMap from "@/lib/libamp/stringMap"
 
 interface PreviewResult {
   env: Env | null
@@ -54,7 +55,7 @@ export function EnvPreview({
       </div>
     )
   }
-  if (!preview.env || envSize(preview.env) === 0) {
+  if (!preview.env || StringMap.cardinal(preview.env) === 0) {
     if (hideEmpty) return null
     return (
       <div className="group relative rounded border bg-muted/30 px-2 py-2 text-[11px] text-muted-foreground">
@@ -66,7 +67,7 @@ export function EnvPreview({
   return (
     <div className="group relative rounded border bg-muted/30 px-2 py-2 text-xs">
       <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-        {envEntries(preview.env).map(([k, v]) => (
+        {StringMap.bindings<Val>(preview.env).map(([k, v]) => (
           <div key={k} className="contents">
             <div className="text-emerald-700 dark:text-emerald-300">{k}</div>
             <div className="min-w-0 break-all">

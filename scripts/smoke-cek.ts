@@ -6,6 +6,7 @@
  * The script exits non-zero on failure.
  */
 
+import * as StringMap from "@/lib/libamp/stringMap"
 import { run } from "../lib/s/cek"
 import { parseEnv, parseValue1 } from "../lib/s/env-parser"
 import {
@@ -16,7 +17,6 @@ import {
 } from "../lib/s/examples"
 import { parseS } from "../lib/s/parser"
 import {
-  envFromEntries,
   showVal,
   valEq,
   vInt,
@@ -65,11 +65,11 @@ function expectValueParseFails(name: string, src: string): void {
 
 function expectUnknownPrimitive(name: string, src: string): void {
   const { prog } = parseS(src)
-  const trace = run(prog, envFromEntries([]), { maxSteps: 10 })
+  const trace = run(prog, StringMap.of_array([]), { maxSteps: 10 })
   expect(
     name,
     trace.end.kind === "stuck" &&
-      trace.end.reason.startsWith("unknown primitive"),
+    trace.end.reason.startsWith("unknown primitive"),
     trace.end.kind === "stuck" ? trace.end.reason : trace.end.kind
   )
 }
@@ -107,7 +107,7 @@ console.log("")
 console.log("3. I_S^T: Ifz(X, Int(10), Int(20)) at X=0 -> 10")
 {
   const { prog } = parseS(INTERPRETER_S_T)
-  const env = envFromEntries([
+  const env = StringMap.of_array([
     [
       "p",
       parseValue1("Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"),
@@ -125,7 +125,7 @@ console.log("")
 console.log("4. I_S^T: Ifz at X=5 -> 20 (else branch)")
 {
   const { prog } = parseS(INTERPRETER_S_T)
-  const env = envFromEntries([
+  const env = StringMap.of_array([
     [
       "p",
       parseValue1("Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"),
@@ -146,7 +146,7 @@ console.log("5. I_S^T: recursive T function (identity-ish)")
   //   f(x) = if x == 0 then 0 else f(x - 1) + 1 ... but T only has Sub and Ifz.
   //   Use: f(x) = Ifz(x, Int(0), App(Fun(0), Sub(x, Int(1)))).  Then f(3) = 0.
   const { prog } = parseS(INTERPRETER_S_T)
-  const env = envFromEntries([
+  const env = StringMap.of_array([
     [
       "p",
       parseValue1(
@@ -169,7 +169,7 @@ console.log("")
 console.log("6. I_S^T: Let binds T variables by xid")
 {
   const { prog } = parseS(INTERPRETER_S_T)
-  const env = envFromEntries([
+  const env = StringMap.of_array([
     [
       "p",
       parseValue1(
@@ -189,7 +189,7 @@ console.log("")
 console.log("7. Stuck: undefined variable surfaces as trace.end = stuck")
 {
   const { prog } = parseS(`main() = let y = nope in y`)
-  const trace = run(prog, envFromEntries([]), { maxSteps: 10 })
+  const trace = run(prog, StringMap.of_array([]), { maxSteps: 10 })
   expect("stuck", trace.end.kind === "stuck")
   if (trace.end.kind === "stuck") {
     console.log(`   reason: ${trace.end.reason}`)

@@ -36,7 +36,12 @@ and match_payload = { label : int; scrutinee : exp; branches : branch array }
 [@@@warning "+30"]
 
 type def = { name : string; params : string array; body : cmd; loc : loc }
-type prog = { defs : def Js.Dict.t; mainName : string; ctrl : cmd Js.Dict.t }
+
+type prog = {
+  defs : def StringMap.t;
+  mainName : string;
+  ctrl : cmd StringMap.t;
+}
 
 type 'a exp_visitor = {
   num : num_payload -> loc -> 'a;

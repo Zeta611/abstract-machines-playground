@@ -1,7 +1,8 @@
 import { withExp, type Exp } from "@/lib/libamp/ast"
 import { evalPrim } from "@/lib/libamp/prims"
-import { envGet, vCtor, vInt, type Env, type Val } from "@/lib/libamp/values"
+import { vCtor, vInt, type Env, type Val } from "@/lib/libamp/values"
 import { fold } from "melange/result.js"
+import * as StringMap from "@/lib/libamp/stringMap"
 
 /**
  * Pure expression interpretation from PDF Section 4.1:
@@ -27,7 +28,7 @@ export function evalExp(e: Exp, rho: Env): Val {
   return withExp(e, {
     num: ({ n }, _loc) => vInt(n),
     var: ({ name }, _loc) => {
-      const v = envGet(rho, name)
+      const v = StringMap.find_opt(name, rho)
       if (v === undefined) {
         throw new EvalError(`undefined variable '${name}'`, e)
       }

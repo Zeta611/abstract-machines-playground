@@ -8,14 +8,12 @@ import {
   type Prog,
 } from "@/lib/libamp/ast"
 import {
-  envExtend,
-  envExtendMany,
-  envFromEntries,
   withVal,
   type Env,
   type Val,
 } from "@/lib/libamp/values"
 import { EvalError, evalExp } from "./eval-exp"
+import * as StringMap from "@/lib/libamp/stringMap"
 
 /**
  * CEK machine for language S.
@@ -108,7 +106,7 @@ const stepLet = (
   const v = evalExp(cmd.exp, s.env)
   const next: State = {
     label: cmdLabel(cmd.body),
-    env: envExtend(s.env, cmd.x, v),
+    env: StringMap.add(cmd.x, v, s.env),
     kont: s.kont,
   }
   return {
@@ -134,7 +132,7 @@ const stepLetCall = (
     }
   }
   const argVals = cmd.args.map((a) => evalExp(a, s.env))
-  const calleeEnv = envFromEntries(def.params.map((p, i) => [p, argVals[i]]))
+  const calleeEnv = StringMap.of_array(def.params.map((p, i) => [p, argVals[i]]))
 
   const frame: Frame = { label: cmd.label, env: s.env }
   const next: State = {
@@ -175,7 +173,7 @@ const stepMatch = (
         const bindings: [string, Val][] = b.vars.map((x, j) => [x, args[j]])
         const next: State = {
           label: cmdLabel(b.body),
-          env: envExtendMany(s.env, bindings),
+          env: bindings.reduce(((env, [x, v]) => StringMap.add(x, v, env)), s.env),
           kont: s.kont,
         }
         return {
@@ -217,7 +215,7 @@ const stepReturn = (
     letCall: ({ x, body }, _loc) => {
       const next: State = {
         label: cmdLabel(body),
-        env: envExtend(top.env, x, v),
+        env: StringMap.add(x, v, top.env),
         kont: rest,
       }
       return {

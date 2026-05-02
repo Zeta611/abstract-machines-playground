@@ -2,9 +2,7 @@ type value = Int of int_payload | Ctor of ctor_payload
 and int_payload = { n : int }
 and ctor_payload = { tag : string; args : value array }
 
-module EnvMap = Map.Make (String)
-
-type env = value EnvMap.t
+type env = value StringMap.t
 type 'a val_visitor = { int : int_payload -> 'a; ctor : ctor_payload -> 'a }
 
 let vInt n = Int { n }
@@ -31,13 +29,3 @@ let rec showVal = function
         tag ^ "("
         ^ (args |> Array.map showVal |> Array.to_list |> String.concat ", ")
         ^ ")"
-
-let envGet rho x = EnvMap.find_opt x rho
-let envEntries rho = rho |> EnvMap.bindings |> Array.of_list
-let envSize rho = EnvMap.cardinal rho
-let envExtend rho x v = EnvMap.add x v rho
-
-let envExtendMany rho bindings =
-  bindings |> Array.fold_left (fun acc (x, v) -> EnvMap.add x v acc) rho
-
-let envFromEntries bindings = envExtendMany EnvMap.empty bindings

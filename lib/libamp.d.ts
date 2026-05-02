@@ -1,8 +1,4 @@
-declare module "@/lib/libamp/foo" {
-  export function bar(x: string): string
-}
-
-declare module "@/lib/libamp/libamp" {}
+declare module "@/lib/libamp/libamp" { }
 
 declare module "@/lib/libamp/prims" {
   import type { Result } from "melange/result.js"
@@ -43,9 +39,21 @@ declare module "melange/result.js" {
   export function is_error<T, E>(result: Result<T, E>): boolean
 }
 
+declare module "@/lib/libamp/stringMap" {
+  declare const stringMapBrand: unique symbol
+  export type StringMap<K> = { readonly [stringMapBrand]: K }
+  export function empty<K>(): StringMap<K>
+  export function of_array<K>(arr: [string, K][]): StringMap<K>
+  export function bindings<K>(map: StringMap<K>): [string, K][]
+  export function cardinal<K>(map: StringMap<K>): number
+  export function find_opt<K>(key: string, map: StringMap<K>): K | undefined
+  export function add<K>(key: string, value: K, map: StringMap<K>): StringMap<K>
+}
+
 declare module "@/lib/libamp/values" {
+  import type { StringMap } from "@/lib/libamp/stringMap"
+
   declare const valBrand: unique symbol
-  declare const envBrand: unique symbol
 
   export type Val = { readonly [valBrand]: never }
 
@@ -58,7 +66,7 @@ declare module "@/lib/libamp/values" {
     args: Val[]
   }
 
-  export type Env = { readonly [envBrand]: never }
+  export type Env = StringMap<Val>
   export type EnvEntry = [string, Val]
 
   export function vInt(n: number): Val
@@ -78,13 +86,6 @@ declare module "@/lib/libamp/values" {
   export function isTrue(value: Val): boolean
   export function valEq(a: Val, b: Val): boolean
   export function showVal(value: Val): string
-
-  export function envGet(env: Env, name: string): Val | undefined
-  export function envEntries(env: Env): EnvEntry[]
-  export function envSize(env: Env): number
-  export function envExtend(env: Env, name: string, value: Val): Env
-  export function envExtendMany(env: Env, bindings: EnvEntry[]): Env
-  export function envFromEntries(bindings: EnvEntry[]): Env
 }
 
 declare module "@/lib/libamp/ast" {
@@ -129,12 +130,10 @@ declare module "@/lib/libamp/ast" {
   export function prim(payload: { op: string; args: Exp[] }, loc: Loc): Exp
 
   export function return_(payload: { label: Label; exp: Exp }, loc: Loc): Cmd
-  export { return_ as return }
   export function let_(
     payload: { label: Label; x: string; exp: Exp; body: Cmd },
     loc: Loc
   ): Cmd
-  export { let_ as let }
   export function letCall(
     payload: {
       label: Label
@@ -149,7 +148,6 @@ declare module "@/lib/libamp/ast" {
     payload: { label: Label; scrutinee: Exp; branches: Branch[] },
     loc: Loc
   ): Cmd
-  export { match_ as match }
 
   export function cmdLabel(cmd: Cmd): Label
   export function cmdLoc(cmd: Cmd): Loc

@@ -25,8 +25,6 @@ let expectBoolean op = function
 
 let boolValue b = if b then vTrue else vFalse
 
-module StringMap = Map.Make (String)
-
 let prims : (value array -> prim_result) StringMap.t =
   StringMap.of_list
     [

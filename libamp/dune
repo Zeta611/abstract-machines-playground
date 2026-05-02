@@ -1,8 +1,8 @@
-;(ocamllex lexer)
-;
-;(menhir
-; (modules parser))
+(ocamllex lexer)
+
+(menhir
+ (modules parser))
 
 (library
  (name libamp)
- (modes melange))
+ (modes melange byte))
