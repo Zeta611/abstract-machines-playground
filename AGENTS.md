@@ -23,7 +23,7 @@ Prefer raw `bun` commands first. If `bun` is not available in the current shell 
 - `lib/s/` - language S implementation, UI-free and independently testable.
   - `grammar.ts` - Lezer grammar built in-memory via `@lezer/generator` `buildParser` (no separate parser build step).
   - `parser.ts` - CST -> labeled AST + `ControlMap` (every `Cmd` has a unique `Label`).
-  - `ast.ts`, `values.ts`, `prims.ts`, `eval-exp.ts` - data types + pure expression eval.
+  - `ast.ml`, `values.ml`, `prims.ml`, `eval-exp.ts` - data types + pure expression eval.
   - `cek.ts` - five transitions: `[LetExp]`, `[LetCall]`, `[Match]`, `[Assert]`, `[Return]`. `[Return]` recovers the bound var via `ctrl(l_call)` on the kont head.
   - `env-parser.ts` - hand-rolled parser for the "initial rho" literals used to feed T programs as S constructor values.
   - `examples.ts` - `INTERPRETER_S_T` and `INITIAL_ENV`.

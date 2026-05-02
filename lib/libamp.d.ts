@@ -4,6 +4,45 @@ declare module "@/lib/libamp/foo" {
 
 declare module "@/lib/libamp/libamp" {}
 
+declare module "@/lib/libamp/prims" {
+  import type { Result } from "melange/result.js"
+  import type { Val } from "@/lib/libamp/values"
+
+  export function evalPrim(op: string, args: Val[]): Result<Val, string>
+  export function isPrim(name: string): boolean
+}
+
+declare module "melange/result.js" {
+  export type Result<T, E> = { TAG: 0; _0: T } | { TAG: 1; _0: E }
+
+  export function ok<T>(value: T): Result<T, never>
+  export function error<E>(error: E): Result<never, E>
+  export function value<T, E>(result: Result<T, E>, defaultValue: T): T
+  export function get_ok<T, E>(result: Result<T, E>): T
+  export function get_error<T, E>(result: Result<T, E>): E
+  export function error_to_failure<T>(result: Result<T, string>): T
+  export function bind<T, U, E>(
+    result: Result<T, E>,
+    f: (value: T) => Result<U, E>
+  ): Result<U, E>
+  export function join<T, E>(result: Result<Result<T, E>, E>): Result<T, E>
+  export function map<T, U, E>(
+    f: (value: T) => U,
+    result: Result<T, E>
+  ): Result<U, E>
+  export function map_error<T, E, F>(
+    f: (error: E) => F,
+    result: Result<T, E>
+  ): Result<T, F>
+  export function fold<T, E, R>(
+    ok: (value: T) => R,
+    error: (error: E) => R,
+    result: Result<T, E>
+  ): R
+  export function is_ok<T, E>(result: Result<T, E>): boolean
+  export function is_error<T, E>(result: Result<T, E>): boolean
+}
+
 declare module "@/lib/libamp/values" {
   declare const valBrand: unique symbol
   declare const envBrand: unique symbol

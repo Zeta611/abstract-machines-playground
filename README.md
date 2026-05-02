@@ -51,7 +51,7 @@ Tag(e, ...)             # constructor value (UpperCase, or `true`/`false`)
 prim(e, ...)            # primitive application (lowercase)
 ```
 
-Primitives available out of the box: `add`, `sub`, `mul`, `iszero`, `eq`, `lt`, `not`. Extend the registry in [`lib/s/prims.ts`](lib/s/prims.ts).
+Primitives available out of the box: `add`, `sub`, `mul`, `iszero`, `eq`, `lt`, `not`. Extend the registry in [`libamp/prims.ml`](libamp/prims.ml).
 
 ### Running T programs
 
@@ -80,14 +80,14 @@ bun run scripts/smoke-cek.ts
 
 ## Development commands
 
-| Command | Description |
-|---|---|
-| `bun run dev` | Start the development server with Turbopack |
-| `bun run build` | Create a production build |
-| `bun run start` | Serve the production build locally |
-| `bun run lint` | Run ESLint |
-| `bun run typecheck` | Type-check without emitting output |
-| `bun run format` | Format all `.ts`/`.tsx` files with Prettier |
+| Command             | Description                                 |
+| ------------------- | ------------------------------------------- |
+| `bun run dev`       | Start the development server with Turbopack |
+| `bun run build`     | Create a production build                   |
+| `bun run start`     | Serve the production build locally          |
+| `bun run lint`      | Run ESLint                                  |
+| `bun run typecheck` | Type-check without emitting output          |
+| `bun run format`    | Format all `.ts`/`.tsx` files with Prettier |
 
 ## Adding shadcn/ui components
 

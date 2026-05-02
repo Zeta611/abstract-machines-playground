@@ -1,6 +1,7 @@
 import { withExp, type Exp } from "@/lib/libamp/ast"
+import { evalPrim } from "@/lib/libamp/prims"
 import { envGet, vCtor, vInt, type Env, type Val } from "@/lib/libamp/values"
-import { PRIMS, PrimError } from "./prims"
+import { fold } from "melange/result.js"
 
 /**
  * Pure expression interpretation from PDF Section 4.1:
@@ -32,24 +33,20 @@ export function evalExp(e: Exp, rho: Env): Val {
       }
       return v
     },
-    ctor: ({ tag, args }, _loc) => vCtor(
-      tag,
-      args.map((a) => evalExp(a, rho))
-    ),
+    ctor: ({ tag, args }, _loc) =>
+      vCtor(
+        tag,
+        args.map((a) => evalExp(a, rho))
+      ),
     prim: ({ op, args }, _loc) => {
-      const fn = PRIMS[op]
-      if (!fn) {
-        throw new EvalError(`unknown primitive '${op}'`, e)
-      }
       const vals = args.map((a) => evalExp(a, rho))
-      try {
-        return fn(vals)
-      } catch (err) {
-        if (err instanceof PrimError) {
-          throw new EvalError(err.message, e)
-        }
-        throw err
-      }
+      return fold(
+        (value) => value,
+        (message) => {
+          throw new EvalError(message, e)
+        },
+        evalPrim(op, vals)
+      )
     },
   })
 }
