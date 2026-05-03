@@ -2,7 +2,7 @@
 
 import type { Env, Val } from "@/lib/libamp/values"
 import { ValueView } from "./value-view"
-import * as StringMap from "@/lib/libamp/stringMap"
+import { StringMap } from "@/lib/libamp/utils"
 
 interface Props {
   env: Env

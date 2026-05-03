@@ -1,59 +1,32 @@
 declare module "@/lib/libamp/libamp" { }
 
 declare module "@/lib/libamp/prims" {
-  import type { Result } from "melange/result.js"
+  import { Result } from "melange/result"
   import type { Val } from "@/lib/libamp/values"
 
   export function evalPrim(op: string, args: Val[]): Result<Val, string>
   export function isPrim(name: string): boolean
 }
 
-declare module "melange/result.js" {
-  export type Result<T, E> = { TAG: 0; _0: T } | { TAG: 1; _0: E }
+declare module "@/lib/libamp/utils" {
+  const mapBrand: unique symbol
+  export type Map<K, V> = { readonly [mapBrand]: [K, V] }
+  export type MapModule<K> = {
+    of_array<V>(arr: [K, V][]): Map<K, V>
+    bindings<V>(map: Map<K, V>): [K, V][]
+    cardinal<V>(map: Map<K, V>): number
+    find_opt<V>(key: K, map: Map<K, V>): V | undefined
+    add<V>(key: K, value: V, map: Map<K, V>): Map<K, V>
+  }
 
-  export function ok<T>(value: T): Result<T, never>
-  export function error<E>(error: E): Result<never, E>
-  export function value<T, E>(result: Result<T, E>, defaultValue: T): T
-  export function get_ok<T, E>(result: Result<T, E>): T
-  export function get_error<T, E>(result: Result<T, E>): E
-  export function error_to_failure<T>(result: Result<T, string>): T
-  export function bind<T, U, E>(
-    result: Result<T, E>,
-    f: (value: T) => Result<U, E>
-  ): Result<U, E>
-  export function join<T, E>(result: Result<Result<T, E>, E>): Result<T, E>
-  export function map<T, U, E>(
-    f: (value: T) => U,
-    result: Result<T, E>
-  ): Result<U, E>
-  export function map_error<T, E, F>(
-    f: (error: E) => F,
-    result: Result<T, E>
-  ): Result<T, F>
-  export function fold<T, E, R>(
-    ok: (value: T) => R,
-    error: (error: E) => R,
-    result: Result<T, E>
-  ): R
-  export function is_ok<T, E>(result: Result<T, E>): boolean
-  export function is_error<T, E>(result: Result<T, E>): boolean
-}
-
-declare module "@/lib/libamp/stringMap" {
-  declare const stringMapBrand: unique symbol
-  export type StringMap<K> = { readonly [stringMapBrand]: K }
-  export function empty<K>(): StringMap<K>
-  export function of_array<K>(arr: [string, K][]): StringMap<K>
-  export function bindings<K>(map: StringMap<K>): [string, K][]
-  export function cardinal<K>(map: StringMap<K>): number
-  export function find_opt<K>(key: string, map: StringMap<K>): K | undefined
-  export function add<K>(key: string, value: K, map: StringMap<K>): StringMap<K>
+  export const StringMap: MapModule<string>
+  export const IntMap: MapModule<number>
 }
 
 declare module "@/lib/libamp/values" {
-  import type { StringMap } from "@/lib/libamp/stringMap"
+  import type { Map } from "@/lib/libamp/utils"
 
-  declare const valBrand: unique symbol
+  const valBrand: unique symbol
 
   export type Val = { readonly [valBrand]: never }
 
@@ -66,7 +39,7 @@ declare module "@/lib/libamp/values" {
     args: Val[]
   }
 
-  export type Env = StringMap<Val>
+  export type Env = Map<string, Val>
   export type EnvEntry = [string, Val]
 
   export function vInt(n: number): Val
@@ -89,104 +62,121 @@ declare module "@/lib/libamp/values" {
 }
 
 declare module "@/lib/libamp/ast" {
+  import type { Map } from "@/lib/libamp/utils";
+
   export type Label = number
 
   export interface Loc {
     from: number
-    to: number
+    to_: number
   }
 
-  declare const expBrand: unique symbol
-  declare const cmdBrand: unique symbol
+  const expDescBrand: unique symbol
 
-  export type Exp = { readonly [expBrand]: never }
-  export type Cmd = { readonly [cmdBrand]: never }
+  export type ExpDesc = { readonly [expDescBrand]: never }
+  export interface AppPayload {
+    callee: string
+    args: Expression[]
+  }
+  export interface Expression {
+    desc: ExpDesc
+    loc: Loc
+  }
 
+  export type ExpVisitor<T> = {
+    num: (n: number) => T
+    var_: (name: string) => T
+    ctor: (payload: AppPayload) => T
+    prim: (payload: AppPayload) => T
+  }
+
+  export const Exp: ExpVisitor<ExpDesc> & {
+    visit: <T>(
+      exp: Expression,
+      visitor: ExpVisitor<T>
+    ) => T
+    summary: (exp: Expression) => string
+  }
+
+  const cmdDescBrand: unique symbol
+
+  export type CmdDesc = { readonly [cmdDescBrand]: never }
+  export interface LetPayload {
+    x: string
+    exp: Expression
+    body: Command
+  }
+  export interface LetCallPayload {
+    x: string
+    e: AppPayload
+    body: Command
+  }
+  export interface MatchPayload {
+    scrutinee: Expression
+    branches: Branch[]
+  }
   export interface Branch {
     tag: string
     vars: string[]
-    body: Cmd
+    body: Command
     loc: Loc
+  }
+  export interface Command {
+    desc: CmdDesc
+    loc: Loc
+    label: Label
+  }
+
+  export type CmdVisitor<T> = {
+    return: (exp: Expression) => T
+    let_: (payload: LetPayload) => T
+    letCall: (payload: LetCallPayload) => T
+    match_: (payload: MatchPayload) => T
+  }
+
+  export const Cmd: CmdVisitor<CmdDesc> & {
+    visit: <T>(
+      cmd: Command,
+      visitor: CmdVisitor<T>
+    ) => T
+    summary: (cmd: Command) => string
   }
 
   export interface Def {
     name: string
     params: string[]
-    body: Cmd
+    body: Command
     loc: Loc
   }
 
-  export type ControlMap = Record<Label, Cmd>
-
-  export interface Prog {
-    defs: Record<string, Def>
+  export interface Program {
+    defs: Map<string, Def>
     mainName: string
-    ctrl: ControlMap
+    ctrl: Map<Label, Command>
+  }
+}
+
+declare module "@/lib/libamp/parser" {
+  import type { Program } from "@/lib/libamp/ast"
+  import type { Result } from "melange/result"
+
+  type SyntaxKind =
+    | "keyword"
+    | "identifier"
+    | "constructor"
+    | "number"
+    | "comment"
+    | "punctuation"
+  type SyntaxRange = {
+    kind: SyntaxKind
+    from: number
+    to_: number
   }
 
-  export function num(payload: { n: number }, loc: Loc): Exp
-  export function var_(payload: { name: string }, loc: Loc): Exp
-  export function ctor(payload: { tag: string; args: Exp[] }, loc: Loc): Exp
-  export function prim(payload: { op: string; args: Exp[] }, loc: Loc): Exp
+  type ParseResult = {
+    program: Program
+    ranges: SyntaxRange[]
+  }
 
-  export function return_(payload: { label: Label; exp: Exp }, loc: Loc): Cmd
-  export function let_(
-    payload: { label: Label; x: string; exp: Exp; body: Cmd },
-    loc: Loc
-  ): Cmd
-  export function letCall(
-    payload: {
-      label: Label
-      x: string
-      fn: string
-      args: Exp[]
-      body: Cmd
-    },
-    loc: Loc
-  ): Cmd
-  export function match_(
-    payload: { label: Label; scrutinee: Exp; branches: Branch[] },
-    loc: Loc
-  ): Cmd
-
-  export function cmdLabel(cmd: Cmd): Label
-  export function cmdLoc(cmd: Cmd): Loc
-
-  export function withExp<T>(
-    exp: Exp,
-    visitor: {
-      num: (payload: { n: number }, loc: Loc) => T
-      var: (payload: { name: string }, loc: Loc) => T
-      ctor: (payload: { tag: string; args: Exp[] }, loc: Loc) => T
-      prim: (payload: { op: string; args: Exp[] }, loc: Loc) => T
-    }
-  ): T
-
-  export function withCmd<T>(
-    cmd: Cmd,
-    visitor: {
-      return: (payload: { label: Label; exp: Exp }, loc: Loc) => T
-      let_: (
-        payload: { label: Label; x: string; exp: Exp; body: Cmd },
-        loc: Loc
-      ) => T
-      letCall: (
-        payload: {
-          label: Label
-          x: string
-          fn: string
-          args: Exp[]
-          body: Cmd
-        },
-        loc: Loc
-      ) => T
-      match_: (
-        payload: { label: Label; scrutinee: Exp; branches: Branch[] },
-        loc: Loc
-      ) => T
-    }
-  ): T
-
-  export function expSummary(exp: Exp): string
-  export function cmdSummary(cmd: Cmd): string
+  export function parse(input: string): Result<ParseResult, string>
 }

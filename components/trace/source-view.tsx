@@ -4,11 +4,12 @@ import { useEffect, useMemo, useRef, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
 import type { Loc } from "@/lib/libamp/ast"
 import {
-  buildSyntaxRanges,
-  type SyntaxKind,
-  type SyntaxRange,
-} from "@/lib/s/ranges"
+  SyntaxKind,
+  SyntaxRange,
+  parse,
+} from "@/lib/libamp/parser"
 import { CopyButton } from "./copy-button"
+import * as Result from "melange/result"
 
 interface Props {
   source: string
@@ -43,7 +44,7 @@ export function SourceView({
         inline: "nearest",
       })
     }
-  }, [highlight?.from, highlight?.to])
+  }, [highlight?.from, highlight?.to_])
 
   useEffect(() => {
     if (hoverRef.current) {
@@ -52,7 +53,7 @@ export function SourceView({
         inline: "nearest",
       })
     }
-  }, [hoverHighlight?.from, hoverHighlight?.to])
+  }, [hoverHighlight?.from, hoverHighlight?.to_])
 
   const traceRanges = buildTraceRanges(
     source.length,
@@ -60,7 +61,14 @@ export function SourceView({
     kontHighlights,
     hoverHighlight ?? null
   )
-  const syntaxRanges = useMemo(() => buildSyntaxRanges(source), [source])
+  const syntaxRanges = useMemo(() =>
+    Result.fold(
+      ({ ranges }) => ranges,
+      () => [],
+      parse(source)
+    ),
+    [source]
+  )
   const lines = Math.max(source.split("\n").length, 1)
 
   return (
@@ -158,13 +166,13 @@ function buildTraceRanges(
   type Cand = { kind: "kont" | "current" | "hover"; from: number; to: number }
   const cands: Cand[] = []
   for (const k of kont) {
-    cands.push({ kind: "kont", from: k.from, to: k.to })
+    cands.push({ kind: "kont", from: k.from, to: k.to_ })
   }
   if (current) {
-    cands.push({ kind: "current", from: current.from, to: current.to })
+    cands.push({ kind: "current", from: current.from, to: current.to_ })
   }
   if (hover) {
-    cands.push({ kind: "hover", from: hover.from, to: hover.to })
+    cands.push({ kind: "hover", from: hover.from, to: hover.to_ })
   }
   for (const c of cands) {
     c.from = Math.max(0, Math.min(length, c.from))
@@ -214,11 +222,11 @@ function renderSyntaxSpans(
   let cursor = from
 
   for (const range of ranges) {
-    if (range.to <= from) continue
+    if (range.to_ <= from) continue
     if (range.from >= to) break
 
     const tokenFrom = Math.max(from, range.from)
-    const tokenTo = Math.min(to, range.to)
+    const tokenTo = Math.min(to, range.to_)
     if (tokenFrom > cursor) {
       out.push(
         <span key={`${cursor}:plain`}>{source.slice(cursor, tokenFrom)}</span>
@@ -246,10 +254,12 @@ function syntaxClassName(kind: SyntaxKind): string {
   switch (kind) {
     case "keyword":
       return "text-teal-700 dark:text-teal-300"
-    case "definition":
-      return "text-sky-700 dark:text-sky-300"
-    case "callee":
-      return "text-sky-700 dark:text-sky-300"
+    /*
+  case "definition":
+    return "text-sky-700 dark:text-sky-300"
+  case "callee":
+    return "text-sky-700 dark:text-sky-300"
+    */
     case "identifier":
       return "text-foreground"
     case "constructor":
@@ -258,8 +268,10 @@ function syntaxClassName(kind: SyntaxKind): string {
       return "text-sky-700 tabular-nums dark:text-sky-300"
     case "comment":
       return "text-muted-foreground"
-    case "operator":
-      return "text-rose-700 dark:text-rose-300"
+    /*
+  case "operator":
+    return "text-rose-700 dark:text-rose-300"
+    */
     case "punctuation":
       return "text-muted-foreground"
   }

@@ -1,8 +1,8 @@
-import { withExp, type Exp } from "@/lib/libamp/ast"
+import { Exp, type Expression } from "@/lib/libamp/ast"
 import { evalPrim } from "@/lib/libamp/prims"
+import { StringMap } from "@/lib/libamp/utils"
 import { vCtor, vInt, type Env, type Val } from "@/lib/libamp/values"
-import { fold } from "melange/result.js"
-import * as StringMap from "@/lib/libamp/stringMap"
+import { fold } from "melange/result"
 
 /**
  * Pure expression interpretation from PDF Section 4.1:
@@ -17,29 +17,29 @@ import * as StringMap from "@/lib/libamp/stringMap"
  */
 
 export class EvalError extends Error {
-  public readonly exp?: Exp
-  constructor(message: string, exp?: Exp) {
+  public readonly exp?: Expression
+  constructor(message: string, exp?: Expression) {
     super(message)
     this.exp = exp
   }
 }
 
-export function evalExp(e: Exp, rho: Env): Val {
-  return withExp(e, {
-    num: ({ n }, _loc) => vInt(n),
-    var: ({ name }, _loc) => {
+export function evalExp(e: Expression, rho: Env): Val {
+  return Exp.visit(e, {
+    num: (n) => vInt(n),
+    var_: (name) => {
       const v = StringMap.find_opt(name, rho)
       if (v === undefined) {
         throw new EvalError(`undefined variable '${name}'`, e)
       }
       return v
     },
-    ctor: ({ tag, args }, _loc) =>
+    ctor: ({ callee: tag, args }) =>
       vCtor(
         tag,
         args.map((a) => evalExp(a, rho))
       ),
-    prim: ({ op, args }, _loc) => {
+    prim: ({ callee: op, args }) => {
       const vals = args.map((a) => evalExp(a, rho))
       return fold(
         (value) => value,

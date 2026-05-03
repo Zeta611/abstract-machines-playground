@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { EnvParseError, parseEnv } from "@/lib/s/env-parser"
 import { ValueView } from "./value-view"
 import { CopyButton } from "./copy-button"
-import * as StringMap from "@/lib/libamp/stringMap"
+import { StringMap } from "@/lib/libamp/utils"
 
 interface PreviewResult {
   env: Env | null

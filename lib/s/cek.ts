@@ -1,11 +1,10 @@
 import {
-  cmdLabel,
-  withCmd,
+  Cmd,
   type Branch,
-  type Cmd,
-  type Exp,
+  type Command,
+  type Expression,
   type Label,
-  type Prog,
+  type Program,
 } from "@/lib/libamp/ast"
 import {
   withVal,
@@ -13,7 +12,7 @@ import {
   type Val,
 } from "@/lib/libamp/values"
 import { EvalError, evalExp } from "./eval-exp"
-import * as StringMap from "@/lib/libamp/stringMap"
+import { IntMap, StringMap } from "@/lib/libamp/utils"
 
 /**
  * CEK machine for language S.
@@ -66,30 +65,30 @@ type StepResult =
   | { kind: "stuck"; reason: string }
 
 /** Construct the initial state for program P with main(x_i) supplied by `rho`. */
-export function inject(prog: Prog, rho: Env): State {
-  const main = prog.defs[prog.mainName]
+export function inject(prog: Program, rho: Env): State {
+  const main = StringMap.find_opt(prog.mainName, prog.defs)
   if (!main) {
     throw new Error(`program has no entry function '${prog.mainName}'`)
   }
   // Main's formal params are looked up by name in `rho`; missing ones only
   // surface as EvalError('undefined variable ...') if actually referenced.
-  return { label: cmdLabel(main.body), env: rho, kont: [] }
+  return { label: main.body.label, env: rho, kont: [] }
 }
 
 /** Do one small-step. Returns the successor state and the step record, or
  *  a terminal result when no transition applies. */
-export function step(s: State, prog: Prog): StepResult {
-  const cmd = prog.ctrl[s.label]
+export function step(s: State, prog: Program): StepResult {
+  const cmd = IntMap.find_opt(s.label, prog.ctrl)
   if (!cmd) {
     return { kind: "stuck", reason: `no command for label ${s.label}` }
   }
 
   try {
-    return withCmd(cmd, {
-      return: (payload, _loc) => stepReturn(s, payload, prog),
-      let_: (payload, _loc) => stepLet(s, payload),
-      letCall: (payload, _loc) => stepLetCall(s, payload, prog),
-      match_: (payload, _loc) => stepMatch(s, payload),
+    return Cmd.visit(cmd, {
+      return: (e) => stepReturn(s, { exp: e, label: cmd.label }, prog),
+      let_: (payload) => stepLet(s, { ...payload, label: cmd.label }),
+      letCall: (payload) => stepLetCall(s, { x: payload.x, fn: payload.e.callee, args: payload.e.args, body: payload.body, label: cmd.label }, prog),
+      match_: (payload) => stepMatch(s, { ...payload, label: cmd.label }),
     })
   } catch (err) {
     if (err instanceof EvalError) {
@@ -101,11 +100,11 @@ export function step(s: State, prog: Prog): StepResult {
 
 const stepLet = (
   s: State,
-  cmd: { label: Label; x: string; exp: Exp; body: Cmd }
+  cmd: { label: Label; x: string; exp: Expression; body: Command }
 ): StepResult => {
   const v = evalExp(cmd.exp, s.env)
   const next: State = {
-    label: cmdLabel(cmd.body),
+    label: cmd.body.label,
     env: StringMap.add(cmd.x, v, s.env),
     kont: s.kont,
   }
@@ -118,10 +117,10 @@ const stepLet = (
 
 const stepLetCall = (
   s: State,
-  cmd: { label: Label; x: string; fn: string; args: Exp[]; body: Cmd },
-  prog: Prog
+  cmd: { label: Label; x: string; fn: string; args: Expression[]; body: Command },
+  prog: Program
 ): StepResult => {
-  const def = prog.defs[cmd.fn]
+  const def = StringMap.find_opt(cmd.fn, prog.defs)
   if (!def) {
     return { kind: "stuck", reason: `undefined function '${cmd.fn}'` }
   }
@@ -136,7 +135,7 @@ const stepLetCall = (
 
   const frame: Frame = { label: cmd.label, env: s.env }
   const next: State = {
-    label: cmdLabel(def.body),
+    label: def.body.label,
     env: calleeEnv,
     kont: [frame, ...s.kont],
   }
@@ -152,7 +151,7 @@ const stepLetCall = (
 
 const stepMatch = (
   s: State,
-  cmd: { label: Label; scrutinee: Exp; branches: Branch[] }
+  cmd: { label: Label; scrutinee: Expression; branches: Branch[] }
 ): StepResult => {
   const v = evalExp(cmd.scrutinee, s.env)
   return withVal<StepResult>(v, {
@@ -172,7 +171,7 @@ const stepMatch = (
         }
         const bindings: [string, Val][] = b.vars.map((x, j) => [x, args[j]])
         const next: State = {
-          label: cmdLabel(b.body),
+          label: b.body.label,
           env: bindings.reduce(((env, [x, v]) => StringMap.add(x, v, env)), s.env),
           kont: s.kont,
         }
@@ -196,25 +195,25 @@ const stepMatch = (
 
 const stepReturn = (
   s: State,
-  cmd: { label: Label; exp: Exp },
-  prog: Prog
+  cmd: { label: Label; exp: Expression },
+  prog: Program
 ): StepResult => {
   const v = evalExp(cmd.exp, s.env)
   if (s.kont.length === 0) {
     return { kind: "final", value: v }
   }
   const [top, ...rest] = s.kont
-  const suspended = prog.ctrl[top.label]
+  const suspended = IntMap.find_opt(top.label, prog.ctrl)
   if (!suspended) {
     return {
       kind: "stuck",
       reason: "continuation head is not a let-call (found <unknown>)",
     }
   }
-  return withCmd<StepResult>(suspended, {
-    letCall: ({ x, body }, _loc) => {
+  return Cmd.visit<StepResult>(suspended, {
+    letCall: ({ x, body }) => {
       const next: State = {
-        label: cmdLabel(body),
+        label: body.label,
         env: StringMap.add(x, v, top.env),
         kont: rest,
       }
@@ -228,15 +227,15 @@ const stepReturn = (
         },
       }
     },
-    return: (_payload, _loc) => ({
+    return: (_payload) => ({
       kind: "stuck",
       reason: "continuation head is not a let-call (found Return)",
     }),
-    let_: (_payload, _loc) => ({
+    let_: (_payload) => ({
       kind: "stuck",
       reason: "continuation head is not a let-call (found Let)",
     }),
-    match_: (_payload, _loc) => ({
+    match_: (_payload) => ({
       kind: "stuck",
       reason: "continuation head is not a let-call (found Match)",
     }),
@@ -247,7 +246,7 @@ export interface RunOptions {
   maxSteps?: number
 }
 
-export function run(prog: Prog, initEnv: Env, opts: RunOptions = {}): Trace {
+export function run(prog: Program, initEnv: Env, opts: RunOptions = {}): Trace {
   const maxSteps = opts.maxSteps ?? 10_000
   const s0 = inject(prog, initEnv)
   const states: State[] = [s0]

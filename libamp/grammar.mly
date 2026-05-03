@@ -1,4 +1,8 @@
-%token LET IN MATCH WITH END
+%token LET "let"
+%token IN "in"
+%token MATCH "match"
+%token WITH "with"
+%token END "end"
 %token ARROW "=>"
 %token EQ "=" 
 %token PIPE "|"
@@ -7,32 +11,50 @@
 %token COMMA ","
 %token EOF
 %token <int> INTEGER
-%token <string> IDENT
+%token <string> UIDENT
+%token <string> LIDENT
 
-%start program
-%type <Cst.program> program
+%start <Ast.program> program
+
+%{
+open Ast
+open ParseUtils
+%}
 
 %%
 
 program:
-| defs=fun_def+ EOF { defs }
+| defs=fun_def+ EOF { p defs }
 
 fun_def:
-| name=IDENT "(" params=separated_list(",", IDENT) ")" "=" body=cmd { (name, params, body) }
+| name=LIDENT "(" params=separated_list(",", LIDENT) ")" "=" body=cmd
+    { d $loc name (params |> Array.of_list) body }
 
 cmd:
-| LET x=IDENT "=" exp=exp IN body=cmd
-    { `Let (x, exp, body) }
-| MATCH scrutinee=exp WITH branches=nonempty_list(branch) END
-    { `Match (scrutinee, branches) }
-| exp=exp { `Return exp }
+| "let" x=LIDENT "=" exp=exp "in" body=cmd
+    { let* exp = exp in
+      let* body = body in
+      let_ $loc x exp body }
+| "match" scrutinee=exp "with" branches=nonempty_list(branch) "end"
+    { 
+      let* scrutinee = scrutinee in
+      let* branches = seq branches in
+      c $loc (Cmd.match_ { scrutinee = scrutinee; branches = branches |> Array.of_list }) }
+| exp=exp
+    { let* exp = exp in
+      c $loc (Cmd.return exp) }
 
 branch:
-| "|" tag=IDENT "(" params=separated_list(",", IDENT) ")" "=>" body=cmd
-    { (tag, params, body) }
+| "|" tag=UIDENT "(" params=separated_list(",", LIDENT) ")" "=>" body=cmd
+    { let* body = body in
+      b $loc tag (params |> Array.of_list) body }
 
 exp:
-| n=INTEGER { `Int n }
-| name=IDENT "(" args=separated_list(",", exp) ")"
-    { `App (name, args) }
-| name=IDENT { `Var name }
+| n=INTEGER { e $loc (Exp.num n) }
+| name=LIDENT "(" args=separated_list(",", exp) ")"
+    { let* args = seq args in
+      e $loc (Exp.prim { callee = name; args = args |> Array.of_list }) }
+| name=UIDENT "(" args=separated_list(",", exp) ")"
+    { let* args = seq args in
+      e $loc (Exp.ctor { callee = name; args = args |> Array.of_list }) }
+| name=LIDENT { e $loc (Exp.var_ name) }

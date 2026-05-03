@@ -48,13 +48,15 @@ import {
   PROGRAM_PRESETS,
   type ProgramPreset,
 } from "@/lib/s/examples"
-import { parseS, SParseError } from "@/lib/s/parser"
-import { cmdLoc, type Cmd, type Loc, type Prog } from "@/lib/libamp/ast"
+import { type Command, type Loc, type Program } from "@/lib/libamp/ast"
+import { IntMap } from "@/lib/libamp/utils"
+import { parse } from "@/lib/libamp/parser"
+import * as Result from "melange/result"
 
 interface Runnable {
   source: string
   envText: string
-  prog: Prog
+  prog: Program
   trace: Trace
 }
 
@@ -79,20 +81,20 @@ type Action =
   | { t: "runSuccess"; r: Runnable }
   | { t: "runFailure"; err: string }
   | {
-      t: "replaceAndRun"
-      source: string
-      envText: string
-      r: Runnable | null
-      err: string | null
-    }
+    t: "replaceAndRun"
+    source: string
+    envText: string
+    r: Runnable | null
+    err: string | null
+  }
   | {
-      t: "importSettings"
-      source: string
-      envText: string
-      queryText: string
-      r: Runnable | null
-      err: string | null
-    }
+    t: "importSettings"
+    source: string
+    envText: string
+    queryText: string
+    r: Runnable | null
+    err: string | null
+  }
 
 function reducer(s: PageState, a: Action): PageState {
   switch (a.t) {
@@ -144,18 +146,16 @@ function tryCompile(
   envText: string,
   stepLimit: number
 ): { r: Runnable | null; err: string | null } {
-  try {
-    const { prog } = parseS(source)
-    const env = parseEnv(envText)
-    const trace = run(prog, env, { maxSteps: stepLimit })
-    return { r: { source, envText, prog, trace }, err: null }
-  } catch (e) {
-    if (e instanceof SParseError) {
-      return { r: null, err: `parse error: ${e.message} (${e.from}-${e.to})` }
-    }
-    if (e instanceof Error) return { r: null, err: e.message }
-    return { r: null, err: String(e) }
-  }
+  return Result.fold(
+    ({ program }) => ({
+      r: {
+        source, envText, prog: program,
+        trace: run(program, parseEnv(envText), { maxSteps: stepLimit })
+      }, err: null
+    }),
+    (err: string) => ({ r: null, err }),
+    parse(source)
+  )
 }
 
 function makeInitial(): PageState {
@@ -364,14 +364,13 @@ export default function Page() {
       ? trace.steps[state.cursor]
       : undefined
 
-  const currentCmd = current && prog ? prog.ctrl[current.label] : undefined
+  const currentCmd = current && prog ? IntMap.find_opt(current.label, prog.ctrl) : undefined
 
   const kontHighlights = useMemo(() => {
     if (!current || !prog) return []
     return current.kont
-      .map((f) => prog.ctrl[f.label])
-      .filter((c): c is NonNullable<typeof c> => !!c)
-      .map((c) => cmdLoc(c))
+      .map((f) => IntMap.find_opt(f.label, prog.ctrl)?.loc)
+      .filter((l): l is NonNullable<typeof l> => !!l)
   }, [current, prog])
 
   return (
@@ -432,11 +431,11 @@ function MainArea({
   playing: boolean
   setPlaying: (p: boolean) => void
   trace: Trace | undefined
-  prog: Prog | undefined
+  prog: Program | undefined
   current: Trace["states"][number] | undefined
   lastStep: Trace["steps"][number] | undefined
   nextStep: Trace["steps"][number] | undefined
-  currentCmd: Cmd | undefined
+  currentCmd: Command | undefined
   kontHighlights: Loc[]
   onVisibleIndicesChange: (indices: number[]) => void
   queryText: string
@@ -444,9 +443,7 @@ function MainArea({
 }) {
   const { hovered } = useLabelHover()
   const hoverHighlight =
-    prog && hovered !== null && prog.ctrl[hovered]
-      ? cmdLoc(prog.ctrl[hovered])
-      : null
+    prog && hovered !== null ? IntMap.find_opt(hovered, prog.ctrl)?.loc ?? null : null
 
   return (
     <main className="min-h-0 flex-1 overflow-hidden p-3">
@@ -460,7 +457,7 @@ function MainArea({
               setEnv={(v) => dispatch({ t: "setEnv", v })}
               runnableSource={state.runnable?.source ?? null}
               locked={state.locked}
-              highlight={currentCmd ? cmdLoc(currentCmd) : undefined}
+              highlight={currentCmd?.loc}
               kontHighlights={kontHighlights}
               hoverHighlight={hoverHighlight}
             />

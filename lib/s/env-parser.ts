@@ -1,3 +1,4 @@
+import { StringMap } from "@/lib/libamp/utils"
 import {
   vCtor,
   vInt,
@@ -5,7 +6,6 @@ import {
   type Env,
   type Val,
 } from "@/lib/libamp/values"
-import * as StringMap from "@/lib/libamp/stringMap"
 
 /**
  * Tiny parser for initial environments.

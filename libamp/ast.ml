@@ -1,118 +1,90 @@
+open Utils
+
 type loc = { from : int; to_ : int }
-type 'a located = { payload : 'a; loc : loc }
 
-[@@@warning "-30"]
+module Exp = struct
+  type desc =
+    | Num of int
+    | Var_ of string
+    | Ctor of app_payload
+    | Prim of app_payload
+  [@@deriving accessors]
 
-type exp =
-  | Num of num_payload located
-  | Var of var_payload located
-  | Ctor of app_payload located
-  | Prim of prim_payload located
+  and app_payload = { callee : string; args : t array }
+  and t = { desc : desc; loc : loc }
 
-and cmd =
-  | Return of return_payload located
-  | Let of let_payload located
-  | LetCall of let_call_payload located
-  | Match of match_payload located
+  type 'a visitor = {
+    num : int -> 'a;
+    var_ : string -> 'a;
+    ctor : app_payload -> 'a;
+    prim : app_payload -> 'a;
+  }
 
-and branch = { tag : string; vars : string array; body : cmd; loc : loc }
-and num_payload = { n : int }
-and var_payload = { name : string }
-and app_payload = { tag : string; args : exp array }
-and prim_payload = { op : string; args : exp array }
-and return_payload = { label : int; exp : exp }
-and let_payload = { label : int; x : string; exp : exp; body : cmd }
+  let visit e visitor =
+    match e.desc with
+    | Num payload -> visitor.num payload
+    | Var_ payload -> visitor.var_ payload
+    | Ctor payload -> visitor.ctor payload
+    | Prim payload -> visitor.prim payload
 
-and let_call_payload = {
-  label : int;
-  x : string;
-  fn : string;
-  args : exp array;
-  body : cmd;
-}
+  let rec summary (e : t) =
+    match e.desc with
+    | Num n -> string_of_int n
+    | Var_ name -> name
+    | Ctor { callee; args } ->
+        callee ^ "("
+        ^ (args |> Array.map summary |> Array.to_list |> String.concat ", ")
+        ^ ")"
+    | Prim { callee; args } ->
+        callee ^ "("
+        ^ (args |> Array.map summary |> Array.to_list |> String.concat ", ")
+        ^ ")"
+end
 
-and match_payload = { label : int; scrutinee : exp; branches : branch array }
+module Cmd = struct
+  type desc =
+    | Return of Exp.t
+    | Let_ of let_payload
+    | LetCall of let_call_payload
+    | Match_ of match_payload
+  [@@deriving accessors]
 
-[@@@warning "+30"]
+  and let_payload = { x : string; exp : Exp.t; body : t }
+  and let_call_payload = { x : string; e : Exp.app_payload; body : t }
+  and match_payload = { scrutinee : Exp.t; branches : branch array }
+  and branch = { tag : string; vars : string array; body : t; loc : loc }
+  and t = { desc : desc; loc : loc; label : int }
 
-type def = { name : string; params : string array; body : cmd; loc : loc }
+  type 'a visitor = {
+    return : Exp.t -> 'a;
+    let_ : let_payload -> 'a;
+    letCall : let_call_payload -> 'a;
+    match_ : match_payload -> 'a;
+  }
 
-type prog = {
+  let visit c visitor =
+    match c.desc with
+    | Return payload -> visitor.return payload
+    | Let_ payload -> visitor.let_ payload
+    | LetCall payload -> visitor.letCall payload
+    | Match_ payload -> visitor.match_ payload
+
+  let summary (c : t) =
+    match c.desc with
+    | Return exp -> "return " ^ Exp.summary exp
+    | Let_ { x; exp; _ } -> "let " ^ x ^ " = " ^ Exp.summary exp ^ " in ..."
+    | LetCall { x; e = { callee; args }; _ } ->
+        "let " ^ x ^ " = " ^ callee ^ "("
+        ^ (args |> Array.map Exp.summary |> Array.to_list |> String.concat ", ")
+        ^ ") in ..."
+    | Match_ { scrutinee; _ } -> "match " ^ Exp.summary scrutinee ^ " with ..."
+end
+
+type 'a def' = { name : string; params : string array; body : 'a; loc : loc }
+type def = Cmd.t def'
+
+type program = {
   defs : def StringMap.t;
   mainName : string;
-  ctrl : cmd StringMap.t;
+  ctrl : Cmd.t IntMap.t;
 }
-
-type 'a exp_visitor = {
-  num : num_payload -> loc -> 'a;
-  var : var_payload -> loc -> 'a;
-  ctor : app_payload -> loc -> 'a;
-  prim : prim_payload -> loc -> 'a;
-}
-
-type 'a cmd_visitor = {
-  return : return_payload -> loc -> 'a;
-  let_ : let_payload -> loc -> 'a;
-  letCall : let_call_payload -> loc -> 'a;
-  match_ : match_payload -> loc -> 'a;
-}
-
-let num (payload : num_payload) loc = Num { payload; loc }
-let var_ (payload : var_payload) loc = Var { payload; loc }
-let ctor (payload : app_payload) loc = Ctor { payload; loc }
-let prim (payload : prim_payload) loc = Prim { payload; loc }
-let return_ (payload : return_payload) loc = Return { payload; loc }
-let let_ (payload : let_payload) loc = Let { payload; loc }
-let letCall (payload : let_call_payload) loc = LetCall { payload; loc }
-let match_ (payload : match_payload) loc = Match { payload; loc }
-
-let cmdLabel = function
-  | Return { payload; _ } -> payload.label
-  | Let { payload; _ } -> payload.label
-  | LetCall { payload; _ } -> payload.label
-  | Match { payload; _ } -> payload.label
-
-let cmdLoc = function
-  | Return { loc; _ } -> loc
-  | Let { loc; _ } -> loc
-  | LetCall { loc; _ } -> loc
-  | Match { loc; _ } -> loc
-
-let withExp e visitor =
-  match e with
-  | Num { payload; loc } -> visitor.num payload loc
-  | Var { payload; loc } -> visitor.var payload loc
-  | Ctor { payload; loc } -> visitor.ctor payload loc
-  | Prim { payload; loc } -> visitor.prim payload loc
-
-let withCmd c visitor =
-  match c with
-  | Return { payload; loc } -> visitor.return payload loc
-  | Let { payload; loc } -> visitor.let_ payload loc
-  | LetCall { payload; loc } -> visitor.letCall payload loc
-  | Match { payload; loc } -> visitor.match_ payload loc
-
-let rec expSummary e =
-  match e with
-  | Num { payload = { n }; _ } -> string_of_int n
-  | Var { payload = { name }; _ } -> name
-  | Ctor { payload = { tag; args }; _ } ->
-      tag ^ "("
-      ^ (args |> Array.map expSummary |> Array.to_list |> String.concat ", ")
-      ^ ")"
-  | Prim { payload = { op; args }; _ } ->
-      op ^ "("
-      ^ (args |> Array.map expSummary |> Array.to_list |> String.concat ", ")
-      ^ ")"
-
-let cmdSummary c =
-  match c with
-  | Return { payload = { exp; _ }; _ } -> "return " ^ expSummary exp
-  | Let { payload = { x; exp; _ }; _ } ->
-      "let " ^ x ^ " = " ^ expSummary exp ^ " in ..."
-  | LetCall { payload = { x; fn; args; _ }; _ } ->
-      "let " ^ x ^ " = " ^ fn ^ "("
-      ^ (args |> Array.map expSummary |> Array.to_list |> String.concat ", ")
-      ^ ") in ..."
-  | Match { payload = { scrutinee; _ }; _ } ->
-      "match " ^ expSummary scrutinee ^ " with ..."

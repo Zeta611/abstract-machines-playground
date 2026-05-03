@@ -7,25 +7,24 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { Separator } from "@/components/ui/separator"
-import { cmdSummary } from "@/lib/libamp/ast"
-import type { ControlMap } from "@/lib/libamp/ast"
+import { Cmd, Command, Label } from "@/lib/libamp/ast"
 import type { State, TraceStep } from "@/lib/s/cek"
 import { EnvView } from "./env-view"
 import { KontView } from "./kont-view"
 import { useLabelHoverBind } from "./label-hover"
 import { ValueView } from "./value-view"
-import * as StringMap from "@/lib/libamp/stringMap"
+import { IntMap, Map, StringMap } from "@/lib/libamp/utils"
 
 interface Props {
   state: State
-  ctrl: ControlMap
+  ctrl: Map<Label, Command>
   lastStep?: TraceStep
   nextStep?: TraceStep
 }
 
 /** Panel that summarizes one CEK state: control, environment, kontinuation. */
 export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
-  const cmd = ctrl[state.label]
+  const cmd = IntMap.find_opt(state.label, ctrl)
   const hoverBind = useLabelHoverBind(state.label)
   const bindingCount = StringMap.cardinal(state.env)
 
@@ -57,7 +56,7 @@ export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
             )}
           </div>
           <div className="mt-1 font-mono text-sm">
-            {cmd ? cmdSummary(cmd) : `(no command for label ${state.label})`}
+            {cmd ? Cmd.summary(cmd) : `(no command for label ${state.label})`}
           </div>
           {lastStep?.value && (
             <div className="mt-2 flex items-center gap-2 text-xs">
