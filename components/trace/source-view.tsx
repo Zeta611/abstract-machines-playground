@@ -254,12 +254,10 @@ function syntaxClassName(kind: SyntaxKind): string {
   switch (kind) {
     case "keyword":
       return "text-teal-700 dark:text-teal-300"
-    /*
-  case "definition":
-    return "text-sky-700 dark:text-sky-300"
-  case "callee":
-    return "text-sky-700 dark:text-sky-300"
-    */
+      /*
+    case "function":
+      return "text-sky-700 dark:text-sky-300"
+      */
     case "identifier":
       return "text-foreground"
     case "constructor":

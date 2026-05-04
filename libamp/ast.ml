@@ -8,7 +8,6 @@ module Exp = struct
     | Var_ of string
     | Ctor of app_payload
     | Prim of app_payload
-  [@@deriving accessors]
 
   and app_payload = { callee : string; args : t array }
   and t = { desc : desc; loc : loc }
@@ -47,7 +46,6 @@ module Cmd = struct
     | Let_ of let_payload
     | LetCall of let_call_payload
     | Match_ of match_payload
-  [@@deriving accessors]
 
   and let_payload = { x : string; exp : Exp.t; body : t }
   and let_call_payload = { x : string; e : Exp.app_payload; body : t }

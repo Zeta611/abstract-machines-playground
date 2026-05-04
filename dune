@@ -1,4 +1,4 @@
 (melange.emit
  (target output)
- (module_systems es6)
+ (module_systems esm)
  (libraries libamp))

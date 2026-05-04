@@ -90,12 +90,12 @@ declare module "@/lib/libamp/ast" {
     prim: (payload: AppPayload) => T
   }
 
-  export const Exp: ExpVisitor<ExpDesc> & {
-    visit: <T>(
+  export namespace Exp {
+    function visit<T>(
       exp: Expression,
       visitor: ExpVisitor<T>
-    ) => T
-    summary: (exp: Expression) => string
+    ): T
+    function summary(exp: Expression): string
   }
 
   const cmdDescBrand: unique symbol
@@ -134,12 +134,12 @@ declare module "@/lib/libamp/ast" {
     match_: (payload: MatchPayload) => T
   }
 
-  export const Cmd: CmdVisitor<CmdDesc> & {
-    visit: <T>(
+  export namespace Cmd {
+    function visit<T>(
       cmd: Command,
       visitor: CmdVisitor<T>
-    ) => T
-    summary: (cmd: Command) => string
+    ): T
+    function summary(cmd: Command): string
   }
 
   export interface Def {

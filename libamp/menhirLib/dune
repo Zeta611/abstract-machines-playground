@@ -1,0 +1,5 @@
+(library
+ (name menhirLib)
+ (modes byte native melange)
+ (flags
+  (:standard -w -67)))

@@ -1,16 +1,6 @@
 open Utils
 open Ast
 
-type syntax_kind =
-  | Keyword [@mel.as "keyword"]
-  | Identifier [@mel.as "identifier"]
-  | Constructor [@mel.as "constructor"]
-  | Number [@mel.as "number"]
-  | Comment [@mel.as "comment"]
-  | Punctuation [@mel.as "punctuation"]
-
-type syntax_range = { kind : syntax_kind; from : int; to_ : int }
-
 module M = struct
   type 'a t = StringSet.t -> Cmd.t IntMap.t -> int -> Cmd.t IntMap.t * int * 'a
 
@@ -62,6 +52,7 @@ let b (from, to_) tag vars body =
 
 let c (from, to_) desc =
   let* label = M.alloc in
+  let* desc = desc in
   M.put label
     {
       desc;
@@ -69,13 +60,16 @@ let c (from, to_) desc =
       label;
     }
 
-let let_ loc x (exp : Exp.t) body =
-  match exp.desc with
-  | Prim ({ callee; _ } as e) ->
-      let* is_fun = M.is_fun callee in
-      if is_fun then c loc (Cmd.letCall { x; e; body })
-      else c loc (Cmd.let_ { x; exp; body })
-  | _ -> c loc (Cmd.let_ { x; exp; body })
+let let_ loc x (exp : Exp.t M.t) body =
+  c loc
+    (let* exp = exp in
+     let* body = body in
+     match exp.desc with
+     | Prim ({ callee; _ } as e) ->
+         let* is_fun = M.is_fun callee in
+         if is_fun then M.unit (Cmd.LetCall { x; e; body })
+         else M.unit (Cmd.Let_ { x; exp; body })
+     | _ -> M.unit (Cmd.Let_ { x; exp; body }))
 
 let d (from, to_) name params body =
   {

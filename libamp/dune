@@ -1,10 +1,14 @@
 (ocamllex lexer)
 
 (menhir
- (modules grammar))
+ (modules grammar)
+ (flags --table --inspection))
 
 (library
  (name libamp)
  (modes melange byte)
+ (libraries menhirLib)
+ (flags
+  (:standard -w -30))
  (preprocess
   (pps melange.ppx)))
