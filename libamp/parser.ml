@@ -11,13 +11,12 @@ type parse_result = { program : Ast.program; ranges : syntax_range array }
 
 module I = Grammar.MenhirInterpreter
 
-external console_log : 'a -> unit = "console.log"
-
 let parse (s : string) : (parse_result, string) result =
   let lexbuf = Lexing.from_string s in
   let rec loop checkpoint ranges =
     match checkpoint with
-    | I.Accepted program -> Ok { program; ranges = ranges |> List.rev |> Array.of_list }
+    | I.Accepted program ->
+        Ok { program; ranges = ranges |> List.rev |> Array.of_list }
     | I.InputNeeded _ ->
         begin match Lexer.token lexbuf with
         | `Token token ->

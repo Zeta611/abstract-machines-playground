@@ -40,8 +40,4 @@ rule token = parse
 
   | eof { `Token EOF }
 
-  | _ as c {
-      let pos = lexbuf.lex_curr_p in
-      let msg = "Unexpected character '" ^ (String.make 1 c) ^ "' at line " ^ string_of_int pos.pos_lnum ^ ", column " ^ string_of_int (pos.pos_cnum - pos.pos_bol) in
-      `Fail msg
-    }
+  | _ as c { `Fail "Unexpected character: " ^ (String.make 1 c) }
