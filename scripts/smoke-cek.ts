@@ -7,7 +7,7 @@
  */
 
 import { StringMap } from "@/lib/libamp/utils"
-import { run } from "@/lib/s/cek"
+import { run, visit_trace_end } from "@/lib/libamp/cek"
 import { parseEnv, parseValue1 } from "@/lib/s/env-parser"
 import {
   INITIAL_ENV,
@@ -20,12 +20,25 @@ import {
   showVal,
   valEq,
   vInt,
-  withVal,
+  visit,
   type Val,
 } from "@/lib/libamp/values"
 import * as Result from "melange/result"
 
 let failed = 0
+
+type EndView =
+  | { kind: "final"; value: Val }
+  | { kind: "stuck"; reason: string; at: unknown }
+  | { kind: "maxed"; reason: string }
+
+function endView(trace: ReturnType<typeof run>) {
+  return visit_trace_end<EndView>(trace.end, {
+    final: (value) => ({ kind: "final" as const, value }),
+    stuck: (reason, at) => ({ kind: "stuck" as const, reason, at }),
+    maxed: (reason) => ({ kind: "maxed" as const, reason }),
+  })
+}
 
 function expect(name: string, cond: boolean, detail?: string): void {
   if (cond) {
@@ -72,11 +85,12 @@ function expectUnknownPrimitive(name: string, src: string): void {
     },
     parse(src))
   const trace = run(program, StringMap.of_array([]), { maxSteps: 10 })
+  const end = endView(trace)
   expect(
     name,
-    trace.end.kind === "stuck" &&
-    trace.end.reason.startsWith("unknown primitive"),
-    trace.end.kind === "stuck" ? trace.end.reason : trace.end.kind
+    end.kind === "stuck" &&
+    end.reason.startsWith("unknown primitive"),
+    end.kind === "stuck" ? end.reason : end.kind
   )
 }
 
@@ -89,12 +103,13 @@ console.log("1. trivial: main(x) = let y = sub(x, 1) in y, x=3 -> 2")
   )
   const env = parseEnv("x = 3")
   const trace = run(program, env, { maxSteps: 100 })
-  expect("terminates", trace.end.kind === "final")
-  if (trace.end.kind === "final") {
-    expectVal("value is 2", trace.end.value, vInt(2))
+  const end = endView(trace)
+  expect("terminates", end.kind === "final")
+  if (end.kind === "final") {
+    expectVal("value is 2", end.value, vInt(2))
   }
   console.log(
-    `   states=${trace.states.length}, steps=${trace.steps.length}, end=${trace.end.kind}`
+    `   states=${trace.states.length}, steps=${trace.steps.length}, end=${end.kind}`
   )
 }
 
@@ -108,12 +123,13 @@ console.log("2. I_S^T on a T program")
   )
   const env = parseEnv(INITIAL_ENV)
   const trace = run(program, env, { maxSteps: 2_000 })
-  expect("terminates", trace.end.kind === "final")
-  if (trace.end.kind === "final") {
-    expectVal("evaluates fact(5) to 120", trace.end.value, vInt(120))
+  const end = endView(trace)
+  expect("terminates", end.kind === "final")
+  if (end.kind === "final") {
+    expectVal("evaluates fact(5) to 120", end.value, vInt(120))
   }
   console.log(
-    `   states=${trace.states.length}, steps=${trace.steps.length}, end=${trace.end.kind}`
+    `   states=${trace.states.length}, steps=${trace.steps.length}, end=${end.kind}`
   )
 }
 
@@ -133,9 +149,10 @@ console.log("3. I_S^T: Ifz(X, Int(10), Int(20)) at X=0 -> 10")
     ["arg", vInt(0)],
   ])
   const trace = run(program, env, { maxSteps: 5_000 })
-  expect("terminates", trace.end.kind === "final")
-  if (trace.end.kind === "final") {
-    expectVal("yields 10", trace.end.value, vInt(10))
+  const end = endView(trace)
+  expect("terminates", end.kind === "final")
+  if (end.kind === "final") {
+    expectVal("yields 10", end.value, vInt(10))
   }
 }
 
@@ -155,9 +172,10 @@ console.log("4. I_S^T: Ifz at X=5 -> 20 (else branch)")
     ["arg", vInt(5)],
   ])
   const trace = run(program, env, { maxSteps: 5_000 })
-  expect("terminates", trace.end.kind === "final")
-  if (trace.end.kind === "final") {
-    expectVal("yields 20", trace.end.value, vInt(20))
+  const end = endView(trace)
+  expect("terminates", end.kind === "final")
+  if (end.kind === "final") {
+    expectVal("yields 20", end.value, vInt(20))
   }
 }
 
@@ -182,12 +200,13 @@ console.log("5. I_S^T: recursive T function (identity-ish)")
     ["arg", vInt(0)],
   ])
   const trace = run(program, env, { maxSteps: 20_000 })
-  expect("terminates", trace.end.kind === "final")
-  if (trace.end.kind === "final") {
-    expectVal("yields 0", trace.end.value, vInt(0))
+  const end = endView(trace)
+  expect("terminates", end.kind === "final")
+  if (end.kind === "final") {
+    expectVal("yields 0", end.value, vInt(0))
   }
   console.log(
-    `   states=${trace.states.length}, steps=${trace.steps.length}, end=${trace.end.kind}`
+    `   states=${trace.states.length}, steps=${trace.steps.length}, end=${end.kind}`
   )
 }
 
@@ -209,9 +228,10 @@ console.log("6. I_S^T: Let binds T variables by xid")
     ["arg", vInt(2)],
   ])
   const trace = run(program, env, { maxSteps: 5_000 })
-  expect("terminates", trace.end.kind === "final")
-  if (trace.end.kind === "final") {
-    expectVal("yields 5", trace.end.value, vInt(5))
+  const end = endView(trace)
+  expect("terminates", end.kind === "final")
+  if (end.kind === "final") {
+    expectVal("yields 5", end.value, vInt(5))
   }
 }
 
@@ -224,9 +244,10 @@ console.log("7. Stuck: undefined variable surfaces as trace.end = stuck")
     parse(`main() = let y = nope in y`)
   )
   const trace = run(program, StringMap.of_array([]), { maxSteps: 10 })
-  expect("stuck", trace.end.kind === "stuck")
-  if (trace.end.kind === "stuck") {
-    console.log(`   reason: ${trace.end.reason}`)
+  const end = endView(trace)
+  expect("stuck", end.kind === "stuck")
+  if (end.kind === "stuck") {
+    console.log(`   reason: ${end.reason}`)
   }
 }
 
@@ -244,9 +265,10 @@ console.log("8. Stuck: bad match surfaces cleanly")
   )
   const env = parseEnv("x = 3")
   const trace = run(program, env, { maxSteps: 10 })
-  expect("stuck", trace.end.kind === "stuck")
-  if (trace.end.kind === "stuck") {
-    console.log(`   reason: ${trace.end.reason}`)
+  const end = endView(trace)
+  expect("stuck", end.kind === "stuck")
+  if (end.kind === "stuck") {
+    console.log(`   reason: ${end.reason}`)
   }
 }
 
@@ -269,12 +291,13 @@ console.log("9. Presets all parse and terminate")
     )
     const env = parseEnv(preset.envText)
     const trace = run(program, env, { maxSteps: 5_000 })
-    expect(`${preset.name} terminates`, trace.end.kind === "final")
-    if (trace.end.kind === "final") {
-      expectVal(`${preset.name} value`, trace.end.value, expected[preset.id])
+    const end = endView(trace)
+    expect(`${preset.name} terminates`, end.kind === "final")
+    if (end.kind === "final") {
+      expectVal(`${preset.name} value`, end.value, expected[preset.id])
     }
     console.log(
-      `   ${preset.id}: states=${trace.states.length}, steps=${trace.steps.length}, end=${trace.end.kind}`
+      `   ${preset.id}: states=${trace.states.length}, steps=${trace.steps.length}, end=${end.kind}`
     )
   }
 }
@@ -306,7 +329,7 @@ console.log("11. Env parser: nested T program literal")
   )
   expect(
     "shape",
-    withVal(v, {
+    visit(v, {
       int: () => false,
       ctor: ({ tag, args }) => tag === "Prog" && args.length === 2,
     }),

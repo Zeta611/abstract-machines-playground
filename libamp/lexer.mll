@@ -40,4 +40,4 @@ rule token = parse
 
   | eof { `Token EOF }
 
-  | _ as c { `Fail "Unexpected character: " ^ (String.make 1 c) }
+  | _ as c { `Fail ("Unexpected character: " ^ (String.make 1 c)) }

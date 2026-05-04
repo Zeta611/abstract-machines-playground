@@ -1,4 +1,4 @@
-import type { RuleName } from "./cek"
+import type { RuleName } from "@/lib/libamp/cek"
 
 export type TraceQueryField = "rule" | "detail" | "l"
 export type TraceQueryComparisonOp = "eq" | "gt" | "gte" | "lt" | "lte"

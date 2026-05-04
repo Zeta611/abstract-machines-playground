@@ -1,0 +1,12 @@
+[
+  {
+    "languageId": "ocaml",
+    "command": "opam",
+    "args": ["exec", "--", "ocamllsp"],
+    "fileExtensions": [
+      ".ml",
+      ".mll",
+      ".mly"
+    ]
+  }
+]

@@ -11,6 +11,16 @@ Prefer raw `bun` commands first. If `bun` is not available in the current shell 
 - One-shot fallback from an unactivated shell: `nix develop --command bun <args>`.
 - `flake.nix` pins `pkgs.bun` against `nixos-unstable`; add reproducible tools there.
 
+## OCaml / Melange build
+
+- When changing files under `libamp/`, regenerate the emitted JS with `opam exec -- dune build`.
+- The checked-in runtime modules under `lib/libamp/` depend on that build step; do not assume editing `.ml` files alone updates the app-visible JS.
+
+## OCaml / TypeScript interop rules
+
+- Visitor helpers exist for TypeScript to case-analyze opaque OCaml values. OCaml code should use direct pattern matching instead of calling visitor functions.
+- Simple enum-like OCaml variants do not need visitor APIs in TypeScript. Prefer lightweight representations for those; reserve visitor-based handling for payload-carrying variants that should stay opaque.
+
 ## Package manager: bun (not npm/pnpm)
 
 - Install: `bun install`

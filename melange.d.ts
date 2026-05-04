@@ -8,3 +8,14 @@ declare module "melange/result" {
             result: Result<T, E>
         ): U1 | U2
 }
+
+declare module "melange/list" {
+    const listBrand: unique symbol
+    export type List<T> = { readonly [listBrand]: T }
+}
+
+declare module "melange/array" {
+    import { List } from "melange/list"
+    export function to_list<T>(arr: T[]): List<T>
+    export function of_list<T>(list: List<T>): T[]
+}

@@ -11,7 +11,7 @@ import {
   traceQueryMatches,
   type TraceQueryAst,
 } from "../lib/s/trace-query"
-import type { RuleName } from "../lib/s/cek"
+import { type RuleName } from "@/lib/libamp/cek"
 
 let failed = 0
 
@@ -51,38 +51,47 @@ const rows = {
   },
   matchIfz: {
     index: 7,
-    rule: "Match" as RuleName,
+    rule: "Match",
     detail: "| Ifz(e1, e2, e3) matched (branch 5)",
     value: "Ifz(X(), Int(1), Int(2))",
     label: 7,
   },
   matchBranch25: {
     index: 25,
-    rule: "Match" as RuleName,
+    rule: "Match",
     detail: "| Z() matched (branch 0)",
     value: "Z()",
     label: 25,
   },
   letExp5: {
     index: 41,
-    rule: "LetExp" as RuleName,
+    rule: "LetExp",
     value: "True()",
     label: 5,
   },
   return25: {
     index: 31,
-    rule: "Return" as RuleName,
+    rule: "Return",
     detail: "return to let y",
     value: "Int(10)",
     label: 25,
   },
   letCall: {
     index: 12,
-    rule: "LetCall" as RuleName,
+    rule: "LetCall",
     detail: "call eval(3 args) -> let r",
     label: 42,
   },
-}
+} satisfies Record<
+  string,
+  {
+    index: number
+    rule?: RuleName
+    detail?: string
+    value?: string
+    label: number
+  }
+>
 
 console.log("1. empty query")
 {

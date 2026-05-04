@@ -1,4 +1,54 @@
-declare module "@/lib/libamp/libamp" { }
+declare module "@/lib/libamp/libamp" {}
+
+declare module "@/lib/libamp/cek" {
+  import type { Program } from "@/lib/libamp/ast"
+  import type { Env, Val } from "@/lib/libamp/values"
+  import type { List } from "melange/list"
+
+  export interface Frame {
+    label: number
+    env: Env
+  }
+
+  export interface State {
+    label: number
+    env: Env
+    kont: List<Frame>
+  }
+
+  export type RuleName = "LetExp" | "LetCall" | "Match" | "Return"
+
+  export interface TraceStep {
+    rule: RuleName
+    detail?: string
+    value?: Val
+  }
+
+  const traceEndBrand: unique symbol
+  export type TraceEnd = { readonly [traceEndBrand]: never }
+  export type TraceEndVisitor<T> = {
+    final: (value: Val) => T
+    stuck: (reason: string, at: State) => T
+    maxed: (reason: string) => T
+  }
+
+  export interface Trace {
+    states: State[]
+    steps: TraceStep[]
+    end: TraceEnd
+  }
+
+  export interface RunOptions {
+    maxSteps?: number
+  }
+
+  export function inject(prog: Program, rho: Env): State
+  export function visit_trace_end<T>(
+    traceEnd: TraceEnd,
+    visitor: TraceEndVisitor<T>
+  ): T
+  export function run(prog: Program, initEnv: Env, opts?: RunOptions): Trace
+}
 
 declare module "@/lib/libamp/prims" {
   import { Result } from "melange/result"
@@ -29,6 +79,7 @@ declare module "@/lib/libamp/values" {
   const valBrand: unique symbol
 
   export type Val = { readonly [valBrand]: never }
+  export type T = Val
 
   export interface IntPayload {
     n: number
@@ -48,7 +99,7 @@ declare module "@/lib/libamp/values" {
   export const vTrue: Val
   export const vFalse: Val
 
-  export function withVal<T>(
+  export function visit<T>(
     value: Val,
     visitor: {
       int: (payload: IntPayload) => T
@@ -62,7 +113,7 @@ declare module "@/lib/libamp/values" {
 }
 
 declare module "@/lib/libamp/ast" {
-  import type { Map } from "@/lib/libamp/utils";
+  import type { Map } from "@/lib/libamp/utils"
 
   export type Label = number
 
@@ -76,13 +127,8 @@ declare module "@/lib/libamp/ast" {
   export type ExpDesc = { readonly [expDescBrand]: never }
   export interface AppPayload {
     callee: string
-    args: Expression[]
+    args: Exp.Exp[]
   }
-  export interface Expression {
-    desc: ExpDesc
-    loc: Loc
-  }
-
   export type ExpVisitor<T> = {
     num: (n: number) => T
     var_: (name: string) => T
@@ -91,11 +137,12 @@ declare module "@/lib/libamp/ast" {
   }
 
   export namespace Exp {
-    function visit<T>(
-      exp: Expression,
-      visitor: ExpVisitor<T>
-    ): T
-    function summary(exp: Expression): string
+    interface Exp {
+      desc: ExpDesc
+      loc: Loc
+    }
+    function visit<T>(exp: Exp, visitor: ExpVisitor<T>): T
+    function summary(exp: Exp): string
   }
 
   const cmdDescBrand: unique symbol
@@ -103,56 +150,53 @@ declare module "@/lib/libamp/ast" {
   export type CmdDesc = { readonly [cmdDescBrand]: never }
   export interface LetPayload {
     x: string
-    exp: Expression
-    body: Command
+    exp: Exp.Exp
+    body: Cmd.Cmd
   }
   export interface LetCallPayload {
     x: string
     e: AppPayload
-    body: Command
+    body: Cmd.Cmd
   }
   export interface MatchPayload {
-    scrutinee: Expression
+    scrutinee: Exp.Exp
     branches: Branch[]
   }
   export interface Branch {
     tag: string
     vars: string[]
-    body: Command
+    body: Cmd.Cmd
     loc: Loc
-  }
-  export interface Command {
-    desc: CmdDesc
-    loc: Loc
-    label: Label
   }
 
   export type CmdVisitor<T> = {
-    return: (exp: Expression) => T
+    return: (exp: Exp.Exp) => T
     let_: (payload: LetPayload) => T
     letCall: (payload: LetCallPayload) => T
     match_: (payload: MatchPayload) => T
   }
 
   export namespace Cmd {
-    function visit<T>(
-      cmd: Command,
-      visitor: CmdVisitor<T>
-    ): T
-    function summary(cmd: Command): string
+    interface Cmd {
+      desc: CmdDesc
+      loc: Loc
+      label: Label
+    }
+    function visit<T>(cmd: Cmd, visitor: CmdVisitor<T>): T
+    function summary(cmd: Cmd): string
   }
 
   export interface Def {
     name: string
     params: string[]
-    body: Command
+    body: Cmd.Cmd
     loc: Loc
   }
 
   export interface Program {
     defs: Map<string, Def>
     mainName: string
-    ctrl: Map<Label, Command>
+    ctrl: Map<Label, Cmd.Cmd>
   }
 }
 

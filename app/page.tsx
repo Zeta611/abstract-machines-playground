@@ -40,18 +40,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { run } from "@/lib/s/cek"
-import type { Trace } from "@/lib/s/cek"
+import { run } from "@/lib/libamp/cek"
+import type { Trace } from "@/lib/libamp/cek"
 import { parseEnv } from "@/lib/s/env-parser"
 import {
   DEFAULT_PRESET_ID,
   PROGRAM_PRESETS,
   type ProgramPreset,
 } from "@/lib/s/examples"
-import { type Command, type Loc, type Program } from "@/lib/libamp/ast"
+import { Cmd, type Loc, type Program } from "@/lib/libamp/ast"
 import { IntMap } from "@/lib/libamp/utils"
 import { parse } from "@/lib/libamp/parser"
 import * as Result from "melange/result"
+import { of_list } from "melange/array"
 
 interface Runnable {
   source: string
@@ -366,12 +367,13 @@ export default function Page() {
 
   const currentCmd = current && prog ? IntMap.find_opt(current.label, prog.ctrl) : undefined
 
+  const kont = useMemo(() => current ? of_list(current.kont) : [], [current])
   const kontHighlights = useMemo(() => {
     if (!current || !prog) return []
-    return current.kont
+    return kont
       .map((f) => IntMap.find_opt(f.label, prog.ctrl)?.loc)
       .filter((l): l is NonNullable<typeof l> => !!l)
-  }, [current, prog])
+  }, [current, kont, prog])
 
   return (
     <div className="flex h-svh flex-col overflow-hidden bg-muted/20">
@@ -435,7 +437,7 @@ function MainArea({
   current: Trace["states"][number] | undefined
   lastStep: Trace["steps"][number] | undefined
   nextStep: Trace["steps"][number] | undefined
-  currentCmd: Command | undefined
+  currentCmd: Cmd.Cmd | undefined
   kontHighlights: Loc[]
   onVisibleIndicesChange: (indices: number[]) => void
   queryText: string

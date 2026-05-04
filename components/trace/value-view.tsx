@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { withVal, type CtorPayload, type Val } from "@/lib/libamp/values"
+import { visit, type CtorPayload, type Val } from "@/lib/libamp/values"
 import { cn } from "@/lib/utils"
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
 
 /** Renders a constructor / integer value as an inline, collapsible tree. */
 export function ValueView({ value, depth = 0, autoCollapseAt = 4 }: Props) {
-  return withVal(value, {
+  return visit(value, {
     int: ({ n }) => (
       <span className="text-sky-700 tabular-nums dark:text-sky-300">{n}</span>
     ),
@@ -82,7 +82,7 @@ function CtorValue({
 }
 
 function countNodes(v: Val): number {
-  return withVal(v, {
+  return visit(v, {
     int: () => 1,
     ctor: countCtorNodes,
   })

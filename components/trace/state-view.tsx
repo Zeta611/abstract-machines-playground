@@ -7,17 +7,18 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { Separator } from "@/components/ui/separator"
-import { Cmd, Command, Label } from "@/lib/libamp/ast"
-import type { State, TraceStep } from "@/lib/s/cek"
+import { Cmd, Label } from "@/lib/libamp/ast"
+import type { State, TraceStep } from "@/lib/libamp/cek"
 import { EnvView } from "./env-view"
 import { KontView } from "./kont-view"
 import { useLabelHoverBind } from "./label-hover"
 import { ValueView } from "./value-view"
 import { IntMap, Map, StringMap } from "@/lib/libamp/utils"
+import { of_list } from "melange/array"
 
 interface Props {
   state: State
-  ctrl: Map<Label, Command>
+  ctrl: Map<Label, Cmd.Cmd>
   lastStep?: TraceStep
   nextStep?: TraceStep
 }
@@ -27,6 +28,7 @@ export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
   const cmd = IntMap.find_opt(state.label, ctrl)
   const hoverBind = useLabelHoverBind(state.label)
   const bindingCount = StringMap.cardinal(state.env)
+  const kont = of_list(state.kont)
 
   return (
     <ResizablePanelGroup orientation="vertical" className="h-full w-full">
@@ -94,11 +96,11 @@ export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
               <b>K</b>ontinuation (κ)
             </span>
             <Badge variant="outline" className="text-[10px]">
-              depth {state.kont.length}
+              depth {kont.length}
             </Badge>
           </div>
           <Separator className="mb-2" />
-          <KontView kont={state.kont} ctrl={ctrl} />
+          <KontView kont={kont} ctrl={ctrl} />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

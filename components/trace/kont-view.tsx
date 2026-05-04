@@ -3,15 +3,15 @@
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { Cmd, Command, Label } from "@/lib/libamp/ast"
-import type { Frame } from "@/lib/s/cek"
+import { Cmd, Label } from "@/lib/libamp/ast"
+import type { Frame } from "@/lib/libamp/cek"
 import { EnvView } from "./env-view"
 import { useLabelHoverBind } from "./label-hover"
 import { IntMap, Map } from "@/lib/libamp/utils"
 
 interface Props {
   kont: Frame[]
-  ctrl: Map<Label, Command>
+  ctrl: Map<Label, Cmd.Cmd>
 }
 
 /** Continuation stack. Top of stack (index 0) = next frame to resume. */
@@ -39,7 +39,7 @@ function FrameCard({
   isTop,
 }: {
   frame: Frame
-  ctrl: Map<Label, Command>
+  ctrl: Map<Label, Cmd.Cmd>
   position: number
   isTop: boolean
 }) {

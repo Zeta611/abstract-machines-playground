@@ -6,13 +6,14 @@ and ctor_payload = { tag : string; args : value array }
 
 type env = value StringMap.t
 type 'a val_visitor = { int : int_payload -> 'a; ctor : ctor_payload -> 'a }
+type t = value
 
 let vInt n = Int { n }
 let vCtor tag args = Ctor { tag; args }
 let vTrue = vCtor "True" [||]
 let vFalse = vCtor "False" [||]
 
-let withVal v visitor =
+let visit v visitor =
   match v with
   | Int payload -> visitor.int payload
   | Ctor payload -> visitor.ctor payload
@@ -31,3 +32,7 @@ let rec showVal = function
         tag ^ "("
         ^ (args |> Array.map showVal |> Array.to_list |> String.concat ", ")
         ^ ")"
+
+let bindMany env xs vs =
+  Array.combine xs vs
+  |> Array.fold_left (fun env (x, v) -> StringMap.add x v env) env
