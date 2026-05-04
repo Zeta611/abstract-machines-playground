@@ -3,11 +3,11 @@
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { Cmd, Label } from "@/lib/libamp/ast"
-import type { Frame } from "@/lib/libamp/cek"
+import { Cmd, Label } from "@/lib/s/ast"
+import type { Frame } from "@/lib/s/cek"
 import { EnvView } from "./env-view"
 import { useLabelHoverBind } from "./label-hover"
-import { IntMap, Map } from "@/lib/libamp/utils"
+import { IntMap, Map } from "@/lib/s/utils"
 
 interface Props {
   kont: Frame[]

@@ -23,15 +23,15 @@ import {
   traceQueryMatches,
   visit_parse_result,
   type TraceQueryAst,
-} from "@/lib/libamp/traceQuery"
-import { showVal } from "@/lib/libamp/values"
+} from "@/lib/s/traceQuery"
+import { showVal } from "@/lib/s/values"
 import {
   visit_trace_end,
   type State,
   type RuleName,
   type Trace,
   type TraceStep,
-} from "@/lib/libamp/cek"
+} from "@/lib/s/cek"
 import { RiQuestionLine } from "@remixicon/react"
 import { useLabelHoverBind } from "./label-hover"
 

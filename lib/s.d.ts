@@ -1,8 +1,8 @@
-declare module "@/lib/libamp/libamp" {}
+declare module "@/lib/s/libamp" {}
 
-declare module "@/lib/libamp/cek" {
-  import type { Program } from "@/lib/libamp/ast"
-  import type { Env, Val } from "@/lib/libamp/values"
+declare module "@/lib/s/cek" {
+  import type { Program } from "@/lib/s/ast"
+  import type { Env, Val } from "@/lib/s/values"
   import type { List } from "melange/list"
 
   export interface Frame {
@@ -50,15 +50,15 @@ declare module "@/lib/libamp/cek" {
   export function run(prog: Program, initEnv: Env, opts?: RunOptions): Trace
 }
 
-declare module "@/lib/libamp/prims" {
+declare module "@/lib/s/prims" {
   import { Result } from "melange/result"
-  import type { Val } from "@/lib/libamp/values"
+  import type { Val } from "@/lib/s/values"
 
   export function evalPrim(op: string, args: Val[]): Result<Val, string>
   export function isPrim(name: string): boolean
 }
 
-declare module "@/lib/libamp/utils" {
+declare module "@/lib/s/utils" {
   const mapBrand: unique symbol
   export type Map<K, V> = { readonly [mapBrand]: [K, V] }
   export type MapModule<K> = {
@@ -73,8 +73,8 @@ declare module "@/lib/libamp/utils" {
   export const IntMap: MapModule<number>
 }
 
-declare module "@/lib/libamp/values" {
-  import type { Map } from "@/lib/libamp/utils"
+declare module "@/lib/s/values" {
+  import type { Map } from "@/lib/s/utils"
 
   const valBrand: unique symbol
 
@@ -112,8 +112,8 @@ declare module "@/lib/libamp/values" {
   export function showVal(value: Val): string
 }
 
-declare module "@/lib/libamp/ast" {
-  import type { Map } from "@/lib/libamp/utils"
+declare module "@/lib/s/ast" {
+  import type { Map } from "@/lib/s/utils"
 
   export type Label = number
 
@@ -200,8 +200,8 @@ declare module "@/lib/libamp/ast" {
   }
 }
 
-declare module "@/lib/libamp/parser" {
-  import type { Program } from "@/lib/libamp/ast"
+declare module "@/lib/s/parser" {
+  import type { Program } from "@/lib/s/ast"
   import type { Result } from "melange/result"
 
   type SyntaxKind =
@@ -225,17 +225,17 @@ declare module "@/lib/libamp/parser" {
   export function parse(input: string): Result<ParseResult, string>
 }
 
-declare module "@/lib/libamp/envParser" {
+declare module "@/lib/s/envParser" {
   import type { Result } from "melange/result"
-  import type { Env, Val } from "@/lib/libamp/values"
+  import type { Env, Val } from "@/lib/s/values"
 
   export function parseValue1(input: string): Result<Val, string>
   export function parseBinding(input: string): Result<[string, Val], string>
   export function parseEnv(input: string): Result<Env, string>
 }
 
-declare module "@/lib/libamp/traceQuery" {
-  import type { RuleName } from "@/lib/libamp/cek"
+declare module "@/lib/s/traceQuery" {
+  import type { RuleName } from "@/lib/s/cek"
 
   export type TraceQueryField = "rule" | "detail" | "l"
   export type TraceQueryComparisonOp = "eq" | "gt" | "gte" | "lt" | "lte"

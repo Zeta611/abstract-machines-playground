@@ -1,6 +1,6 @@
 "use client"
 
-import type { Loc } from "@/lib/libamp/ast"
+import type { Loc } from "@/lib/s/ast"
 import { SourceEditor } from "./source-editor"
 import { SourceView } from "./source-view"
 

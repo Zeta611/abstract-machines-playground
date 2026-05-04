@@ -14,7 +14,7 @@ Prefer raw `bun` commands first. If `bun` is not available in the current shell 
 ## OCaml / Melange build
 
 - When changing files under `libamp/`, regenerate the emitted JS with `opam exec -- dune build`.
-- The checked-in runtime modules under `lib/libamp/` depend on that build step; do not assume editing `.ml` files alone updates the app-visible JS.
+- The checked-in runtime modules under `lib/s/` depend on that build step; do not assume editing `.ml` files alone updates the app-visible JS.
 
 ## OCaml / TypeScript interop rules
 

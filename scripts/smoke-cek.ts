@@ -6,23 +6,23 @@
  * The script exits non-zero on failure.
  */
 
-import { StringMap } from "@/lib/libamp/utils"
-import { run, visit_trace_end } from "@/lib/libamp/cek"
-import { parseEnv, parseValue1 } from "@/lib/libamp/envParser"
+import { StringMap } from "@/lib/s/utils"
+import { run, visit_trace_end } from "@/lib/s/cek"
+import { parseEnv, parseValue1 } from "@/lib/s/envParser"
 import {
   INITIAL_ENV,
   INTERPRETER_S_T,
   PROGRAM_PRESETS,
   TRIVIAL,
 } from "@/lib/examples"
-import { parse } from "@/lib/libamp/parser"
+import { parse } from "@/lib/s/parser"
 import {
   showVal,
   valEq,
   vInt,
   visit,
   type Val,
-} from "@/lib/libamp/values"
+} from "@/lib/s/values"
 import * as Result from "melange/result"
 
 let failed = 0

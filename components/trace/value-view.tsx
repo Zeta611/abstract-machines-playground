@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { visit, type CtorPayload, type Val } from "@/lib/libamp/values"
+import { visit, type CtorPayload, type Val } from "@/lib/s/values"
 import { cn } from "@/lib/utils"
 
 interface Props {

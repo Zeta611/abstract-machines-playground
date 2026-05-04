@@ -11,8 +11,8 @@ import {
   traceQueryMatches,
   visit_parse_result,
   type TraceQueryAst,
-} from "@/lib/libamp/traceQuery"
-import { type RuleName } from "@/lib/libamp/cek"
+} from "@/lib/s/traceQuery"
+import { type RuleName } from "@/lib/s/cek"
 
 let failed = 0
 

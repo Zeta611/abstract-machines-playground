@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useRef, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
-import type { Loc } from "@/lib/libamp/ast"
+import type { Loc } from "@/lib/s/ast"
 import {
   SyntaxKind,
   SyntaxRange,
   parse,
-} from "@/lib/libamp/parser"
+} from "@/lib/s/parser"
 import { CopyButton } from "./copy-button"
 import * as Result from "melange/result"
 

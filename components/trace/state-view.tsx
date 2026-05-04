@@ -7,13 +7,13 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { Separator } from "@/components/ui/separator"
-import { Cmd, Label } from "@/lib/libamp/ast"
-import type { State, TraceStep } from "@/lib/libamp/cek"
+import { Cmd, Label } from "@/lib/s/ast"
+import type { State, TraceStep } from "@/lib/s/cek"
 import { EnvView } from "./env-view"
 import { KontView } from "./kont-view"
 import { useLabelHoverBind } from "./label-hover"
 import { ValueView } from "./value-view"
-import { IntMap, Map, StringMap } from "@/lib/libamp/utils"
+import { IntMap, Map, StringMap } from "@/lib/s/utils"
 import { of_list } from "melange/array"
 
 interface Props {

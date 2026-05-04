@@ -40,17 +40,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { run } from "@/lib/libamp/cek"
-import type { Trace } from "@/lib/libamp/cek"
-import { parseEnv } from "@/lib/libamp/envParser"
+import { run } from "@/lib/s/cek"
+import type { Trace } from "@/lib/s/cek"
+import { parseEnv } from "@/lib/s/envParser"
 import {
   DEFAULT_PRESET_ID,
   PROGRAM_PRESETS,
   type ProgramPreset,
 } from "@/lib/examples"
-import { Cmd, type Loc, type Program } from "@/lib/libamp/ast"
-import { IntMap } from "@/lib/libamp/utils"
-import { parse } from "@/lib/libamp/parser"
+import { Cmd, type Loc, type Program } from "@/lib/s/ast"
+import { IntMap } from "@/lib/s/utils"
+import { parse } from "@/lib/s/parser"
 import * as Result from "melange/result"
 import { of_list } from "melange/array"
 

@@ -1,8 +1,8 @@
 "use client"
 
-import type { Env, Val } from "@/lib/libamp/values"
+import type { Env, Val } from "@/lib/s/values"
 import { ValueView } from "./value-view"
-import { StringMap } from "@/lib/libamp/utils"
+import { StringMap } from "@/lib/s/utils"
 
 interface Props {
   env: Env

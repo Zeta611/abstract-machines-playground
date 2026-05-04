@@ -1,12 +1,12 @@
 "use client"
 
 import { useMemo } from "react"
-import type { Val, Env } from "@/lib/libamp/values"
+import type { Val, Env } from "@/lib/s/values"
 import { cn } from "@/lib/utils"
-import { parseEnv } from "@/lib/libamp/envParser"
+import { parseEnv } from "@/lib/s/envParser"
 import { ValueView } from "./value-view"
 import { CopyButton } from "./copy-button"
-import { StringMap } from "@/lib/libamp/utils"
+import { StringMap } from "@/lib/s/utils"
 import * as Result from "melange/result"
 
 interface PreviewResult {
