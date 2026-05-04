@@ -21,10 +21,10 @@ import { cn } from "@/lib/utils"
 import {
   parseTraceQuery,
   traceQueryMatches,
-  visit_parse_result,
   type TraceQueryAst,
 } from "@/lib/s/traceQuery"
 import { showVal } from "@/lib/s/values"
+import * as Result from "melange/result"
 import {
   visit_trace_end,
   type State,
@@ -119,10 +119,11 @@ export function TraceTimeline({
 
   const queryParse = useMemo(
     (): QueryParseState =>
-      visit_parse_result<QueryParseState>(parseTraceQuery(queryText), {
-        ok: (ast) => ({ ok: true, ast: ast ?? null }),
-        error: ({ message, at }) => ({ ok: false as const, message, at }),
-      }),
+      Result.fold(
+        (ast) => ({ ok: true, ast: ast ?? null }),
+        ({ message, at }) => ({ ok: false as const, message, at }),
+        parseTraceQuery(queryText)
+      ),
     [queryText]
   )
 
@@ -140,7 +141,7 @@ export function TraceTimeline({
       const step = trace.steps[i - 1]
       const state = trace.states[i]
       if (
-        traceQueryMatches(queryParse.ast, {
+        traceQueryMatches(queryParse.ast ?? undefined, {
           index: i,
           rule: step?.rule,
           detail: step?.detail,

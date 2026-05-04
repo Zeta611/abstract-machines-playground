@@ -65,9 +65,9 @@ let let_ loc x (exp : Exp.t M.t) body =
     (let* exp = exp in
      let* body = body in
      match exp.desc with
-     | Prim ({ callee; _ } as e) ->
-         let* is_fun = M.is_fun callee in
-         if is_fun then M.unit (Cmd.LetCall { x; e; body })
+     | Prim ({ op; args }) ->
+         let* is_fun = M.is_fun op in
+         if is_fun then M.unit (Cmd.LetCall { x; callee = op; args; body })
          else M.unit (Cmd.Let_ { x; exp; body })
      | _ -> M.unit (Cmd.Let_ { x; exp; body }))
 

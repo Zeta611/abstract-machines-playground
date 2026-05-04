@@ -53,8 +53,8 @@ exp:
   | n=INTEGER { e $loc (Exp.Num n) }
   | name=fun_name "(" args=separated_list(",", exp) ")"
     { let* args = seq args in
-      e $loc (Exp.Prim { callee = name; args = args |> Array.of_list }) }
+      e $loc (Exp.Prim { op = name; args = args |> Array.of_list }) }
   | name=UIDENT "(" args=separated_list(",", exp) ")"
     { let* args = seq args in
-      e $loc (Exp.Ctor { callee = name; args = args |> Array.of_list }) }
+      e $loc (Exp.Ctor { tag = name; args = args |> Array.of_list }) }
   | name=LIDENT { e $loc (Exp.Var_ name) }

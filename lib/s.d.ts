@@ -1,5 +1,3 @@
-declare module "@/lib/s/libamp" {}
-
 declare module "@/lib/s/cek" {
   import type { Program } from "@/lib/s/ast"
   import type { Env, Val } from "@/lib/s/values"
@@ -26,47 +24,35 @@ declare module "@/lib/s/cek" {
 
   const traceEndBrand: unique symbol
   export type TraceEnd = { readonly [traceEndBrand]: never }
-  export type TraceEndVisitor<T> = {
-    final: (value: Val) => T
-    stuck: (reason: string, at: State) => T
-    maxed: (reason: string) => T
-  }
-
   export interface Trace {
     states: State[]
     steps: TraceStep[]
     end: TraceEnd
   }
 
-  export interface RunOptions {
-    maxSteps?: number
-  }
-
-  export function inject(prog: Program, rho: Env): State
   export function visit_trace_end<T>(
     traceEnd: TraceEnd,
-    visitor: TraceEndVisitor<T>
+    visitor: {
+      final: (value: Val) => T
+      stuck: (reason: string, at: State) => T
+      maxed: (reason: string) => T
+    }
   ): T
-  export function run(prog: Program, initEnv: Env, opts?: RunOptions): Trace
-}
-
-declare module "@/lib/s/prims" {
-  import { Result } from "melange/result"
-  import type { Val } from "@/lib/s/values"
-
-  export function evalPrim(op: string, args: Val[]): Result<Val, string>
-  export function isPrim(name: string): boolean
+  export function run(
+    prog: Program,
+    initEnv: Env,
+    opts?: { maxSteps?: number }
+  ): Trace
 }
 
 declare module "@/lib/s/utils" {
   const mapBrand: unique symbol
   export type Map<K, V> = { readonly [mapBrand]: [K, V] }
-  export type MapModule<K> = {
+  type MapModule<K> = {
     of_array<V>(arr: [K, V][]): Map<K, V>
     bindings<V>(map: Map<K, V>): [K, V][]
     cardinal<V>(map: Map<K, V>): number
     find_opt<V>(key: K, map: Map<K, V>): V | undefined
-    add<V>(key: K, value: V, map: Map<K, V>): Map<K, V>
   }
 
   export const StringMap: MapModule<string>
@@ -79,8 +65,6 @@ declare module "@/lib/s/values" {
   const valBrand: unique symbol
 
   export type Val = { readonly [valBrand]: never }
-  export type T = Val
-
   export interface IntPayload {
     n: number
   }
@@ -91,13 +75,7 @@ declare module "@/lib/s/values" {
   }
 
   export type Env = Map<string, Val>
-  export type EnvEntry = [string, Val]
-
   export function vInt(n: number): Val
-  export function vCtor(tag: string, args: Val[]): Val
-
-  export const vTrue: Val
-  export const vFalse: Val
 
   export function visit<T>(
     value: Val,
@@ -107,7 +85,6 @@ declare module "@/lib/s/values" {
     }
   ): T
 
-  export function isTrue(value: Val): boolean
   export function valEq(a: Val, b: Val): boolean
   export function showVal(value: Val): string
 }
@@ -122,79 +99,30 @@ declare module "@/lib/s/ast" {
     to_: number
   }
 
-  const expDescBrand: unique symbol
-
-  export type ExpDesc = { readonly [expDescBrand]: never }
-  export interface AppPayload {
-    callee: string
-    args: Exp.Exp[]
-  }
-  export type ExpVisitor<T> = {
-    num: (n: number) => T
-    var_: (name: string) => T
-    ctor: (payload: AppPayload) => T
-    prim: (payload: AppPayload) => T
-  }
-
   export namespace Exp {
     interface Exp {
-      desc: ExpDesc
       loc: Loc
     }
-    function visit<T>(exp: Exp, visitor: ExpVisitor<T>): T
-    function summary(exp: Exp): string
-  }
-
-  const cmdDescBrand: unique symbol
-
-  export type CmdDesc = { readonly [cmdDescBrand]: never }
-  export interface LetPayload {
-    x: string
-    exp: Exp.Exp
-    body: Cmd.Cmd
-  }
-  export interface LetCallPayload {
-    x: string
-    e: AppPayload
-    body: Cmd.Cmd
-  }
-  export interface MatchPayload {
-    scrutinee: Exp.Exp
-    branches: Branch[]
-  }
-  export interface Branch {
-    tag: string
-    vars: string[]
-    body: Cmd.Cmd
-    loc: Loc
-  }
-
-  export type CmdVisitor<T> = {
-    return: (exp: Exp.Exp) => T
-    let_: (payload: LetPayload) => T
-    letCall: (payload: LetCallPayload) => T
-    match_: (payload: MatchPayload) => T
   }
 
   export namespace Cmd {
     interface Cmd {
-      desc: CmdDesc
       loc: Loc
       label: Label
     }
-    function visit<T>(cmd: Cmd, visitor: CmdVisitor<T>): T
     function summary(cmd: Cmd): string
   }
 
-  export interface Def {
-    name: string
-    params: string[]
-    body: Cmd.Cmd
-    loc: Loc
-  }
-
   export interface Program {
-    defs: Map<string, Def>
+    defs: Map<
+      string,
+      {
+        name: string
+        params: string[]
+        body: Cmd.Cmd
+        loc: Loc
+      }
+    >
     mainName: string
     ctrl: Map<Label, Cmd.Cmd>
   }
@@ -230,50 +158,27 @@ declare module "@/lib/s/envParser" {
   import type { Env, Val } from "@/lib/s/values"
 
   export function parseValue1(input: string): Result<Val, string>
-  export function parseBinding(input: string): Result<[string, Val], string>
   export function parseEnv(input: string): Result<Env, string>
 }
 
 declare module "@/lib/s/traceQuery" {
+  import type { Result } from "melange/result"
   import type { RuleName } from "@/lib/s/cek"
-
-  export type TraceQueryField = "rule" | "detail" | "l"
-  export type TraceQueryComparisonOp = "eq" | "gt" | "gte" | "lt" | "lte"
 
   const traceQueryAstBrand: unique symbol
   export type TraceQueryAst = { readonly [traceQueryAstBrand]: never }
 
-  export interface TraceQueryParseError {
-    message: string
-    at: number
-  }
-
-  const traceQueryParseResultBrand: unique symbol
-  export type TraceQueryParseResult = {
-    readonly [traceQueryParseResultBrand]: never
-  }
-
-  export type TraceQueryParseResultVisitor<T> = {
-    ok: (ast: TraceQueryAst | null) => T
-    error: (error: TraceQueryParseError) => T
-  }
-
-  export interface TraceQueryRow {
-    index: number
-    rule?: RuleName
-    detail?: string
-    value?: string
-    label: number
-  }
-
-  export function visit_parse_result<T>(
-    result: TraceQueryParseResult,
-    visitor: TraceQueryParseResultVisitor<T>
-  ): T
-
-  export function parseTraceQuery(input: string): TraceQueryParseResult
+  export function parseTraceQuery(
+    input: string
+  ): Result<TraceQueryAst | undefined, { message: string; at: number }>
   export function traceQueryMatches(
-    ast: TraceQueryAst | null,
-    row: TraceQueryRow
+    ast: TraceQueryAst | undefined,
+    row: {
+      index: number
+      rule?: RuleName
+      detail?: string
+      value?: string
+      label: number
+    }
   ): boolean
 }

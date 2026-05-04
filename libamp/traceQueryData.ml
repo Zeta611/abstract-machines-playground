@@ -30,21 +30,10 @@ type row = {
 }
 
 type parse_error = { message : string; at : int }
-type parse_result = Ok of ast option | Error of parse_error
-
-type 'a parse_result_visitor = {
-  ok : ast option -> 'a;
-  error : parse_error -> 'a;
-}
 
 type operator = EqToken | NeqToken | GtToken | GteToken | LtToken | LteToken
 
 exception Query_error of parse_error
-
-let visit_parse_result result visitor =
-  match result with
-  | Ok ast -> visitor.ok ast
-  | Error error -> visitor.error error
 
 let raise_error ~at message = raise (Query_error { message; at })
 

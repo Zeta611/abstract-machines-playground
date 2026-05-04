@@ -39,21 +39,21 @@ let parseTraceQuery input =
             (I.offer checkpoint (token, startp, endp))
             (Some (token, at, endp))
         with
-        | TraceQueryLexer.Lex_error error -> Error error
-        | Query_error error -> Error error
+        | TraceQueryLexer.Lex_error error -> Stdlib.Error error
+        | Query_error error -> Stdlib.Error error
         end
     | I.Shifting _ | I.AboutToReduce _ -> loop (I.resume checkpoint) current
-    | I.Accepted ast -> Ok ast
+    | I.Accepted ast -> Stdlib.Ok ast
     | I.HandlingError _ | I.Rejected -> (
         match current with
-        | None -> Error { message = "unexpected end of input"; at = input_len }
+        | None -> Stdlib.Error { message = "unexpected end of input"; at = input_len }
         | Some (EOF, _, _) ->
-            Error { message = "unexpected end of input"; at = input_len }
+            Stdlib.Error { message = "unexpected end of input"; at = input_len }
         | Some (token, at, _) ->
-            Error { message = "unexpected " ^ token_text token; at })
+            Stdlib.Error { message = "unexpected " ^ token_text token; at })
   in
   try loop (TraceQueryGrammar.Incremental.query_eof lexbuf.lex_curr_p) None
-  with Query_error error -> Error error
+  with Query_error error -> Stdlib.Error error
 
 let normalize value = String.lowercase_ascii value
 

@@ -67,12 +67,12 @@ let rec eval_exp (e : Exp.t) (rho : env) : (value, string) result =
       | Some v -> Ok v
       | None -> Error ("undefined variable '" ^ x ^ "'")
       end
-  | Ctor { callee; args } ->
+  | Ctor { tag; args } ->
       let* argVals = args |> Array.map (fun arg -> eval_exp arg rho) |> seq in
-      Ok (vCtor callee argVals)
-  | Prim { callee; args } ->
+      Ok (vCtor tag argVals)
+  | Prim { op; args } ->
       let* argVals = args |> Array.map (fun arg -> eval_exp arg rho) |> seq in
-      Prims.evalPrim callee argVals
+      Prims.evalPrim op argVals
 
 let inject (prog : program) (rho : env) : state =
   let main = StringMap.find prog.mainName prog.defs in
@@ -113,22 +113,22 @@ let step (s : state) (prog : program) : (step_success, string) result =
                ^ Cmd.summary suspended)
           end
       end
-  | LetCall { x; e; _ } ->
-      begin match StringMap.find_opt e.callee prog.defs with
-      | None -> Error ("undefined function " ^ e.callee)
+  | LetCall { x; callee; args; _ } ->
+      begin match StringMap.find_opt callee prog.defs with
+      | None -> Error ("undefined function " ^ callee)
       | Some def ->
-          if Array.length def.params <> Array.length e.args then
-            ffail "arity mismatch calling '%s': expected %d, got %d" e.callee
-              (Array.length def.params) (Array.length e.args)
+          if Array.length def.params <> Array.length args then
+            ffail "arity mismatch calling '%s': expected %d, got %d" callee
+              (Array.length def.params) (Array.length args)
           else
             let* argVals =
-              e.args |> Array.map (fun arg -> eval_exp arg s.env) |> seq
+              args |> Array.map (fun arg -> eval_exp arg s.env) |> seq
             in
             let calleeEnv = bindMany StringMap.empty def.params argVals in
             let frame = { label = s.label; env = s.env } in
             mk_step
               (def.body.label, calleeEnv, frame :: s.kont, LetCall)
-              "call %s(%d args) -> let %s" e.callee (Array.length argVals) x
+              "call %s(%d args) -> let %s" callee (Array.length argVals) x
       end
   | Let_ { x; exp; body } ->
       let* v = eval_exp exp s.env in
