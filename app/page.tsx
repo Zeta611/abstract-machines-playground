@@ -42,12 +42,12 @@ import {
 } from "@/components/ui/select"
 import { run } from "@/lib/libamp/cek"
 import type { Trace } from "@/lib/libamp/cek"
-import { parseEnv } from "@/lib/s/env-parser"
+import { parseEnv } from "@/lib/libamp/envParser"
 import {
   DEFAULT_PRESET_ID,
   PROGRAM_PRESETS,
   type ProgramPreset,
-} from "@/lib/s/examples"
+} from "@/lib/examples"
 import { Cmd, type Loc, type Program } from "@/lib/libamp/ast"
 import { IntMap } from "@/lib/libamp/utils"
 import { parse } from "@/lib/libamp/parser"
@@ -148,12 +148,20 @@ function tryCompile(
   stepLimit: number
 ): { r: Runnable | null; err: string | null } {
   return Result.fold(
-    ({ program }) => ({
-      r: {
-        source, envText, prog: program,
-        trace: run(program, parseEnv(envText), { maxSteps: stepLimit })
-      }, err: null
-    }),
+    ({ program }) =>
+      Result.fold(
+        (env) => ({
+          r: {
+            source,
+            envText,
+            prog: program,
+            trace: run(program, env, { maxSteps: stepLimit }),
+          },
+          err: null,
+        }),
+        (err: string) => ({ r: null, err }),
+        parseEnv(envText)
+      ),
     (err: string) => ({ r: null, err }),
     parse(source)
   )

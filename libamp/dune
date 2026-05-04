@@ -1,7 +1,7 @@
-(ocamllex lexer)
+(ocamllex lexer traceQueryLexer)
 
 (menhir
- (modules grammar)
+ (modules grammar traceQueryGrammar)
  (flags --table --inspection))
 
 (library

@@ -18,7 +18,12 @@ import {
 } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
 import { cn } from "@/lib/utils"
-import { parseTraceQuery, traceQueryMatches } from "@/lib/s/trace-query"
+import {
+  parseTraceQuery,
+  traceQueryMatches,
+  visit_parse_result,
+  type TraceQueryAst,
+} from "@/lib/libamp/traceQuery"
 import { showVal } from "@/lib/libamp/values"
 import {
   visit_trace_end,
@@ -40,6 +45,10 @@ interface Props {
   queryText: string
   setQueryText: (v: string) => void
 }
+
+type QueryParseState =
+  | { ok: true; ast: TraceQueryAst | null }
+  | { ok: false; message: string; at: number }
 
 const RULE_NAMES: RuleName[] = ["LetExp", "LetCall", "Match", "Return"]
 
@@ -108,7 +117,14 @@ export function TraceTimeline({
   const [queryHelpOpen, setQueryHelpOpen] = useState(false)
   const [queryScrollLeft, setQueryScrollLeft] = useState(0)
 
-  const queryParse = useMemo(() => parseTraceQuery(queryText), [queryText])
+  const queryParse = useMemo(
+    (): QueryParseState =>
+      visit_parse_result<QueryParseState>(parseTraceQuery(queryText), {
+        ok: (ast) => ({ ok: true, ast: ast ?? null }),
+        error: ({ message, at }) => ({ ok: false as const, message, at }),
+      }),
+    [queryText]
+  )
 
   const visibleIndices = useMemo(() => {
     if (queryParse.ok && queryParse.ast === null) {

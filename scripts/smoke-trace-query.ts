@@ -9,11 +9,23 @@
 import {
   parseTraceQuery,
   traceQueryMatches,
+  visit_parse_result,
   type TraceQueryAst,
-} from "../lib/s/trace-query"
+} from "@/lib/libamp/traceQuery"
 import { type RuleName } from "@/lib/libamp/cek"
 
 let failed = 0
+
+type QueryParseState =
+  | { ok: true; ast: TraceQueryAst | null }
+  | { ok: false; message: string; at: number }
+
+function normalizeParse(query: string): QueryParseState {
+  return visit_parse_result<QueryParseState>(parseTraceQuery(query), {
+    ok: (ast) => ({ ok: true, ast: ast ?? null }),
+    error: ({ message, at }) => ({ ok: false, message, at }),
+  })
+}
 
 function expect(name: string, cond: boolean, detail?: string): void {
   if (cond) {
@@ -25,7 +37,7 @@ function expect(name: string, cond: boolean, detail?: string): void {
 }
 
 function parseOk(query: string): TraceQueryAst | null {
-  const parsed = parseTraceQuery(query)
+  const parsed = normalizeParse(query)
   expect(
     query || "empty query",
     parsed.ok,
@@ -36,7 +48,7 @@ function parseOk(query: string): TraceQueryAst | null {
 }
 
 function parseBad(query: string): void {
-  const parsed = parseTraceQuery(query)
+  const parsed = normalizeParse(query)
   expect(
     `${query} is invalid`,
     !parsed.ok,
@@ -95,7 +107,7 @@ const rows = {
 
 console.log("1. empty query")
 {
-  const parsed = parseTraceQuery("")
+  const parsed = normalizeParse("")
   expect("empty parses to null", parsed.ok && parsed.ast === null)
 }
 

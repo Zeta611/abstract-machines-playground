@@ -8,13 +8,13 @@
 
 import { StringMap } from "@/lib/libamp/utils"
 import { run, visit_trace_end } from "@/lib/libamp/cek"
-import { parseEnv, parseValue1 } from "@/lib/s/env-parser"
+import { parseEnv, parseValue1 } from "@/lib/libamp/envParser"
 import {
   INITIAL_ENV,
   INTERPRETER_S_T,
   PROGRAM_PRESETS,
   TRIVIAL,
-} from "@/lib/s/examples"
+} from "@/lib/examples"
 import { parse } from "@/lib/libamp/parser"
 import {
   showVal,
@@ -69,12 +69,34 @@ function expectParseFails(name: string, src: string): void {
 }
 
 function expectValueParseFails(name: string, src: string): void {
-  try {
+  expect(
+    name,
+    Result.fold(
+      () => false,
+      () => true,
+      parseValue1(src)
+    )
+  )
+}
+
+function parseValueOrThrow(src: string): Val {
+  return Result.fold(
+    (value) => value,
+    (message) => {
+      throw new Error(`env parse error: ${message}`)
+    },
     parseValue1(src)
-    expect(name, false, "parsed successfully")
-  } catch {
-    expect(name, true)
-  }
+  )
+}
+
+function parseEnvOrThrow(src: string) {
+  return Result.fold(
+    (env) => env,
+    (message) => {
+      throw new Error(`env parse error: ${message}`)
+    },
+    parseEnv(src)
+  )
 }
 
 function expectUnknownPrimitive(name: string, src: string): void {
@@ -101,7 +123,7 @@ console.log("1. trivial: main(x) = let y = sub(x, 1) in y, x=3 -> 2")
     (err) => { throw new Error(`parse error: ${err}`) },
     parse(TRIVIAL)
   )
-  const env = parseEnv("x = 3")
+  const env = parseEnvOrThrow("x = 3")
   const trace = run(program, env, { maxSteps: 100 })
   const end = endView(trace)
   expect("terminates", end.kind === "final")
@@ -121,7 +143,7 @@ console.log("2. I_S^T on a T program")
     (err) => { throw new Error(`parse error: ${err}`) },
     parse(INTERPRETER_S_T)
   )
-  const env = parseEnv(INITIAL_ENV)
+  const env = parseEnvOrThrow(INITIAL_ENV)
   const trace = run(program, env, { maxSteps: 2_000 })
   const end = endView(trace)
   expect("terminates", end.kind === "final")
@@ -144,7 +166,7 @@ console.log("3. I_S^T: Ifz(X, Int(10), Int(20)) at X=0 -> 10")
   const env = StringMap.of_array([
     [
       "p",
-      parseValue1("Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"),
+      parseValueOrThrow("Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"),
     ],
     ["arg", vInt(0)],
   ])
@@ -167,7 +189,7 @@ console.log("4. I_S^T: Ifz at X=5 -> 20 (else branch)")
   const env = StringMap.of_array([
     [
       "p",
-      parseValue1("Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"),
+      parseValueOrThrow("Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"),
     ],
     ["arg", vInt(5)],
   ])
@@ -193,7 +215,7 @@ console.log("5. I_S^T: recursive T function (identity-ish)")
   const env = StringMap.of_array([
     [
       "p",
-      parseValue1(
+      parseValueOrThrow(
         "Prog(Defs(Fun(0), Ifz(0, Var(1, 0), Int(2, 0), App(3, Fun(0), Sub(4, Var(5, 0), Int(6, 1)))), Nil()), App(7, Fun(0), Int(8, 3)))"
       ),
     ],
@@ -221,7 +243,7 @@ console.log("6. I_S^T: Let binds T variables by xid")
   const env = StringMap.of_array([
     [
       "p",
-      parseValue1(
+      parseValueOrThrow(
         "Prog(Nil(), Let(0, Var(1, 1), Int(2, 7), Sub(3, Var(4, 1), Var(5, 0))))"
       ),
     ],
@@ -263,7 +285,7 @@ console.log("8. Stuck: bad match surfaces cleanly")
   end
 `)
   )
-  const env = parseEnv("x = 3")
+  const env = parseEnvOrThrow("x = 3")
   const trace = run(program, env, { maxSteps: 10 })
   const end = endView(trace)
   expect("stuck", end.kind === "stuck")
@@ -279,8 +301,8 @@ console.log("9. Presets all parse and terminate")
     "definitional-interpreter": vInt(120),
     factorial: vInt(3628800),
     fibonacci: vInt(13),
-    "mutual-parity": parseValue1("False()"),
-    "peano-addition": parseValue1("S(S(S(S(S(Z())))))"),
+    "mutual-parity": parseValueOrThrow("False()"),
+    "peano-addition": parseValueOrThrow("S(S(S(S(S(Z())))))"),
   }
 
   for (const preset of PROGRAM_PRESETS) {
@@ -289,7 +311,7 @@ console.log("9. Presets all parse and terminate")
       (err) => { throw new Error(`parse error: ${err}`) },
       parse(preset.source)
     )
-    const env = parseEnv(preset.envText)
+    const env = parseEnvOrThrow(preset.envText)
     const trace = run(program, env, { maxSteps: 5_000 })
     const end = endView(trace)
     expect(`${preset.name} terminates`, end.kind === "final")
@@ -324,7 +346,7 @@ console.log("10. S grammar rejects removed constructs")
 console.log("")
 console.log("11. Env parser: nested T program literal")
 {
-  const v = parseValue1(
+  const v = parseValueOrThrow(
     "Prog(Defs(Fun(0), Sub(0, Var(1, 0), Int(2, 1)), Nil()), App(3, Fun(0), Int(4, 5)))"
   )
   expect(

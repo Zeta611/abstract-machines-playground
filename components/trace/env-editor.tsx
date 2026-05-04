@@ -3,10 +3,11 @@
 import { useMemo } from "react"
 import type { Val, Env } from "@/lib/libamp/values"
 import { cn } from "@/lib/utils"
-import { EnvParseError, parseEnv } from "@/lib/s/env-parser"
+import { parseEnv } from "@/lib/libamp/envParser"
 import { ValueView } from "./value-view"
 import { CopyButton } from "./copy-button"
 import { StringMap } from "@/lib/libamp/utils"
+import * as Result from "melange/result"
 
 interface PreviewResult {
   env: Env | null
@@ -15,17 +16,11 @@ interface PreviewResult {
 
 function useEnvPreview(value: string): PreviewResult {
   return useMemo(() => {
-    try {
-      return { env: parseEnv(value), error: null }
-    } catch (e) {
-      const msg =
-        e instanceof EnvParseError
-          ? e.message
-          : e instanceof Error
-            ? e.message
-            : String(e)
-      return { env: null, error: msg }
-    }
+    return Result.fold(
+      (env) => ({ env, error: null }),
+      (error) => ({ env: null, error }),
+      parseEnv(value)
+    )
   }, [value])
 }
 

@@ -224,3 +224,56 @@ declare module "@/lib/libamp/parser" {
 
   export function parse(input: string): Result<ParseResult, string>
 }
+
+declare module "@/lib/libamp/envParser" {
+  import type { Result } from "melange/result"
+  import type { Env, Val } from "@/lib/libamp/values"
+
+  export function parseValue1(input: string): Result<Val, string>
+  export function parseBinding(input: string): Result<[string, Val], string>
+  export function parseEnv(input: string): Result<Env, string>
+}
+
+declare module "@/lib/libamp/traceQuery" {
+  import type { RuleName } from "@/lib/libamp/cek"
+
+  export type TraceQueryField = "rule" | "detail" | "l"
+  export type TraceQueryComparisonOp = "eq" | "gt" | "gte" | "lt" | "lte"
+
+  const traceQueryAstBrand: unique symbol
+  export type TraceQueryAst = { readonly [traceQueryAstBrand]: never }
+
+  export interface TraceQueryParseError {
+    message: string
+    at: number
+  }
+
+  const traceQueryParseResultBrand: unique symbol
+  export type TraceQueryParseResult = {
+    readonly [traceQueryParseResultBrand]: never
+  }
+
+  export type TraceQueryParseResultVisitor<T> = {
+    ok: (ast: TraceQueryAst | null) => T
+    error: (error: TraceQueryParseError) => T
+  }
+
+  export interface TraceQueryRow {
+    index: number
+    rule?: RuleName
+    detail?: string
+    value?: string
+    label: number
+  }
+
+  export function visit_parse_result<T>(
+    result: TraceQueryParseResult,
+    visitor: TraceQueryParseResultVisitor<T>
+  ): T
+
+  export function parseTraceQuery(input: string): TraceQueryParseResult
+  export function traceQueryMatches(
+    ast: TraceQueryAst | null,
+    row: TraceQueryRow
+  ): boolean
+}
