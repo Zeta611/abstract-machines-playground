@@ -33,7 +33,7 @@ function MakeEngineTable(funarg) {
     throw new Caml_js_exceptions.MelangeError("Assert_failure", {
         MEL_EXN_ID: "Assert_failure",
         _1: [
-          "libamp/menhirLib/TableInterpreter.ml",
+          "vendor/menhirLib/TableInterpreter.ml",
           64,
           4
         ]
@@ -65,7 +65,7 @@ function MakeEngineTable(funarg) {
         throw new Caml_js_exceptions.MelangeError("Assert_failure", {
             MEL_EXN_ID: "Assert_failure",
             _1: [
-              "libamp/menhirLib/TableInterpreter.ml",
+              "vendor/menhirLib/TableInterpreter.ml",
               103,
               8
             ]
@@ -89,7 +89,7 @@ function MakeEngineTable(funarg) {
         throw new Caml_js_exceptions.MelangeError("Assert_failure", {
             MEL_EXN_ID: "Assert_failure",
             _1: [
-              "libamp/menhirLib/TableInterpreter.ml",
+              "vendor/menhirLib/TableInterpreter.ml",
               121,
               8
             ]
@@ -113,7 +113,7 @@ function MakeEngineTable(funarg) {
           throw new Caml_js_exceptions.MelangeError("Assert_failure", {
               MEL_EXN_ID: "Assert_failure",
               _1: [
-                "libamp/menhirLib/TableInterpreter.ml",
+                "vendor/menhirLib/TableInterpreter.ml",
                 142,
                 10
               ]
@@ -148,7 +148,7 @@ function MakeEngineTable(funarg) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/TableInterpreter.ml",
+            "vendor/menhirLib/TableInterpreter.ml",
             164,
             4
           ]

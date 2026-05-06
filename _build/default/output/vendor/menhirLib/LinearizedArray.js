@@ -21,7 +21,7 @@ function make(a) {
     throw new Caml_js_exceptions.MelangeError("Assert_failure", {
         MEL_EXN_ID: "Assert_failure",
         _1: [
-          "libamp/menhirLib/LinearizedArray.ml",
+          "vendor/menhirLib/LinearizedArray.ml",
           30,
           2
         ]
@@ -62,7 +62,7 @@ function read(la, i, j) {
     throw new Caml_js_exceptions.MelangeError("Assert_failure", {
         MEL_EXN_ID: "Assert_failure",
         _1: [
-          "libamp/menhirLib/LinearizedArray.ml",
+          "vendor/menhirLib/LinearizedArray.ml",
           52,
           2
         ]
@@ -76,7 +76,7 @@ function write(la, i, j, v) {
     throw new Caml_js_exceptions.MelangeError("Assert_failure", {
         MEL_EXN_ID: "Assert_failure",
         _1: [
-          "libamp/menhirLib/LinearizedArray.ml",
+          "vendor/menhirLib/LinearizedArray.ml",
           56,
           2
         ]

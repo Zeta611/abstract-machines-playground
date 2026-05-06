@@ -200,6 +200,8 @@ function string_of_rule_name(param) {
       return "LetExp";
     case /* LetCall */ "LetCall" :
       return "LetCall";
+    case /* LetTag */ "LetTag" :
+      return "LetTag";
     case /* Match */ "Match" :
       return "Match";
     case /* Return */ "Return" :

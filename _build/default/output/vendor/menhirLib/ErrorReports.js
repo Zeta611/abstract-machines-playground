@@ -84,7 +84,7 @@ function show(f, buffer) {
   throw new Caml_js_exceptions.MelangeError("Assert_failure", {
       MEL_EXN_ID: "Assert_failure",
       _1: [
-        "libamp/menhirLib/ErrorReports.ml",
+        "vendor/menhirLib/ErrorReports.ml",
         39,
         6
       ]
@@ -103,7 +103,7 @@ function last(buffer) {
   throw new Caml_js_exceptions.MelangeError("Assert_failure", {
       MEL_EXN_ID: "Assert_failure",
       _1: [
-        "libamp/menhirLib/ErrorReports.ml",
+        "vendor/menhirLib/ErrorReports.ml",
         52,
         6
       ]

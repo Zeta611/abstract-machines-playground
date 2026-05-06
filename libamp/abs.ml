@@ -1,21 +1,22 @@
 open Ast
 open Utils
 
-(* partial map *)
-module PMap (KV : sig
+module type Domain = sig
   type t
-  type v
+  val bot : t
+  val join : t -> t -> t
+end
 
-  val compare : t -> t -> int
-  val bot : v
-end) =
+(* partial map *)
+module PMap (K : Map.OrderedType) (V : Domain) =
 struct
-  module KV = KV
-  include Map.Make (KV)
+  module K = K
+  module V = V
+  include Map.Make (K)
 
-  type nonrec t = KV.v t
+  type nonrec t = V.t t
 
-  let lookup k m = find_opt k m |> Option.value ~default:KV.bot
+  let lookup k m = find_opt k m |> Option.value ~default:V.bot
   let bot = empty
 end
 
@@ -159,7 +160,7 @@ let evalPrim = function
         ^ string_of_int (List.length args)
         ^ " argument(s)")
 
-let rec eval_exp (e : Exp.t) (rho : AbsEnv.t) (s : abs_store) :
+let rec eval_exp (e : Exp.t) (rho : AbsEnv.t) (sv : AbsVStore.t) (sk : AbsKStore.t) :
     (AbsVal.t, string) result =
   match e.desc with
   | Num n -> Ok (IntSet.singleton n, StringMap.empty)

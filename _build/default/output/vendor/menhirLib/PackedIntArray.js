@@ -39,7 +39,7 @@ function pack(a) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/PackedIntArray.ml",
+            "vendor/menhirLib/PackedIntArray.ml",
             74,
             4
           ]
@@ -76,7 +76,7 @@ function pack(a) {
     throw new Caml_js_exceptions.MelangeError("Assert_failure", {
         MEL_EXN_ID: "Assert_failure",
         _1: [
-          "libamp/menhirLib/PackedIntArray.ml",
+          "vendor/menhirLib/PackedIntArray.ml",
           123,
           4
         ]

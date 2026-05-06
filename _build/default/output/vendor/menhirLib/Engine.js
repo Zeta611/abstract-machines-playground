@@ -181,7 +181,7 @@ function Make(funarg) {
           throw new Caml_js_exceptions.MelangeError("Assert_failure", {
               MEL_EXN_ID: "Assert_failure",
               _1: [
-                "libamp/menhirLib/Engine.ml",
+                "vendor/menhirLib/Engine.ml",
                 333,
                 4
               ]
@@ -192,7 +192,7 @@ function Make(funarg) {
             throw new Caml_js_exceptions.MelangeError("Assert_failure", {
                 MEL_EXN_ID: "Assert_failure",
                 _1: [
-                  "libamp/menhirLib/Engine.ml",
+                  "vendor/menhirLib/Engine.ml",
                   348,
                   4
                 ]
@@ -314,7 +314,7 @@ function Make(funarg) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/Engine.ml",
+            "vendor/menhirLib/Engine.ml",
             666,
             4
           ]
@@ -363,7 +363,7 @@ function Make(funarg) {
         throw new Caml_js_exceptions.MelangeError("Assert_failure", {
             MEL_EXN_ID: "Assert_failure",
             _1: [
-              "libamp/menhirLib/Engine.ml",
+              "vendor/menhirLib/Engine.ml",
               693,
               8
             ]
@@ -381,7 +381,7 @@ function Make(funarg) {
           throw new Caml_js_exceptions.MelangeError("Assert_failure", {
               MEL_EXN_ID: "Assert_failure",
               _1: [
-                "libamp/menhirLib/Engine.ml",
+                "vendor/menhirLib/Engine.ml",
                 693,
                 8
               ]
@@ -462,7 +462,7 @@ function Make(funarg) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/Engine.ml",
+            "vendor/menhirLib/Engine.ml",
             853,
             6
           ]

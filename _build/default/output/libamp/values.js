@@ -3,7 +3,7 @@
 import * as Caml_obj from "melange.js/caml_obj.js";
 import * as Curry from "melange.js/curry.js";
 import * as Libamp__Utils from "./utils.js";
-import * as Stdlib__Array from "melange/array.js";
+import * as Stdlib__List from "melange/list.js";
 import * as Stdlib__String from "melange/string.js";
 
 function vInt(n) {
@@ -29,7 +29,7 @@ const vTrue = {
   TAG: /* Ctor */ 1,
   _0: {
     tag: "True",
-    args: []
+    args: /* [] */ 0
   }
 };
 
@@ -37,7 +37,7 @@ const vFalse = {
   TAG: /* Ctor */ 1,
   _0: {
     tag: "False",
-    args: []
+    args: /* [] */ 0
   }
 };
 
@@ -55,7 +55,7 @@ function isTrue(param) {
   }
   const match = param._0;
   if (match.tag === "True") {
-    return match.args.length === 0;
+    return Stdlib__List.length(match.args) === 0;
   } else {
     return false;
   }
@@ -70,17 +70,17 @@ function showVal(param) {
   const match = param._0;
   const args = match.args;
   const tag = match.tag;
-  if (args.length === 0) {
+  if (Stdlib__List.length(args) === 0) {
     return tag + "()";
   } else {
-    return tag + ("(" + (Stdlib__String.concat(", ", Stdlib__Array.to_list(Stdlib__Array.map(showVal, args))) + ")"));
+    return tag + ("(" + (Stdlib__String.concat(", ", Stdlib__List.map(showVal, args)) + ")"));
   }
 }
 
 function bindMany(env, xs, vs) {
-  return Stdlib__Array.fold_left((function (env, param) {
-    return Curry._3(Libamp__Utils.StringMap.add, param[0], param[1], env);
-  }), env, Stdlib__Array.combine(xs, vs));
+  return Stdlib__List.fold_left2((function (env, x, v) {
+    return Curry._3(Libamp__Utils.StringMap.add, x, v, env);
+  }), env, xs, vs);
 }
 
 export {

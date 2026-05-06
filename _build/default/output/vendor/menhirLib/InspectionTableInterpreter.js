@@ -18,7 +18,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             65,
             4
           ]
@@ -43,7 +43,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             90,
             4
           ]
@@ -59,7 +59,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             90,
             4
           ]
@@ -79,7 +79,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             84,
             4
           ]
@@ -96,7 +96,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             84,
             4
           ]
@@ -123,7 +123,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
         throw new Caml_js_exceptions.MelangeError("Assert_failure", {
             MEL_EXN_ID: "Assert_failure",
             _1: [
-              "libamp/menhirLib/InspectionTableInterpreter.ml",
+              "vendor/menhirLib/InspectionTableInterpreter.ml",
               90,
               4
             ]
@@ -139,7 +139,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
         throw new Caml_js_exceptions.MelangeError("Assert_failure", {
             MEL_EXN_ID: "Assert_failure",
             _1: [
-              "libamp/menhirLib/InspectionTableInterpreter.ml",
+              "vendor/menhirLib/InspectionTableInterpreter.ml",
               90,
               4
             ]
@@ -164,7 +164,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             84,
             4
           ]
@@ -181,7 +181,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             84,
             4
           ]
@@ -233,7 +233,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             84,
             4
           ]
@@ -244,7 +244,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             177,
             4
           ]
@@ -264,7 +264,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             84,
             4
           ]
@@ -280,7 +280,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             90,
             4
           ]
@@ -291,7 +291,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             177,
             4
           ]
@@ -315,7 +315,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             90,
             4
           ]
@@ -331,7 +331,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             90,
             4
           ]
@@ -384,7 +384,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
         throw new Caml_js_exceptions.MelangeError("Assert_failure", {
             MEL_EXN_ID: "Assert_failure",
             _1: [
-              "libamp/menhirLib/InspectionTableInterpreter.ml",
+              "vendor/menhirLib/InspectionTableInterpreter.ml",
               90,
               4
             ]
@@ -420,7 +420,7 @@ function Make(funarg, funarg$1, funarg$2, funarg$3) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/InspectionTableInterpreter.ml",
+            "vendor/menhirLib/InspectionTableInterpreter.ml",
             84,
             4
           ]

@@ -128,7 +128,7 @@ function tabulate(is_eof, lexer) {
       throw new Caml_js_exceptions.MelangeError("Assert_failure", {
           MEL_EXN_ID: "Assert_failure",
           _1: [
-            "libamp/menhirLib/LexerUtil.ml",
+            "vendor/menhirLib/LexerUtil.ml",
             66,
             4
           ]

@@ -4,12 +4,12 @@ import * as Caml_exceptions from "melange.js/caml_exceptions.js";
 import * as Caml_js_exceptions from "melange.js/caml_js_exceptions.js";
 import * as Curry from "melange.js/curry.js";
 import * as Libamp__Values from "./values.js";
-import * as MenhirLib__Engine from "./menhirLib/Engine.js";
-import * as MenhirLib__InspectionTableInterpreter from "./menhirLib/InspectionTableInterpreter.js";
-import * as MenhirLib__LinearizedArray from "./menhirLib/LinearizedArray.js";
-import * as MenhirLib__PackedIntArray from "./menhirLib/PackedIntArray.js";
-import * as MenhirLib__RowDisplacementDecode from "./menhirLib/RowDisplacementDecode.js";
-import * as MenhirLib__TableInterpreter from "./menhirLib/TableInterpreter.js";
+import * as MenhirLib__Engine from "../vendor/menhirLib/Engine.js";
+import * as MenhirLib__InspectionTableInterpreter from "../vendor/menhirLib/InspectionTableInterpreter.js";
+import * as MenhirLib__LinearizedArray from "../vendor/menhirLib/LinearizedArray.js";
+import * as MenhirLib__PackedIntArray from "../vendor/menhirLib/PackedIntArray.js";
+import * as MenhirLib__RowDisplacementDecode from "../vendor/menhirLib/RowDisplacementDecode.js";
+import * as MenhirLib__TableInterpreter from "../vendor/menhirLib/TableInterpreter.js";
 
 const $$Error = /* @__PURE__ */ Caml_exceptions.create("Libamp.EnvGrammar.MenhirBasics.Error");
 
