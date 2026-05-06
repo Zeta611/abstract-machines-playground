@@ -141,14 +141,16 @@ const FIBONACCI_ENV = `n = 7
 
 const MUTUAL_PARITY = `even(n) =
   match iszero(n) with
-  | True() => True()
+  | True() =>
+    let t = True() in t
   | False() =>
     let r = odd(sub(n, 1)) in r
   end
 
 odd(n) =
   match iszero(n) with
-  | True() => False()
+  | True() =>
+    let f = False() in f
   | False() =>
     let r = even(sub(n, 1)) in r
   end
@@ -166,7 +168,9 @@ const PEANO_ADDITION = `addPeano(pair) =
     match x with
     | Z() => y
     | S(x1) =>
-      let r = addPeano(Pair(x1, S(y))) in r
+      let y1 = S(y) in
+      let pair1 = Pair(x1, y1) in
+      let r = addPeano(pair1) in r
     end
   end
 `

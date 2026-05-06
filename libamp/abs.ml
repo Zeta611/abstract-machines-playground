@@ -78,27 +78,46 @@ module AbsEnv = PMap (String) (VAddr.Abs)
 module WithTop (D : Domain) = struct
   module D = D
 
-  type t = D.t option
+  type t = Top | V of D.t
 
-  let bot = Some D.bot
-  let inject v = Some v
-  let top = None
+  let bot : t = V D.bot
+  let inject v : t = V v
+  let top : t = Top
 
-  let join x y =
-    match (x, y) with
-    | None, _ | _, None -> None
-    | Some v1, Some v2 -> Some (D.join v1 v2)
+  let join x y : t =
+    match (x, y) with Top, _ | _, Top -> Top | V v1, V v2 -> V (D.join v1 v2)
 end
 
 module IntSet = Set (Int)
 module AbsInt = WithTop (IntSet)
 
+module WithBot (D : Domain) = struct
+  module D = D
+
+  type t = Bot | V of D.t
+
+  let bot : t = Bot
+  let inject v : t = V v
+
+  let join x y : t =
+    match (x, y) with
+    | Bot, Bot -> Bot
+    | V v, Bot | Bot, V v -> V v
+    | V v1, V v2 -> V (D.join v1 v2)
+end
+
+module AbsAddrList = PMap (Int) (VAddr.Abs)
+module AbsArgs = WithBot (AbsAddrList)
+
 module AbsAdt = struct
-  module AbsArgs = PMap (Int) (VAddr.Abs)
   include PMap (String) (AbsArgs)
 
   let of_tag_args (tag : string) (args : VAddr.Abs.t list) : t =
-    let argMap = args |> List.mapi (fun i arg -> (i, arg)) |> AbsArgs.of_list in
+    let argMap =
+      args
+      |> List.mapi (fun i arg -> (i, arg))
+      |> AbsAddrList.of_list |> AbsArgs.inject
+    in
     add tag argMap empty
 end
 
@@ -113,17 +132,17 @@ module AbsVal = struct
   let true_ : t = (AbsInt.bot, AbsAdt.of_tag_args "True" [])
   let false_ = (AbsInt.bot, AbsAdt.of_tag_args "False" [])
 
-  let lift_int_binop f (x, _) (y, _) =
+  let lift_int_binop f ((x, _) : t) ((y, _) : t) : t =
     match (x, y) with
-    | Some xSet, Some ySet ->
+    | V xSet, V ySet ->
         bot
         |> IntSet.fold (fun n -> IntSet.fold (fun m -> join (f n m)) ySet) xSet
     | _ -> of_abs_int AbsInt.top
 
-  let lift_int_unop f (x, _) =
+  let lift_int_unop f ((x, _) : t) : t =
     match x with
-    | Some xSet -> bot |> IntSet.fold (fun n -> join (f n)) xSet
-    | None -> of_abs_int AbsInt.top
+    | V xSet -> bot |> IntSet.fold (fun n -> join (f n)) xSet
+    | _ -> of_abs_int AbsInt.top
 
   let lift_tag_unop f ((_, m) : t) =
     bot |> AbsAdt.fold (fun tag args acc -> join acc (f (tag, args))) m
@@ -322,33 +341,37 @@ let abs_transition (prog : program)
   | Match_ { scrutinee; branches; _ } ->
       let+ v = eval_exp scrutinee rho sv sk in
       branches
-      |> List.map (fun branch ->
+      |> List.filter_map (fun branch ->
           let branchTag = branch.Cmd.tag in
           let args = AbsVal.adt_of v |> AbsAdt.lookup branchTag in
-          let varAddrArgs =
-            branch.vars
-            |> List.mapi (fun i var ->
-                let addr = abs_allocv sigma i in
-                let arg = joined_lookup (AbsAdt.AbsArgs.lookup i args) sv in
-                (var, addr, arg))
-          in
-          let sv' =
-            List.fold_left
-              (fun sv (_, addr, arg) -> AbsVStore.weak_update addr arg sv)
-              sv varAddrArgs
-          in
-          let rho' =
-            List.fold_left
-              (fun rho (var, addr, _) ->
-                AbsEnv.weak_update var (VAddr.Abs.singleton addr) rho)
-              rho varAddrArgs
-          in
-          ( abs_tick sigma (`L branch.body.label),
-            branch.body.label,
-            rho',
-            sv',
-            sk,
-            ak ))
+          match args with
+          | AbsArgs.Bot -> None
+          | AbsArgs.V args ->
+              let varAddrArgs =
+                branch.vars
+                |> List.mapi (fun i var ->
+                    let addr = abs_allocv sigma i in
+                    let arg = joined_lookup (AbsAddrList.lookup i args) sv in
+                    (var, addr, arg))
+              in
+              let sv' =
+                List.fold_left
+                  (fun sv (_, addr, arg) -> AbsVStore.weak_update addr arg sv)
+                  sv varAddrArgs
+              in
+              let rho' =
+                List.fold_left
+                  (fun rho (var, addr, _) ->
+                    AbsEnv.weak_update var (VAddr.Abs.singleton addr) rho)
+                  rho varAddrArgs
+              in
+              Some
+                ( abs_tick sigma (`L branch.body.label),
+                  branch.body.label,
+                  rho',
+                  sv',
+                  sk,
+                  ak ))
 
 module TimeLabel = struct
   type t = Time.Ptn.t * Label.t
@@ -374,3 +397,117 @@ let abs_transfer (prog : program) (cfg : AbsCfg.t) : (AbsCfg.t, string) result =
          AbsCfg.join cfg
            (Frames.weak_update (t, l) (rho, ak) Frames.bot, (sv, sk)))
        cfg
+
+type abs_run = { cfg : AbsCfg.t; steps : int; stabilized : bool }
+type abs_env_row = { name : string; addrs : string array }
+type abs_vstore_row = { addr : string; value : string }
+
+type abs_kstore_row = {
+  addr : string;
+  env : abs_env_row array;
+  kont : string array;
+}
+
+type abs_frame_row = {
+  label : int;
+  env : abs_env_row array;
+  kont : string array;
+}
+
+type abs_cfg_view = {
+  frames : abs_frame_row array;
+  vstore : abs_vstore_row array;
+  kstore : abs_kstore_row array;
+}
+
+let show_label (Label.L n) = n
+
+let show_vaddr = function
+  | VAddr.Ptn.Static n -> Printf.sprintf "s%d" n
+  | Dynamic (_, Label.L l, i) -> Printf.sprintf "v(%d,%d)" l i
+
+let show_kaddr (_, Label.L l) = Printf.sprintf "k(%d)" l
+
+let show_vaddr_abs addrs =
+  VAddr.Abs.to_list addrs |> List.map show_vaddr |> String.concat " | "
+
+let show_kaddr_abs addrs =
+  KAddr.Abs.to_list addrs |> List.map show_kaddr |> Array.of_list
+
+let show_abs_int : AbsInt.t -> string = function
+  | V ints ->
+      let body =
+        IntSet.to_list ints |> List.map string_of_int |> String.concat "|"
+      in
+      Printf.sprintf "Int{%s}" body
+  | _ -> "Int(*)"
+
+let show_abs_val ((ints, adts) : AbsVal.t) =
+  let parts = [] in
+  let parts =
+    match ints with
+    | V ints when IntSet.is_empty ints -> parts
+    | _ -> show_abs_int ints :: parts
+  in
+  let parts =
+    AbsAdt.to_list adts
+    |> List.filter_map (fun (tag, args) ->
+        match args with
+        | AbsArgs.Bot -> None
+        | AbsArgs.V args ->
+            let argDoc =
+              AbsAddrList.to_list args
+              |> List.map (fun (_, addrs) -> show_vaddr_abs addrs)
+              |> String.concat ", "
+            in
+            if argDoc = "" then Some tag
+            else Some (Printf.sprintf "%s(%s)" tag argDoc))
+    |> List.rev_append parts
+  in
+  if List.length parts = 0 then "⊥"
+  else
+    let ordered = List.rev parts in
+    if List.length ordered = 1 then List.hd ordered
+    else "{" ^ String.concat " | " ordered ^ "}"
+
+let view_env (rho : AbsEnv.t) : abs_env_row array =
+  AbsEnv.to_list rho
+  |> List.map (fun (name, addrs) ->
+      { name; addrs = [| show_vaddr_abs addrs |] })
+  |> Array.of_list
+
+let view_frame (((_, l), (rho, ak)) : TimeLabel.t * AbsFrame.t) : abs_frame_row
+    =
+  { label = show_label l; env = view_env rho; kont = show_kaddr_abs ak }
+
+let view_kstore_row ((addr, (rho, ak)) : KAddr.Ptn.t * AbsFrame.t) :
+    abs_kstore_row =
+  { addr = show_kaddr addr; env = view_env rho; kont = show_kaddr_abs ak }
+
+let view_vstore_row ((addr, value) : VAddr.Ptn.t * AbsVal.t) : abs_vstore_row =
+  { addr = show_vaddr addr; value = show_abs_val value }
+
+let view_cfg ((frames, (sv, sk)) : AbsCfg.t) : abs_cfg_view =
+  {
+    frames = Frames.to_list frames |> List.map view_frame |> Array.of_list;
+    vstore = AbsVStore.to_list sv |> List.map view_vstore_row |> Array.of_list;
+    kstore = AbsKStore.to_list sk |> List.map view_kstore_row |> Array.of_list;
+  }
+
+let abs_inject (prog : program) ((rho, sv) : AbsEnv.t * AbsVStore.t) : AbsCfg.t
+    =
+  let main = StringMap.find prog.mainName prog.defs in
+  ( Frames.weak_update ((), main.body.label) (rho, KAddr.Abs.bot) Frames.bot,
+    (sv, AbsKStore.bot) )
+
+let rec iterate_abs_transfer (prog : program) (fuel : int) (steps : int)
+    (cfg : AbsCfg.t) : (abs_run, string) result =
+  if fuel <= 0 then Ok { cfg; steps; stabilized = false }
+  else
+    let* next = abs_transfer prog cfg in
+    if next = cfg then Ok { cfg = next; steps = steps + 1; stabilized = true }
+    else iterate_abs_transfer prog (fuel - 1) (steps + 1) next
+
+let run_abs (prog : program) ((rho, sv) : AbsEnv.t * AbsVStore.t) (fuel : int) :
+    (abs_run, string) result =
+  abs_inject prog (rho, sv) |> iterate_abs_transfer prog fuel 0

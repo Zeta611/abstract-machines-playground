@@ -17,11 +17,20 @@ open Values
 
 %%
 
+padding:
+  | NEWLINE* { () }
+
 value_eof:
-  | value EOF { $1 }
+  | padding value padding EOF { $2 }
 
 env_eof:
-  | bindings=separated_list(NEWLINE+, binding) EOF { bindings }
+  | env_lines EOF { $1 }
+
+env_lines:
+  | { [] }
+  | NEWLINE+ rest=env_lines { rest }
+  | first=binding { [ first ] }
+  | first=binding NEWLINE+ rest=env_lines { first :: rest }
 
 binding:
   | name=binding_name "=" value=value { (name, value) }

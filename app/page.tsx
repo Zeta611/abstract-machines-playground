@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import {
   useCallback,
   useEffect,
@@ -639,6 +640,11 @@ function Header({
         <div className="text-[11px] text-muted-foreground">
           ↓/↑ or j/k step · space = play/pause
         </div>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/abstract">
+            <span className="text-xs">Abstract Explorer</span>
+          </Link>
+        </Button>
         <Button asChild size="sm" variant="outline">
           <a
             href="https://github.com/Zeta611/abstract-machines-playground"

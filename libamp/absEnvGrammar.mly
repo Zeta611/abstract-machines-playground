@@ -24,17 +24,16 @@ value_eof:
   | padding value EOF { $2 }
 
 env_eof:
-  | bindings EOF { $1 }
+  | env_lines EOF { $1 }
 
 padding:
   | NEWLINE* { () }
 
-bindings:
-  | separated_list(binding_sep, binding) { $1 }
-
-binding_sep:
-  | padding COMMA padding { () }
-  | NEWLINE+ { () }
+env_lines:
+  | { [] }
+  | NEWLINE+ rest=env_lines { rest }
+  | first=binding { [ first ] }
+  | first=binding NEWLINE+ rest=env_lines { first :: rest }
 
 binding:
   | name=binding_name padding "=" padding value=value { (name, value) }

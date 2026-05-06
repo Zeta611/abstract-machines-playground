@@ -63,37 +63,6 @@ const semantic_action = [
   }),
   (function (_menhir_env) {
     const _menhir_stack = _menhir_env.stack;
-    const match = _menhir_stack.next.next;
-    return {
-      state: match.state,
-      semv: undefined,
-      startp: match.startp,
-      endp: _menhir_stack.endp,
-      next: match.next
-    };
-  }),
-  (function (_menhir_env) {
-    const _menhir_stack = _menhir_env.stack;
-    return {
-      state: _menhir_stack.state,
-      semv: undefined,
-      startp: _menhir_stack.startp,
-      endp: _menhir_stack.endp,
-      next: _menhir_stack.next
-    };
-  }),
-  (function (_menhir_env) {
-    const _menhir_stack = _menhir_env.stack;
-    return {
-      state: _menhir_stack.state,
-      semv: _menhir_stack.semv,
-      startp: _menhir_stack.startp,
-      endp: _menhir_stack.endp,
-      next: _menhir_stack.next
-    };
-  }),
-  (function (_menhir_env) {
-    const _menhir_stack = _menhir_env.stack;
     const _menhir_s = _menhir_env.current;
     const _startpos = _menhir_stack.endp;
     return {
@@ -142,6 +111,32 @@ const semantic_action = [
   (function (_menhir_env) {
     const _menhir_stack = _menhir_env.stack;
     const match = _menhir_stack.next;
+    return {
+      state: match.state,
+      semv: _menhir_stack.semv,
+      startp: match.startp,
+      endp: _menhir_stack.endp,
+      next: match.next
+    };
+  }),
+  (function (_menhir_env) {
+    const _menhir_stack = _menhir_env.stack;
+    const _v_0 = _menhir_stack.semv;
+    const _v = {
+      hd: _v_0,
+      tl: /* [] */ 0
+    };
+    return {
+      state: _menhir_stack.state,
+      semv: _v,
+      startp: _menhir_stack.startp,
+      endp: _menhir_stack.endp,
+      next: _menhir_stack.next
+    };
+  }),
+  (function (_menhir_env) {
+    const _menhir_stack = _menhir_env.stack;
+    const match = _menhir_stack.next.next;
     const _v_0 = match.semv;
     const _v_1 = _menhir_stack.semv;
     const _v = {
@@ -170,12 +165,19 @@ const semantic_action = [
   }),
   (function (_menhir_env) {
     const _menhir_stack = _menhir_env.stack;
+    const match = _menhir_stack.next;
+    const _v_0 = match.semv;
+    const _v_1 = _menhir_stack.semv;
+    const _v = {
+      hd: _v_0,
+      tl: _v_1
+    };
     return {
-      state: _menhir_stack.state,
-      semv: _menhir_stack.semv,
-      startp: _menhir_stack.startp,
+      state: match.state,
+      semv: _v,
+      startp: match.startp,
       endp: _menhir_stack.endp,
-      next: _menhir_stack.next
+      next: match.next
     };
   }),
   (function (_menhir_env) {
@@ -240,38 +242,6 @@ const semantic_action = [
       startp: _menhir_stack.startp,
       endp: _menhir_stack.endp,
       next: _menhir_stack.next
-    };
-  }),
-  (function (_menhir_env) {
-    const _menhir_stack = _menhir_env.stack;
-    const _v_0 = _menhir_stack.semv;
-    const _v = {
-      hd: _v_0,
-      tl: /* [] */ 0
-    };
-    return {
-      state: _menhir_stack.state,
-      semv: _v,
-      startp: _menhir_stack.startp,
-      endp: _menhir_stack.endp,
-      next: _menhir_stack.next
-    };
-  }),
-  (function (_menhir_env) {
-    const _menhir_stack = _menhir_env.stack;
-    const match = _menhir_stack.next.next;
-    const _v_0 = match.semv;
-    const _v_1 = _menhir_stack.semv;
-    const _v = {
-      hd: _v_0,
-      tl: _v_1
-    };
-    return {
-      state: match.state,
-      semv: _v,
-      startp: match.startp,
-      endp: _menhir_stack.endp,
-      next: match.next
     };
   }),
   (function (_menhir_env) {
@@ -458,25 +428,25 @@ function token2value(_tok) {
 }
 
 function default_reduction(i) {
-  return MenhirLib__PackedIntArray.get8("\0\x06\x05\x12\t\x01\0\f\0\0\x0e\0\0\0\0\0\0\x1e\0\0\x17\0\x1d\x1c\0\0\0\x03\x15\0\x19\x10\0\x0b\x1f\x04\0\0\x14\0\0\x07\b\0\x1b\0\x02\0\0 ", i);
+  return MenhirLib__PackedIntArray.get8("\0\x06\0\x13\x05\0\x0b\0\0\x0f\0\0\0\0\0\0\x1b\0\0\x16\0\x1a\x19\0\0\0\x03\x14\0\x18\x11\0\b\x1c\x04\0\0\r\0\t\x01\0\x02\0\0\x1d", i);
 }
 
 function error(i, j) {
-  return MenhirLib__PackedIntArray.get1("@P\0\0\0\0\0\0\0\0\0@\0\x04\"/@\0\0DX \xc0\xf8l0@\x80\0\x06\0\x81\0\0\b\0\0\0\0$\b\0Q`\0\0\0 \xc0\0\0\0 \0\0\0\0\0\0A\xa2$\0\0\x01D@\0\0\0\x80\x80\0\"\xc0\0\b0\0\x10\0\0", Math.imul(13, i) + j | 0);
+  return MenhirLib__PackedIntArray.get1("DP\0\x11\x14\0\0\0\"(\0\0\x84E\xa8\0\0\b\x8b\x04\x18\x1f\r\x86\b\x10\0\0\xc0\x10 \0\x01\0\0\0\0\x04\x81\0\n,\0\0\0\x04\x18\0\0\0\x04\0\0\0\0\0\0\b$E\0\0\0@\0\0\x02,\0\0\x83\0\x01\0\0", Math.imul(13, i) + j | 0);
 }
 
 function action(i, j) {
-  const k = MenhirLib__RowDisplacementDecode.decode(MenhirLib__PackedIntArray.get8("\x12\0\0\0\0\0\f\0\x03\x03\x002\x030\x1400\0\x030\0*\0\0\x03,\x03\0\x000\0\0>\0\0\0$$\0 \x03\0\0\x12\0\x03\x000\r\0", i));
-  return MenhirLib__PackedIntArray.get8("1]UN&\xc71111\x061%%%%>\x1f\nIA%%\x96Z:9I\xa2e1BF\x86j2", k + j | 0);
+  const k = MenhirLib__RowDisplacementDecode.decode(MenhirLib__PackedIntArray.get8("2\x000\0\x002\0\x03\x03\0\"\x03 \x14  \0\x03 \0\n\0\0\x03\x0e\x03\0\0 \0\0$\0\0\x0042\0\x03\0\0\x03\0 \r\0", i));
+  return MenhirLib__PackedIntArray.get8("5YQJ\"\xb755V5\x9f5\x19\x19\x19\x19:6=f\x82\x19\x19>BE\x06.\0\n\n\n\0E\x12E%-", k + j | 0);
 }
 
 function lhs(i) {
-  return MenhirLib__PackedIntArray.get8("\x01\0\x13\x12\x11\x11\x10\x10\x0f\x0e\x0e\r\f\f\x0b\x0b\n\n\t\t\b\x07\x07\x06\x06\x05\x05\x04\x04\x03\x03\x02", i);
+  return MenhirLib__PackedIntArray.get8("\x01\0\x10\x0f\x0e\x0e\r\r\f\x0b\x0b\x0b\x0b\n\n\t\t\b\b\x07\x06\x06\x05\x05\x04\x04\x03\x03\x02", i);
 }
 
 function $$goto(i, j) {
-  const k = MenhirLib__RowDisplacementDecode.decode(MenhirLib__PackedIntArray.get8("\x0b\0\0\0\0\0\0\0<D\0\0J4\x1b\x16J\0\0@\0\0\0\0\x10\0:\0\0<\0\0\0\0\0\0\x0bD\0\0\r\0\0\x1c\0 \0,\0\0", i));
-  return MenhirLib__PackedIntArray.get8("\x04#*(+\x05\x1d\x1d\x06\0\x07,\t%\x18\x19\x1a /-\x1d\0!\x000\x181\x1e\x1d\x18$\t%\x18\x19\x13\x1f\x1c\f\x15\x13\x1d\x1d'\x16\x0e\x0b\0\0\x1d", k + j | 0);
+  const k = MenhirLib__RowDisplacementDecode.decode(MenhirLib__PackedIntArray.get8("\x11\0\x0e\0\0\f\0:\x12\0\0JL\x19\x0e>\0\0@\0\0\0\0\x1e\0B\0\x000\0\0\0\0\0\0\n\r\0\0\0\0 \0:\0\0", i));
+  return MenhirLib__PackedIntArray.get8("\x06\"\x06')&\b$\b$\x17\x18\x1f%\x06\x04 \x07+\n\b$\x19,\0\x1c\x1c\x17\x18\x1e\0\x1d\x17-\x12\x12\x0b\x15\x14\x1c\x1b\x17#\x1c\r\0\0\x1c", k + j | 0);
 }
 
 const ET = MenhirLib__TableInterpreter.MakeEngineTable({
@@ -616,7 +586,7 @@ function terminal(t) {
           MEL_EXN_ID: "Assert_failure",
           _1: [
             "libamp/absEnvGrammar.ml",
-            1223,
+            1131,
             12
           ]
         });
@@ -654,7 +624,7 @@ function nonterminal(nt) {
         TAG: /* X */ 0,
         _0: {
           TAG: /* N */ 1,
-          _0: /* N_separated_nonempty_list_binding_sep_binding_ */ 3
+          _0: /* N_separated_nonempty_list_arg_sep_value_ */ 3
         }
       };
     case 6 :
@@ -662,7 +632,7 @@ function nonterminal(nt) {
         TAG: /* X */ 0,
         _0: {
           TAG: /* N */ 1,
-          _0: /* N_separated_nonempty_list_arg_sep_value_ */ 4
+          _0: /* N_separated_nonempty_list_PIPE_value_atom_ */ 4
         }
       };
     case 7 :
@@ -670,7 +640,7 @@ function nonterminal(nt) {
         TAG: /* X */ 0,
         _0: {
           TAG: /* N */ 1,
-          _0: /* N_separated_nonempty_list_PIPE_value_atom_ */ 5
+          _0: /* N_padding */ 5
         }
       };
     case 8 :
@@ -678,7 +648,7 @@ function nonterminal(nt) {
         TAG: /* X */ 0,
         _0: {
           TAG: /* N */ 1,
-          _0: /* N_padding */ 6
+          _0: /* N_nonempty_list_NEWLINE_ */ 6
         }
       };
     case 9 :
@@ -686,7 +656,7 @@ function nonterminal(nt) {
         TAG: /* X */ 0,
         _0: {
           TAG: /* N */ 1,
-          _0: /* N_nonempty_list_NEWLINE_ */ 7
+          _0: /* N_loption_separated_nonempty_list_arg_sep_value__ */ 7
         }
       };
     case 10 :
@@ -694,7 +664,7 @@ function nonterminal(nt) {
         TAG: /* X */ 0,
         _0: {
           TAG: /* N */ 1,
-          _0: /* N_loption_separated_nonempty_list_binding_sep_binding__ */ 8
+          _0: /* N_list_NEWLINE_ */ 8
         }
       };
     case 11 :
@@ -702,7 +672,7 @@ function nonterminal(nt) {
         TAG: /* X */ 0,
         _0: {
           TAG: /* N */ 1,
-          _0: /* N_loption_separated_nonempty_list_arg_sep_value__ */ 9
+          _0: /* N_env_lines */ 9
         }
       };
     case 12 :
@@ -710,7 +680,7 @@ function nonterminal(nt) {
         TAG: /* X */ 0,
         _0: {
           TAG: /* N */ 1,
-          _0: /* N_list_NEWLINE_ */ 10
+          _0: /* N_env_eof */ 10
         }
       };
     case 13 :
@@ -718,7 +688,7 @@ function nonterminal(nt) {
         TAG: /* X */ 0,
         _0: {
           TAG: /* N */ 1,
-          _0: /* N_env_eof */ 11
+          _0: /* N_ctor_args */ 11
         }
       };
     case 14 :
@@ -726,7 +696,7 @@ function nonterminal(nt) {
         TAG: /* X */ 0,
         _0: {
           TAG: /* N */ 1,
-          _0: /* N_ctor_args */ 12
+          _0: /* N_binding_name */ 12
         }
       };
     case 15 :
@@ -734,7 +704,7 @@ function nonterminal(nt) {
         TAG: /* X */ 0,
         _0: {
           TAG: /* N */ 1,
-          _0: /* N_bindings */ 13
+          _0: /* N_binding */ 13
         }
       };
     case 16 :
@@ -742,31 +712,7 @@ function nonterminal(nt) {
         TAG: /* X */ 0,
         _0: {
           TAG: /* N */ 1,
-          _0: /* N_binding_sep */ 14
-        }
-      };
-    case 17 :
-      return {
-        TAG: /* X */ 0,
-        _0: {
-          TAG: /* N */ 1,
-          _0: /* N_binding_name */ 15
-        }
-      };
-    case 18 :
-      return {
-        TAG: /* X */ 0,
-        _0: {
-          TAG: /* N */ 1,
-          _0: /* N_binding */ 16
-        }
-      };
-    case 19 :
-      return {
-        TAG: /* X */ 0,
-        _0: {
-          TAG: /* N */ 1,
-          _0: /* N_arg_sep */ 17
+          _0: /* N_arg_sep */ 14
         }
       };
     default:
@@ -774,7 +720,7 @@ function nonterminal(nt) {
           MEL_EXN_ID: "Assert_failure",
           _1: [
             "libamp/absEnvGrammar.ml",
-            1265,
+            1167,
             12
           ]
         });
@@ -782,15 +728,15 @@ function nonterminal(nt) {
 }
 
 function lr0_incoming(i) {
-  return MenhirLib__PackedIntArray.get8("\0\x04\x14\x0b\x15\x1b\x1f\x18#\f\x19\x11\x16\x11\x04\x0e\x10\x12\x07\n\x0f\x0f\b\x07\t\x11\x1a\x11\x19'\r\r\x17\x06\x1d\t%\f\x13\x11\x1a\x11\x13!\x0b\0\x05\x11\t\x18", i);
+  return MenhirLib__PackedIntArray.get8("\0\x04\f\x11\x14\x11\x17\x1d\f\x15\x0f\x16\x0f\x04\x0e\x10\x12\x07\n\r\r\b\x07\t\x0f\x1a\x0f\x15!\x0b\x0b\x13\x06\x1b\t\x1f\x11\x17\x17\x18\x19\0\x05\x0f\t\x18", i);
 }
 
 function rhs_data(i) {
-  return MenhirLib__PackedIntArray.get8("\x1b\x05\x11\x1a\x11#\x11\x16\x11\t\x14\x04\x11\x1a\x11\x13\x15\x0e\x17\x06\x1f\x18\f\x19\r\x0b\f\f\x13\x19\x07\x07\n\x0f\t\t'\r%%!\x0b\x07\x10\x0f\b\x12\x04\x1d\x11\t\x18", i);
+  return MenhirLib__PackedIntArray.get8("\x19\x05\x0f\x1a\x0f\x1d\x0f\x16\x0f\t\x14\x04\x0e\x13\x06\x17\x18\x11\x17\x1f\x1f\x11\x17\f\x15\x0b\f\f\x11\x15\x07\x07\n\r\t\t!\x0b\x07\x10\r\b\x12\x04\x1b\x0f\t\x18", i);
 }
 
 function rhs_entry(i) {
-  return MenhirLib__PackedIntArray.get8("\0\x01\x02\x05\n\x0b\f\x0f\x10\x11\x11\x14\x16\x16\x18\x18\x19\x19\x1a\x1b\x1d\x1e\x1f\"#&'*+./14", i);
+  return MenhirLib__PackedIntArray.get8("\0\x01\x02\x05\n\x0b\f\f\x0f\x11\x11\x13\x14\x17\x17\x19\x19\x1a\x1b\x1d\x1e\x1f\"#&'*+-0", i);
 }
 
 function rhs(i) {
@@ -798,15 +744,15 @@ function rhs(i) {
 }
 
 function lr0_core(i) {
-  return MenhirLib__PackedIntArray.get8("\0\x01\x02\x03\x04\x05\x06\x07\b\t\n\x0b\f\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !\"#$%&'()*+,-./01", i);
+  return MenhirLib__PackedIntArray.get8("\0\x01\x02\x03\x04\x05\x06\x07\b\t\n\x0b\f\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !\"#$%&'()*+,-", i);
 }
 
 function lr0_items_data(i) {
-  return MenhirLib__PackedIntArray.get16("\0\0\x14\x01\x10\x01D\x01 \x01\0\x01,\x01,\x02\f\x014\x014\x02\f\x02\f\x03\f\x04x\x01(\x01p\x01t\x01X\x01T\x01X\x02X\x03p\x02p\x03l\x01`\x01\\\x01\b\x01\b\x02\b\x03P\x01`\x02`\x03<\x01(\x02(\x03x\x02\f\x05h\x01d\x01L\x01H\x014\x01L\x02\x18\x01\x18\x02\x18\x03\x1c\x01h\x02h\x03\x04\0\x04\x01|\x01|\x02|\x03", i);
+  return MenhirLib__PackedIntArray.get16("\0\0\x14\x01H\x01D\x01H\x02\x10\x01(\x01(\x02\f\x018\x018\x02\f\x02\f\x03\f\x04l\x01\x1c\x01d\x01h\x01T\x01P\x01T\x02T\x03d\x02d\x03`\x01\\\x01X\x01\b\x01\b\x02\b\x03L\x01\\\x02\\\x03@\x01\x1c\x02\x1c\x03l\x02\f\x050\x01,\x010\x020\x03 \x01 \x02\0\x01\x04\0\x04\x01p\x01p\x02p\x03", i);
 }
 
 function lr0_items_entry(i) {
-  return MenhirLib__PackedIntArray.get8("\0\x01\x02\x03\x04\x05\x06\x07\b\t\n\x0b\f\r\x0e\x0f\x10\x11\x12\x14\x15\x16\x17\x18\x19\x1b\x1c\x1d\x1e\x1f !\"#$%&(+,-./01234567", i);
+  return MenhirLib__PackedIntArray.get8("\0\x01\x02\x04\x05\x06\x07\b\t\n\x0b\f\r\x0e\x0f\x10\x11\x12\x14\x15\x16\x17\x18\x19\x1b\x1c\x1d\x1e\x1f !\"#$%&()*+,-./012", i);
 }
 
 function lr0_items(i) {
@@ -814,11 +760,11 @@ function lr0_items(i) {
 }
 
 function nullable(i) {
-  return MenhirLib__PackedIntArray.get1("\0\xbb\0", i);
+  return MenhirLib__PackedIntArray.get1("\x01t\0", i);
 }
 
 function first(i, j) {
-  return MenhirLib__PackedIntArray.get1("E\x82\x02\x91`\x81\x04\x18 !\x06\b\x10\x04\0 \x10\x10\x83\0@ (\b\b\b\x04\n\x02\x10\x10\b\x10", Math.imul(13, i) + j | 0);
+  return MenhirLib__PackedIntArray.get1("E\x82\"\x91`\x81\x04\x18 \xc1\x02\0\x80\x04\x02\f\x01\0\x88\x84E\x01\x01\x01\b\b\x04\b", Math.imul(13, i) + j | 0);
 }
 
 const include = MenhirLib__InspectionTableInterpreter.Make({
@@ -847,7 +793,7 @@ const include = MenhirLib__InspectionTableInterpreter.Make({
 }, ET, {});
 
 function value_eof(lexer, lexbuf) {
-  return Curry._4(entry, "Legacy", 45, lexer, lexbuf);
+  return Curry._4(entry, "Legacy", 41, lexer, lexbuf);
 }
 
 function env_eof(lexer, lexbuf) {
@@ -855,7 +801,7 @@ function env_eof(lexer, lexbuf) {
 }
 
 function value_eof$1(initial_position) {
-  return Curry._2(start, 45, initial_position);
+  return Curry._2(start, 41, initial_position);
 }
 
 function env_eof$1(initial_position) {

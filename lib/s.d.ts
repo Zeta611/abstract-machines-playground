@@ -165,6 +165,75 @@ declare module "@/lib/s/envParser" {
   export function parseEnv(input: string): Result<Env, string>
 }
 
+declare module "@/lib/s/absEnvParser" {
+  import type { Result } from "melange/result"
+  import type { AbsEnv, AbsVStore } from "@/lib/s/abs"
+
+  export function parseAbsValue1(input: string): Result<unknown, string>
+  export function parseAbsEnvStore(
+    input: string
+  ): Result<[AbsEnv, AbsVStore], string>
+}
+
+declare module "@/lib/s/abs" {
+  import type { Program } from "@/lib/s/ast"
+  import type { Result } from "melange/result"
+
+  const absEnvBrand: unique symbol
+  const absVStoreBrand: unique symbol
+  const absCfgBrand: unique symbol
+
+  export type AbsEnv = { readonly [absEnvBrand]: never }
+  export type AbsVStore = { readonly [absVStoreBrand]: never }
+  export type AbsCfg = { readonly [absCfgBrand]: never }
+
+  export interface AbsRun {
+    cfg: AbsCfg
+    steps: number
+    stabilized: boolean
+  }
+
+  export interface AbsEnvRow {
+    name: string
+    addrs: string[]
+  }
+
+  export interface AbsVStoreRow {
+    addr: string
+    value: string
+  }
+
+  export interface AbsKStoreRow {
+    addr: string
+    env: AbsEnvRow[]
+    kont: string[]
+  }
+
+  export interface AbsFrameRow {
+    label: number
+    env: AbsEnvRow[]
+    kont: string[]
+  }
+
+  export interface AbsCfgView {
+    frames: AbsFrameRow[]
+    vstore: AbsVStoreRow[]
+    kstore: AbsKStoreRow[]
+  }
+
+  export function run_abs(
+    prog: Program,
+    init: [AbsEnv, AbsVStore],
+    fuel: number
+  ): Result<AbsRun, string>
+  export function abs_inject(prog: Program, init: [AbsEnv, AbsVStore]): AbsCfg
+  export function abs_transfer(
+    prog: Program,
+    cfg: AbsCfg
+  ): Result<AbsCfg, string>
+  export function view_cfg(cfg: AbsCfg): AbsCfgView
+}
+
 declare module "@/lib/s/traceQuery" {
   import type { Result } from "melange/result"
   import type { RuleName } from "@/lib/s/cek"
