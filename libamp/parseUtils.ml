@@ -2,7 +2,7 @@ open Utils
 open Ast
 
 module M = struct
-  type 'a t = StringSet.t -> Cmd.t IntMap.t -> int -> Cmd.t IntMap.t * int * 'a
+  type 'a t = StringSet.t -> Cmd.t LabelMap.t -> Label.t -> Cmd.t LabelMap.t * Label.t * 'a
 
   let unit (x : 'a) : 'a t = fun _ ctrl label -> (ctrl, label, x)
 
@@ -14,10 +14,10 @@ module M = struct
   let is_fun (ident : string) : bool t =
    fun funNames ctrl label -> (ctrl, label, StringSet.mem ident funNames)
 
-  let alloc : int t = fun _ ctrl label -> (ctrl, label + 1, label)
+  let alloc : Label.t t = fun _ ctrl (L label) -> (ctrl, L (label + 1), L label)
 
-  let put (label : int) (cmd : Cmd.t) : Cmd.t t =
-   fun _ ctrl label' -> (IntMap.add label cmd ctrl, label', cmd)
+  let put (label : Label.t) (cmd : Cmd.t) : Cmd.t t =
+   fun _ ctrl label' -> (LabelMap.add (label) cmd ctrl, label', cmd)
 end
 
 let ( let* ) = M.bind
@@ -96,7 +96,7 @@ let p defs =
            let* body = body in
            M.unit { name; params; body; loc })
          defs)
-      funNames IntMap.empty 0
+      funNames LabelMap.empty (Label.L 0)
   in
   {
     defs = StringMap.of_list (List.map (fun def -> (def.name, def)) defs);

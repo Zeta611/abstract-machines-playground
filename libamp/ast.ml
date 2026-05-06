@@ -2,6 +2,14 @@ open Utils
 
 type loc = { from : int; to_ : int }
 
+module Label = struct
+  type t = L of int [@@unboxed]
+
+  let compare (x : t) (y : t) : int = compare x y
+end
+
+module LabelMap = Map.Make (Label)
+
 module Exp = struct
   type desc =
     | Num of int
@@ -33,7 +41,7 @@ module Cmd = struct
     | Match_ of { scrutinee : Exp.t; branches : branch array }
 
   and branch = { tag : string; vars : string array; body : t; loc : loc }
-  and t = { desc : desc; loc : loc; label : int }
+  and t = { desc : desc; loc : loc; label : Label.t }
 
   let summary (c : t) =
     match c.desc with
@@ -52,5 +60,5 @@ type def = Cmd.t def'
 type program = {
   defs : def StringMap.t;
   mainName : string;
-  ctrl : Cmd.t IntMap.t;
+  ctrl : Cmd.t LabelMap.t;
 }

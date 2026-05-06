@@ -1,15 +1,15 @@
 declare module "@/lib/s/cek" {
-  import type { Program } from "@/lib/s/ast"
+  import type { Program, Label } from "@/lib/s/ast"
   import type { Env, Val } from "@/lib/s/values"
   import type { List } from "melange/list"
 
   export interface Frame {
-    label: number
+    label: Label
     env: Env
   }
 
   export interface State {
-    label: number
+    label: Label
     env: Env
     kont: List<Frame>
   }
@@ -90,9 +90,11 @@ declare module "@/lib/s/values" {
 }
 
 declare module "@/lib/s/ast" {
-  import type { Map } from "@/lib/s/utils"
+  import type { Map, MapModule } from "@/lib/s/utils"
 
-  export type Label = number
+  const labelBrand: unique symbol
+  export type Label = number & { readonly [labelBrand]: never }
+  export const LabelMap: MapModule<Label>
 
   export interface Loc {
     from: number

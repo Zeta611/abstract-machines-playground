@@ -2,8 +2,8 @@ open Utils
 open Ast
 open Values
 
-type frame = { label : int; env : env }
-type state = { label : int; env : env; kont : frame list }
+type frame = { label : Label.t; env : env }
+type state = { label : Label.t; env : env; kont : frame list }
 
 type rule_name =
   | LetExp [@mel.as "LetExp"]
@@ -78,7 +78,7 @@ let inject (prog : program) (rho : env) : state =
   let main = StringMap.find prog.mainName prog.defs in
   { label = main.body.label; env = rho; kont = [] }
 
-let mk_step ((label, env, kont, rule) : int * env * frame list * rule_name)
+let mk_step ((label, env, kont, rule) : Label.t * env * frame list * rule_name)
     ?(value : value option) detail =
   Printf.ksprintf
     (fun s ->
@@ -94,14 +94,14 @@ let ffail reason = Printf.ksprintf (fun s -> Error s) reason
 let sfail reason = Error reason
 
 let step (s : state) (prog : program) : (step_success, string) result =
-  let cmd = IntMap.find s.label prog.ctrl in
+  let cmd = LabelMap.find s.label prog.ctrl in
   match cmd.desc with
   | Return exp ->
       let* v = eval_exp exp s.env in
       begin match s.kont with
       | [] -> Ok (FinalValue { value = v })
       | top :: rest ->
-          let suspended = IntMap.find top.label prog.ctrl in
+          let suspended = LabelMap.find top.label prog.ctrl in
           begin match suspended.desc with
           | LetCall { x; body; _ } ->
               mk_step
