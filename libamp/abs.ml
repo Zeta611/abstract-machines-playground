@@ -89,7 +89,17 @@ module WithTop (D : Domain) = struct
 end
 
 module IntSet = Set (Int)
-module AbsInt = WithTop (IntSet)
+
+module AbsInt = struct
+  include WithTop (IntSet)
+
+  let join x y : t =
+    match (x, y) with
+    | V v1, V v2 ->
+        let union = IntSet.union v1 v2 in
+        if IntSet.cardinal union > 5 then top else V union
+    | _ -> join x y (* use the inherited join *)
+end
 
 module WithBot (D : Domain) = struct
   module D = D
@@ -126,11 +136,11 @@ module AbsVal = struct
 
   let int_of v = fst v
   let adt_of v = snd v
-  let of_int n = (AbsInt.inject (IntSet.singleton n), AbsAdt.bot)
-  let of_adt m = (AbsInt.bot, m)
-  let of_abs_int i = (i, AbsAdt.bot)
+  let of_int n : t = (AbsInt.inject (IntSet.singleton n), AbsAdt.bot)
+  let of_adt m : t = (AbsInt.bot, m)
+  let of_abs_int i : t = (i, AbsAdt.bot)
   let true_ : t = (AbsInt.bot, AbsAdt.of_tag_args "True" [])
-  let false_ = (AbsInt.bot, AbsAdt.of_tag_args "False" [])
+  let false_ : t = (AbsInt.bot, AbsAdt.of_tag_args "False" [])
 
   let lift_int_binop f ((x, _) : t) ((y, _) : t) : t =
     match (x, y) with
@@ -139,12 +149,12 @@ module AbsVal = struct
         |> IntSet.fold (fun n -> IntSet.fold (fun m -> join (f n m)) ySet) xSet
     | _ -> of_abs_int AbsInt.top
 
-  let lift_int_unop f ((x, _) : t) : t =
+  let lift_int_test f ((x, _) : t) : t =
     match x with
     | V xSet -> bot |> IntSet.fold (fun n -> join (f n)) xSet
-    | _ -> of_abs_int AbsInt.top
+    | _ -> join true_ false_
 
-  let lift_tag_unop f ((_, m) : t) =
+  let lift_tag_unop f ((_, m) : t) : t =
     bot |> AbsAdt.fold (fun tag args acc -> join acc (f (tag, args))) m
 end
 
@@ -184,7 +194,7 @@ let evalPrim : string * AbsVal.t list -> (AbsVal.t, string) result = function
       AbsVal.lift_int_binop (fun n m -> AbsVal.of_int (n * m)) arg1 arg2
       |> Result.ok
   | "iszero", [ arg ] ->
-      AbsVal.lift_int_unop
+      AbsVal.lift_int_test
         (fun n -> if n = 0 then AbsVal.true_ else AbsVal.false_)
         arg
       |> Result.ok
@@ -223,8 +233,8 @@ let rec eval_exp (e : Exp.t) (rho : AbsEnv.t) (sv : AbsVStore.t)
       in
       evalPrim (op, argVals)
 
-let abs_allocv (sigma : abs_state) (i : int) : VAddr.Ptn.t =
-  let t, l, _, _, _, _ = sigma in
+let abs_allocv (sigma : abs_state) (l : Label.t) (i : int) : VAddr.Ptn.t =
+  let t, _, _, _, _, _ = sigma in
   Dynamic (t, l, i)
 
 let abs_allock (sigma : abs_state) : KAddr.Ptn.t =
@@ -254,7 +264,7 @@ let abs_transition (prog : program)
           let x, Cmd.{ label = lr; _ } =
             LabelMap.find l' prog.ctrl |> let_call_of |> Option.get
           in
-          let a0 = abs_allocv sigma 0 in
+          let a0 = abs_allocv sigma lr 0 in
           ( abs_tick sigma (`A ptn_ak),
             lr,
             AbsEnv.weak_update x (VAddr.Abs.singleton a0) rho',
@@ -263,7 +273,7 @@ let abs_transition (prog : program)
             ak' ))
   | Let_ { x; exp; body; _ } ->
       let+ v = eval_exp exp rho sv sk in
-      let a0 = abs_allocv sigma 0 in
+      let a0 = abs_allocv sigma body.label 0 in
       [
         ( abs_tick sigma (`L body.label),
           body.label,
@@ -276,9 +286,11 @@ let abs_transition (prog : program)
       let+ argVals =
         args |> List.map (fun arg -> eval_exp arg rho sv sk) |> seq
       in
-      let a0 = abs_allocv sigma 0 in
+      let a0 = abs_allocv sigma body.label 0 in
       let valAddrs =
-        List.mapi (fun i arg -> (arg, abs_allocv sigma i)) argVals
+        List.mapi
+          (fun i arg -> (arg, abs_allocv sigma body.label (i + 1)))
+          argVals
       in
       let sv' =
         List.fold_left
@@ -310,7 +322,7 @@ let abs_transition (prog : program)
         try
           List.combine def.params argVals
           |> List.mapi (fun i (param, arg) ->
-              let addr = abs_allocv sigma i in
+              let addr = abs_allocv sigma def.body.label (i + 1) in
               (param, addr, arg))
           |> Result.ok
         with Invalid_argument _ ->
@@ -350,7 +362,7 @@ let abs_transition (prog : program)
               let varAddrArgs =
                 branch.vars
                 |> List.mapi (fun i var ->
-                    let addr = abs_allocv sigma i in
+                    let addr = abs_allocv sigma branch.body.label (i + 1) in
                     let arg = joined_lookup (AbsAddrList.lookup i args) sv in
                     (var, addr, arg))
               in
@@ -435,12 +447,8 @@ let show_kaddr_abs addrs =
   KAddr.Abs.to_list addrs |> List.map show_kaddr |> Array.of_list
 
 let show_abs_int : AbsInt.t -> string = function
-  | V ints ->
-      let body =
-        IntSet.to_list ints |> List.map string_of_int |> String.concat "|"
-      in
-      Printf.sprintf "Int{%s}" body
-  | _ -> "Int(*)"
+  | V ints -> IntSet.to_list ints |> List.map string_of_int |> String.concat "|"
+  | _ -> "&top;"
 
 let show_abs_val ((ints, adts) : AbsVal.t) =
   let parts = [] in

@@ -9,7 +9,7 @@
 import { parse } from "@/lib/s/parser"
 import { parseAbsEnvStore, parseAbsValue1 } from "@/lib/s/absEnvParser"
 import { run_abs, view_cfg } from "@/lib/s/abs"
-import { PROGRAM_PRESETS } from "@/lib/examples"
+import { ABSTRACT_PROGRAM_PRESETS, PROGRAM_PRESETS } from "@/lib/examples"
 import * as Result from "melange/result"
 
 let failed = 0
@@ -112,6 +112,14 @@ console.log("3. abstract run integration")
       expect("reachable frames are exposed", view.frames.length > 0)
       expect("run records step count", run.steps > 0)
     }
+  }
+}
+
+console.log("")
+console.log("4. abstract presets parse")
+{
+  for (const preset of ABSTRACT_PROGRAM_PRESETS) {
+    expectOk(`${preset.name} abstract env parses`, parseAbsEnvStore(preset.absEnvText))
   }
 }
 

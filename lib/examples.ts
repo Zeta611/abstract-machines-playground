@@ -108,6 +108,13 @@ export interface ProgramPreset {
   envText: string
 }
 
+export interface AbstractProgramPreset {
+  id: string
+  name: string
+  source: string
+  absEnvText: string
+}
+
 export const DEFAULT_PRESET_ID = "definitional-interpreter"
 
 const FACTORIAL = `fact(n) =
@@ -178,6 +185,22 @@ const PEANO_ADDITION = `addPeano(pair) =
 const PEANO_ADDITION_ENV = `pair = Pair(S(S(S(Z()))), S(S(Z())))
 `
 
+const FACTORIAL_ABS_ENV = `n = {0|1|2|3}
+`
+
+const FIBONACCI_ABS_ENV = `n = {0|1|2|3|4}
+`
+
+const MUTUAL_PARITY_ABS_ENV = `n = {0|1|2|3|4|5}
+`
+
+const PEANO_ADDITION_ABS_ENV = `pair = {Pair(Z(), S(Z()))|Pair(S(Z()), S(S(Z())))|Pair(S(S(Z())), S(Z()))}
+`
+
+const INTERPRETER_ABS_ENV = `p = Prog(Defs(Fun(0), Ifz(10, Var(11, 0), Int(12, 1), Mul(13, Var(14, 0), App(15, Fun(0), Sub(16, Var(17, 0), Int(18, 1))))), Nil()), App(20, Fun(0), Var(21, 0)))
+arg = {0|1|2|3|4|5}
+`
+
 export const PROGRAM_PRESETS: ProgramPreset[] = [
   {
     id: DEFAULT_PRESET_ID,
@@ -208,5 +231,38 @@ export const PROGRAM_PRESETS: ProgramPreset[] = [
     name: "Peano addition",
     source: PEANO_ADDITION,
     envText: PEANO_ADDITION_ENV,
+  },
+]
+
+export const ABSTRACT_PROGRAM_PRESETS: AbstractProgramPreset[] = [
+  {
+    id: "definitional-interpreter-abs",
+    name: "definitional interpreter",
+    source: INTERPRETER_S_T,
+    absEnvText: INTERPRETER_ABS_ENV,
+  },
+  {
+    id: "factorial-abs",
+    name: "factorial",
+    source: FACTORIAL,
+    absEnvText: FACTORIAL_ABS_ENV,
+  },
+  {
+    id: "fibonacci-abs",
+    name: "fibonacci",
+    source: FIBONACCI,
+    absEnvText: FIBONACCI_ABS_ENV,
+  },
+  {
+    id: "mutual-parity-abs",
+    name: "mutual parity",
+    source: MUTUAL_PARITY,
+    absEnvText: MUTUAL_PARITY_ABS_ENV,
+  },
+  {
+    id: "peano-addition-abs",
+    name: "Peano addition",
+    source: PEANO_ADDITION,
+    absEnvText: PEANO_ADDITION_ABS_ENV,
   },
 ]

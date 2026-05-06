@@ -11,12 +11,56 @@ import type {
 } from "@/lib/s/abs"
 import type { Label } from "@/lib/s/ast"
 
+function parseAddrLabel(addr: string): number | null {
+  const match = addr.match(/^[vk]\((\d+)(?:,\d+)?\)$/)
+  if (!match) return null
+  const n = Number(match[1])
+  return Number.isFinite(n) ? n : null
+}
+
+function AddrBadges({
+  addrs,
+  onHoverAddrLabel,
+  emptyLabel = "∅",
+}: {
+  addrs: string[]
+  onHoverAddrLabel?: (label: number | null) => void
+  emptyLabel?: string
+}) {
+  if (addrs.length === 0) {
+    return <span className="italic text-muted-foreground">{emptyLabel}</span>
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {addrs.map((addr) => {
+        const label = parseAddrLabel(addr)
+        return (
+          <Badge
+            key={addr}
+            variant="outline"
+            className="font-mono text-[10px]"
+            onMouseEnter={() => onHoverAddrLabel?.(label)}
+            onMouseLeave={() => onHoverAddrLabel?.(null)}
+            onFocus={() => onHoverAddrLabel?.(label)}
+            onBlur={() => onHoverAddrLabel?.(null)}
+          >
+            {addr}
+          </Badge>
+        )
+      })}
+    </div>
+  )
+}
+
 function EnvCell({
   rows,
   emptyLabel = "(empty)",
+  onHoverAddrLabel,
 }: {
   rows: AbsEnvRow[]
   emptyLabel?: string
+  onHoverAddrLabel?: (label: number | null) => void
 }) {
   if (rows.length === 0) {
     return <span className="italic text-muted-foreground">{emptyLabel}</span>
@@ -29,9 +73,9 @@ function EnvCell({
           <span className="text-emerald-700 dark:text-emerald-300">
             {row.name}
           </span>
-          <span className="break-words text-foreground/90">
-            {row.addrs.join(", ")}
-          </span>
+          <div className="min-w-0">
+            <AddrBadges addrs={row.addrs} onHoverAddrLabel={onHoverAddrLabel} />
+          </div>
         </div>
       ))}
     </div>
@@ -41,22 +85,18 @@ function EnvCell({
 function KontCell({
   kont,
   emptyLabel = "∅",
+  onHoverAddrLabel,
 }: {
   kont: string[]
   emptyLabel?: string
+  onHoverAddrLabel?: (label: number | null) => void
 }) {
-  if (kont.length === 0) {
-    return <span className="italic text-muted-foreground">{emptyLabel}</span>
-  }
-
   return (
-    <div className="flex flex-wrap gap-1">
-      {kont.map((addr) => (
-        <Badge key={addr} variant="outline" className="font-mono text-[10px]">
-          {addr}
-        </Badge>
-      ))}
-    </div>
+    <AddrBadges
+      addrs={kont}
+      emptyLabel={emptyLabel}
+      onHoverAddrLabel={onHoverAddrLabel}
+    />
   )
 }
 
@@ -86,10 +126,12 @@ function FrameRow({
   row,
   active,
   onSelectLabel,
+  onHoverAddrLabel,
 }: {
   row: AbsFrameRow
   active: boolean
   onSelectLabel: (label: number) => void
+  onHoverAddrLabel?: (label: number | null) => void
 }) {
   const hoverBind = useLabelHoverBind(row.label as Label)
 
@@ -98,12 +140,12 @@ function FrameRow({
       type="button"
       onClick={() => onSelectLabel(row.label)}
       className={[
-        "grid w-full grid-cols-[7rem_minmax(14rem,1fr)_12rem] gap-x-4 border-b px-4 py-3 text-left text-xs last:border-b-0",
+        "flex w-full flex-col gap-3 border-b px-4 py-3 text-left text-xs last:border-b-0",
         "hover:bg-muted/30 focus:bg-muted/30 focus:outline-none",
         active ? "bg-emerald-50/70 dark:bg-emerald-950/20" : "",
       ].join(" ")}
     >
-      <div>
+      <div className="flex items-center gap-2">
         <Badge
           variant={active ? "default" : "outline"}
           className="font-mono text-[10px]"
@@ -112,11 +154,19 @@ function FrameRow({
           ℓ={row.label}
         </Badge>
       </div>
-      <div className="pt-0.5">
-        <EnvCell rows={row.env} />
-      </div>
-      <div className="pt-0.5">
-        <KontCell kont={row.kont} />
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="min-w-0">
+          <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            Env
+          </div>
+          <EnvCell rows={row.env} onHoverAddrLabel={onHoverAddrLabel} />
+        </div>
+        <div className="min-w-0 md:min-w-[8rem]">
+          <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            Kont Addrs
+          </div>
+          <KontCell kont={row.kont} onHoverAddrLabel={onHoverAddrLabel} />
+        </div>
       </div>
     </button>
   )
@@ -126,10 +176,12 @@ function FramesTable({
   rows,
   activeLabel,
   onSelectLabel,
+  onHoverAddrLabel,
 }: {
   rows: AbsFrameRow[]
   activeLabel: number | null
   onSelectLabel: (label: number) => void
+  onHoverAddrLabel?: (label: number | null) => void
 }) {
   if (rows.length === 0) {
     return (
@@ -140,25 +192,27 @@ function FramesTable({
   }
 
   return (
-    <div className="min-w-[44rem]">
-      <div className="grid grid-cols-[7rem_minmax(14rem,1fr)_12rem] border-b bg-muted/40 px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-        <div>Label</div>
-        <div>Env</div>
-        <div>Kont Addrs</div>
-      </div>
+    <div>
       {rows.map((row) => (
         <FrameRow
           key={`${row.label}:${row.kont.join("|")}`}
           row={row}
           active={activeLabel === row.label}
           onSelectLabel={onSelectLabel}
+          onHoverAddrLabel={onHoverAddrLabel}
         />
       ))}
     </div>
   )
 }
 
-function VStoreTable({ rows }: { rows: AbsVStoreRow[] }) {
+function VStoreTable({
+  rows,
+  onHoverAddrLabel,
+}: {
+  rows: AbsVStoreRow[]
+  onHoverAddrLabel?: (label: number | null) => void
+}) {
   if (rows.length === 0) {
     return (
       <div className="p-4 text-sm italic text-muted-foreground">
@@ -178,9 +232,7 @@ function VStoreTable({ rows }: { rows: AbsVStoreRow[] }) {
           key={row.addr}
           className="grid grid-cols-[8rem_minmax(16rem,1fr)] gap-x-4 border-b px-4 py-3 text-xs last:border-b-0"
         >
-          <div className="font-mono text-sky-700 dark:text-sky-300">
-            {row.addr}
-          </div>
+          <AddrBadges addrs={[row.addr]} onHoverAddrLabel={onHoverAddrLabel} />
           <div className="break-words">{row.value}</div>
         </div>
       ))}
@@ -188,7 +240,13 @@ function VStoreTable({ rows }: { rows: AbsVStoreRow[] }) {
   )
 }
 
-function KStoreTable({ rows }: { rows: AbsKStoreRow[] }) {
+function KStoreTable({
+  rows,
+  onHoverAddrLabel,
+}: {
+  rows: AbsKStoreRow[]
+  onHoverAddrLabel?: (label: number | null) => void
+}) {
   if (rows.length === 0) {
     return (
       <div className="p-4 text-sm italic text-muted-foreground">
@@ -198,22 +256,29 @@ function KStoreTable({ rows }: { rows: AbsKStoreRow[] }) {
   }
 
   return (
-    <div className="min-w-[48rem]">
-      <div className="grid grid-cols-[8rem_minmax(14rem,1fr)_12rem] border-b bg-muted/40 px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-        <div>Addr</div>
-        <div>Saved Env</div>
-        <div>Saved Kont</div>
-      </div>
+    <div>
       {rows.map((row) => (
         <div
           key={row.addr}
-          className="grid grid-cols-[8rem_minmax(14rem,1fr)_12rem] gap-x-4 border-b px-4 py-3 text-xs last:border-b-0"
+          className="flex flex-col gap-3 border-b px-4 py-3 text-xs last:border-b-0"
         >
-          <div className="font-mono text-amber-700 dark:text-amber-300">
-            {row.addr}
+          <div>
+            <AddrBadges addrs={[row.addr]} onHoverAddrLabel={onHoverAddrLabel} />
           </div>
-          <EnvCell rows={row.env} />
-          <KontCell kont={row.kont} />
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+            <div className="min-w-0">
+              <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                Saved Env
+              </div>
+              <EnvCell rows={row.env} onHoverAddrLabel={onHoverAddrLabel} />
+            </div>
+            <div className="min-w-0 md:min-w-[8rem]">
+              <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                Saved Kont
+              </div>
+              <KontCell kont={row.kont} onHoverAddrLabel={onHoverAddrLabel} />
+            </div>
+          </div>
         </div>
       ))}
     </div>
@@ -224,10 +289,12 @@ export function AbsConfigView({
   view,
   activeLabel,
   onSelectLabel,
+  onHoverAddrLabel,
 }: {
   view: AbsCfgView
   activeLabel: number | null
   onSelectLabel: (label: number) => void
+  onHoverAddrLabel?: (label: number | null) => void
 }) {
   return (
     <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-3">
@@ -236,13 +303,14 @@ export function AbsConfigView({
           rows={view.frames}
           activeLabel={activeLabel}
           onSelectLabel={onSelectLabel}
+          onHoverAddrLabel={onHoverAddrLabel}
         />
       </PanelShell>
       <PanelShell title="Value Store" count={view.vstore.length}>
-        <VStoreTable rows={view.vstore} />
+        <VStoreTable rows={view.vstore} onHoverAddrLabel={onHoverAddrLabel} />
       </PanelShell>
       <PanelShell title="Kont Store" count={view.kstore.length}>
-        <KStoreTable rows={view.kstore} />
+        <KStoreTable rows={view.kstore} onHoverAddrLabel={onHoverAddrLabel} />
       </PanelShell>
     </div>
   )

@@ -685,6 +685,8 @@ const singleton$2 = include$3.singleton;
 
 const union$3 = include$3.union;
 
+const cardinal = include$3.cardinal;
+
 const fold$1 = include$3.fold;
 
 const is_empty = include$3.is_empty;
@@ -700,8 +702,6 @@ const IntSet_inter = include$3.inter;
 const IntSet_disjoint = include$3.disjoint;
 
 const IntSet_diff = include$3.diff;
-
-const IntSet_cardinal = include$3.cardinal;
 
 const IntSet_elements = include$3.elements;
 
@@ -774,7 +774,7 @@ const IntSet = {
   inter: IntSet_inter,
   disjoint: IntSet_disjoint,
   diff: IntSet_diff,
-  cardinal: IntSet_cardinal,
+  cardinal: cardinal,
   elements: IntSet_elements,
   min_elt: IntSet_min_elt,
   min_elt_opt: IntSet_min_elt_opt,
@@ -841,12 +841,30 @@ function join$1(x, y) {
   }
 }
 
+function join$2(x, y) {
+  if (/* tag */ typeof x === "number" || typeof x === "string") {
+    return join$1(x, y);
+  }
+  if (/* tag */ typeof y === "number" || typeof y === "string") {
+    return join$1(x, y);
+  }
+  const union$4 = Curry._2(union$3, x._0, y._0);
+  if (Curry._1(cardinal, union$4) > 5) {
+    return /* Top */ 0;
+  } else {
+    return {
+      TAG: /* V */ 0,
+      _0: union$4
+    };
+  }
+}
+
 const AbsInt = {
   D: D,
   bot: bot,
   inject: inject,
   top: /* Top */ 0,
-  join: join$1
+  join: join$2
 };
 
 function WithBot(D) {
@@ -916,7 +934,7 @@ function lookup$1(k, m) {
   return Stdlib__Option.value(param, empty);
 }
 
-function join$2(m1, m2) {
+function join$3(m1, m2) {
   return Curry._3(union$4, (function (param, v1, v2) {
     return Caml_option.some(Curry._2(union, v1, v2));
   }), m1, m2);
@@ -1054,13 +1072,13 @@ const AbsAddrList = {
   V: V$1,
   lookup: lookup$1,
   bot: empty$4,
-  join: join$2,
+  join: join$3,
   weak_update: weak_update$1
 };
 
 const D$1 = {
   bot: empty$4,
-  join: join$2
+  join: join$3
 };
 
 function inject$1(v) {
@@ -1070,7 +1088,7 @@ function inject$1(v) {
   };
 }
 
-function join$3(x, y) {
+function join$4(x, y) {
   if (/* tag */ typeof x === "number" || typeof x === "string") {
     if (/* tag */ typeof y === "number" || typeof y === "string") {
       return /* Bot */ 0;
@@ -1090,7 +1108,7 @@ function join$3(x, y) {
   } else {
     return {
       TAG: /* V */ 0,
-      _0: join$2(v1, y._0)
+      _0: join$3(v1, y._0)
     };
   }
 }
@@ -1099,12 +1117,12 @@ const AbsArgs = {
   D: D$1,
   bot: /* Bot */ 0,
   inject: inject$1,
-  join: join$3
+  join: join$4
 };
 
 const V$2 = {
   bot: /* Bot */ 0,
-  join: join$3
+  join: join$4
 };
 
 const K$2 = {
@@ -1132,16 +1150,16 @@ function lookup$2(k, m) {
   return Stdlib__Option.value(param, /* Bot */ 0);
 }
 
-function join$4(m1, m2) {
+function join$5(m1, m2) {
   return Curry._3(union$5, (function (param, v1, v2) {
-    return Caml_option.some(join$3(v1, v2));
+    return Caml_option.some(join$4(v1, v2));
   }), m1, m2);
 }
 
 function weak_update$2(k, v, m) {
   return Curry._3(update$2, k, (function (old) {
     if (old !== undefined) {
-      return Caml_option.some(join$3(Caml_option.valFromOption(old), v));
+      return Caml_option.some(join$4(Caml_option.valFromOption(old), v));
     } else {
       return Caml_option.some(v);
     }
@@ -1281,19 +1299,19 @@ const AbsAdt = {
   V: V$2,
   lookup: lookup$2,
   bot: empty$5,
-  join: join$4,
+  join: join$5,
   weak_update: weak_update$2,
   of_tag_args: of_tag_args
 };
 
 const D2 = {
   bot: empty$5,
-  join: join$4
+  join: join$5
 };
 
 const D1 = {
   bot: bot,
-  join: join$1
+  join: join$2
 };
 
 const bot$1 = [
@@ -1301,10 +1319,10 @@ const bot$1 = [
   empty$5
 ];
 
-function join$5(param, param$1) {
+function join$6(param, param$1) {
   return [
-    join$1(param[0], param$1[0]),
-    join$4(param[1], param$1[1])
+    join$2(param[0], param$1[0]),
+    join$5(param[1], param$1[1])
   ];
 }
 
@@ -1374,24 +1392,21 @@ function lift_int_binop(f, param, param$1) {
     return Curry._2(fold$1, (function (m) {
       const partial_arg = Curry._2(f, n, m);
       return function (param) {
-        return join$5(partial_arg, param);
+        return join$6(partial_arg, param);
       };
     }), ySet);
   }), x._0, bot$1);
 }
 
-function lift_int_unop(f, param) {
+function lift_int_test(f, param) {
   const x = param[0];
   if (/* tag */ typeof x === "number" || typeof x === "string") {
-    return [
-      /* Top */ 0,
-      empty$5
-    ];
+    return join$6(true_, false_);
   } else {
     return Curry._3(fold$1, (function (n) {
       const partial_arg = Curry._1(f, n);
       return function (param) {
-        return join$5(partial_arg, param);
+        return join$6(partial_arg, param);
       };
     }), x._0, bot$1);
   }
@@ -1399,7 +1414,7 @@ function lift_int_unop(f, param) {
 
 function lift_tag_unop(f, param) {
   return Curry._3(fold$2, (function (tag, args, acc) {
-    return join$5(acc, Curry._1(f, [
+    return join$6(acc, Curry._1(f, [
       tag,
       args
     ]));
@@ -1410,7 +1425,7 @@ const AbsVal = {
   D1: D1,
   D2: D2,
   bot: bot$1,
-  join: join$5,
+  join: join$6,
   int_of: int_of,
   adt_of: adt_of,
   of_int: of_int,
@@ -1419,13 +1434,13 @@ const AbsVal = {
   true_: true_,
   false_: false_,
   lift_int_binop: lift_int_binop,
-  lift_int_unop: lift_int_unop,
+  lift_int_test: lift_int_test,
   lift_tag_unop: lift_tag_unop
 };
 
 const V$3 = {
   bot: bot$1,
-  join: join$5
+  join: join$6
 };
 
 const include$6 = Stdlib__Map.Make(Ptn$1);
@@ -1445,16 +1460,16 @@ function lookup$3(k, m) {
   return Stdlib__Option.value(param, bot$1);
 }
 
-function join$6(m1, m2) {
+function join$7(m1, m2) {
   return Curry._3(union$6, (function (param, v1, v2) {
-    return Caml_option.some(join$5(v1, v2));
+    return Caml_option.some(join$6(v1, v2));
   }), m1, m2);
 }
 
 function weak_update$3(k, v, m) {
   return Curry._3(update$3, k, (function (old) {
     if (old !== undefined) {
-      return Caml_option.some(join$5(Caml_option.valFromOption(old), v));
+      return Caml_option.some(join$6(Caml_option.valFromOption(old), v));
     } else {
       return Caml_option.some(v);
     }
@@ -1585,7 +1600,7 @@ const AbsVStore = {
   V: V$3,
   lookup: lookup$3,
   bot: empty$6,
-  join: join$6,
+  join: join$7,
   weak_update: weak_update$3
 };
 
@@ -1604,7 +1619,7 @@ const bot$2 = [
   empty$1
 ];
 
-function join$7(param, param$1) {
+function join$8(param, param$1) {
   return [
     join(param[0], param$1[0]),
     Curry._2(union$1, param[1], param$1[1])
@@ -1615,12 +1630,12 @@ const AbsFrame = {
   D1: D1$1,
   D2: D2$1,
   bot: bot$2,
-  join: join$7
+  join: join$8
 };
 
 const V$4 = {
   bot: bot$2,
-  join: join$7
+  join: join$8
 };
 
 const include$7 = Stdlib__Map.Make(Ptn$2);
@@ -1640,16 +1655,16 @@ function lookup$4(k, m) {
   return Stdlib__Option.value(param, bot$2);
 }
 
-function join$8(m1, m2) {
+function join$9(m1, m2) {
   return Curry._3(union$7, (function (param, v1, v2) {
-    return Caml_option.some(join$7(v1, v2));
+    return Caml_option.some(join$8(v1, v2));
   }), m1, m2);
 }
 
 function weak_update$4(k, v, m) {
   return Curry._3(update$4, k, (function (old) {
     if (old !== undefined) {
-      return Caml_option.some(join$7(Caml_option.valFromOption(old), v));
+      return Caml_option.some(join$8(Caml_option.valFromOption(old), v));
     } else {
       return Caml_option.some(v);
     }
@@ -1780,7 +1795,7 @@ const AbsKStore = {
   V: V$4,
   lookup: lookup$4,
   bot: empty$7,
-  join: join$8,
+  join: join$9,
   weak_update: weak_update$4
 };
 
@@ -1788,7 +1803,7 @@ function joined_lookup(a, m) {
   return Curry._3(fold, (function (addr) {
     const partial_arg = lookup$3(addr, m);
     return function (param) {
-      return join$5(partial_arg, param);
+      return join$6(partial_arg, param);
     };
   }), a, bot$1);
 }
@@ -1851,7 +1866,7 @@ function evalPrim(param) {
     case "iszero" :
       const match$4 = param[1];
       if (match$4 && !match$4.tl) {
-        return Stdlib__Result.ok(lift_int_unop((function (n) {
+        return Stdlib__Result.ok(lift_int_test((function (n) {
           if (n === 0) {
             return true_;
           } else {
@@ -1942,11 +1957,11 @@ function eval_exp(e, rho, sv, sk) {
   }
 }
 
-function abs_allocv(sigma, i) {
+function abs_allocv(sigma, l, i) {
   return {
     TAG: /* Dynamic */ 0,
     _0: sigma[0],
-    _1: sigma[1],
+    _1: l,
     _2: i
   };
 }
@@ -1995,10 +2010,11 @@ function abs_transition(prog, sigma) {
         return Stdlib__List.map((function (ptn_ak) {
           const match = lookup$4(ptn_ak, sk);
           const match$1 = Stdlib__Option.get(let_call_of(Curry._2(Libamp__Ast.LabelMap.find, ptn_ak[1], prog.ctrl)));
-          const a0 = abs_allocv(sigma, 0);
+          const lr = match$1[1].label;
+          const a0 = abs_allocv(sigma, lr, 0);
           return [
             undefined,
-            match$1[1].label,
+            lr,
             weak_update(match$1[0], Curry._1(singleton, a0), match[0]),
             weak_update$3(a0, v, sv),
             sk,
@@ -2010,7 +2026,7 @@ function abs_transition(prog, sigma) {
       const body = e.body;
       const x = e.x;
       return Stdlib__Result.Syntax.let$plus(eval_exp(e.exp, rho, sv, sk), (function (v) {
-        const a0 = abs_allocv(sigma, 0);
+        const a0 = abs_allocv(sigma, body.label, 0);
         return {
           hd: [
             undefined,
@@ -2032,7 +2048,7 @@ function abs_transition(prog, sigma) {
           let tmp;
           try {
             tmp = Stdlib__Result.ok(Stdlib__List.mapi((function (i, param) {
-              const addr = abs_allocv(sigma, i);
+              const addr = abs_allocv(sigma, def.body.label, i + 1 | 0);
               return [
                 param[0],
                 addr,
@@ -2118,22 +2134,22 @@ function abs_transition(prog, sigma) {
       return Stdlib__Result.Syntax.let$plus(seq(Stdlib__List.map((function (arg) {
         return eval_exp(arg, rho, sv, sk);
       }), e.args)), (function (argVals) {
-        const a0 = abs_allocv(sigma, 0);
+        const a0 = abs_allocv(sigma, body$1.label, 0);
         const valAddrs = Stdlib__List.mapi((function (i, arg) {
           return [
             arg,
-            abs_allocv(sigma, i)
+            abs_allocv(sigma, body$1.label, i + 1 | 0)
           ];
         }), argVals);
         const sv$p = Stdlib__List.fold_left((function (sv, param) {
           return weak_update$3(param[1], param[0], sv);
         }), sv, valAddrs);
-        const m = of_tag_args(tag, Stdlib__List.map((function (param) {
+        const v_1 = of_tag_args(tag, Stdlib__List.map((function (param) {
           return Curry._1(singleton, param[1]);
         }), valAddrs));
         const v = [
           bot,
-          m
+          v_1
         ];
         return {
           hd: [
@@ -2158,7 +2174,7 @@ function abs_transition(prog, sigma) {
           }
           const args$1 = args._0;
           const varAddrArgs = Stdlib__List.mapi((function (i, $$var) {
-            const addr = abs_allocv(sigma, i);
+            const addr = abs_allocv(sigma, branch.body.label, i + 1 | 0);
             const arg = joined_lookup(lookup$1(i, args$1), sv);
             return [
               $$var,
@@ -2193,7 +2209,7 @@ const TimeLabel = {
 
 const V$5 = {
   bot: bot$2,
-  join: join$7
+  join: join$8
 };
 
 const include$8 = Stdlib__Map.Make(TimeLabel);
@@ -2213,16 +2229,16 @@ function lookup$5(k, m) {
   return Stdlib__Option.value(param, bot$2);
 }
 
-function join$9(m1, m2) {
+function join$10(m1, m2) {
   return Curry._3(union$8, (function (param, v1, v2) {
-    return Caml_option.some(join$7(v1, v2));
+    return Caml_option.some(join$8(v1, v2));
   }), m1, m2);
 }
 
 function weak_update$5(k, v, m) {
   return Curry._3(update$5, k, (function (old) {
     if (old !== undefined) {
-      return Caml_option.some(join$7(Caml_option.valFromOption(old), v));
+      return Caml_option.some(join$8(Caml_option.valFromOption(old), v));
     } else {
       return Caml_option.some(v);
     }
@@ -2353,7 +2369,7 @@ const Frames = {
   V: V$5,
   lookup: lookup$5,
   bot: empty$8,
-  join: join$9,
+  join: join$10,
   weak_update: weak_update$5
 };
 
@@ -2362,21 +2378,21 @@ const bot$3 = [
   empty$7
 ];
 
-function join$10(param, param$1) {
+function join$11(param, param$1) {
   return [
-    join$6(param[0], param$1[0]),
-    join$8(param[1], param$1[1])
+    join$7(param[0], param$1[0]),
+    join$9(param[1], param$1[1])
   ];
 }
 
 const D2$2 = {
   bot: bot$3,
-  join: join$10
+  join: join$11
 };
 
 const D1$2 = {
   bot: empty$8,
-  join: join$9
+  join: join$10
 };
 
 const bot$4 = [
@@ -2384,10 +2400,10 @@ const bot$4 = [
   bot$3
 ];
 
-function join$11(param, param$1) {
+function join$12(param, param$1) {
   return [
-    join$9(param[0], param$1[0]),
-    join$10(param[1], param$1[1])
+    join$10(param[0], param$1[0]),
+    join$11(param[1], param$1[1])
   ];
 }
 
@@ -2395,7 +2411,7 @@ const AbsCfg = {
   D1: D1$2,
   D2: D2$2,
   bot: bot$4,
-  join: join$11
+  join: join$12
 };
 
 function abs_transfer(prog, cfg) {
@@ -2420,7 +2436,7 @@ function abs_transfer(prog, cfg) {
     return abs_transition(prog, sigma);
   }), Curry._1(to_list$8, cfg[0]))), (function (newCfgs) {
     return Stdlib__List.fold_left((function (cfg, param) {
-      return join$11(cfg, [
+      return join$12(cfg, [
         weak_update$5([
           param[0],
           param[1]
@@ -2523,27 +2539,11 @@ function show_kaddr_abs(addrs) {
 
 function show_abs_int(ints) {
   if (/* tag */ typeof ints === "number" || typeof ints === "string") {
-    return "Int(*)";
+    return "&top;";
   } else {
-    return Curry._1(Stdlib__Printf.sprintf({
-      TAG: /* Format */ 0,
-      _0: {
-        TAG: /* String_literal */ 11,
-        _0: "Int{",
-        _1: {
-          TAG: /* String */ 2,
-          _0: /* No_padding */ 0,
-          _1: {
-            TAG: /* Char_literal */ 12,
-            _0: /* '}' */125,
-            _1: /* End_of_format */ 0
-          }
-        }
-      },
-      _1: "Int{%s}"
-    }), Stdlib__String.concat("|", Stdlib__List.map((function (prim) {
+    return Stdlib__String.concat("|", Stdlib__List.map((function (prim) {
       return String(prim);
-    }), Curry._1(to_list$3, ints._0))));
+    }), Curry._1(to_list$3, ints._0)));
   }
 }
 
