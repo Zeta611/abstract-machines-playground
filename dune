@@ -1,0 +1,4 @@
+(melange.emit
+ (target output)
+ (module_systems esm)
+ (libraries libamp))

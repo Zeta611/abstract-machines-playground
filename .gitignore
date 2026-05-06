@@ -37,3 +37,10 @@ pnpm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ocaml
+/_build/*
+!/_build/default/
+/_build/default/*
+!/_build/default/output/
+!/_build/default/output/**

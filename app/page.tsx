@@ -42,19 +42,22 @@ import {
 } from "@/components/ui/select"
 import { run } from "@/lib/s/cek"
 import type { Trace } from "@/lib/s/cek"
-import { parseEnv } from "@/lib/s/env-parser"
+import { parseEnv } from "@/lib/s/envParser"
 import {
   DEFAULT_PRESET_ID,
   PROGRAM_PRESETS,
   type ProgramPreset,
-} from "@/lib/s/examples"
-import { parseS, SParseError } from "@/lib/s/parser"
-import type { Loc, Prog } from "@/lib/s/ast"
+} from "@/lib/examples"
+import { Cmd, type Loc, type Program } from "@/lib/s/ast"
+import { IntMap } from "@/lib/s/utils"
+import { parse } from "@/lib/s/parser"
+import * as Result from "melange/result"
+import { of_list } from "melange/array"
 
 interface Runnable {
   source: string
   envText: string
-  prog: Prog
+  prog: Program
   trace: Trace
 }
 
@@ -144,18 +147,24 @@ function tryCompile(
   envText: string,
   stepLimit: number
 ): { r: Runnable | null; err: string | null } {
-  try {
-    const { prog } = parseS(source)
-    const env = parseEnv(envText)
-    const trace = run(prog, env, { maxSteps: stepLimit })
-    return { r: { source, envText, prog, trace }, err: null }
-  } catch (e) {
-    if (e instanceof SParseError) {
-      return { r: null, err: `parse error: ${e.message} (${e.from}-${e.to})` }
-    }
-    if (e instanceof Error) return { r: null, err: e.message }
-    return { r: null, err: String(e) }
-  }
+  return Result.fold(
+    ({ program }) =>
+      Result.fold(
+        (env) => ({
+          r: {
+            source,
+            envText,
+            prog: program,
+            trace: run(program, env, { maxSteps: stepLimit }),
+          },
+          err: null,
+        }),
+        (err: string) => ({ r: null, err }),
+        parseEnv(envText)
+      ),
+    (err: string) => ({ r: null, err }),
+    parse(source)
+  )
 }
 
 function makeInitial(): PageState {
@@ -364,15 +373,16 @@ export default function Page() {
       ? trace.steps[state.cursor]
       : undefined
 
-  const currentCmd = current && prog ? prog.ctrl.get(current.label) : undefined
+  const currentCmd =
+    current && prog ? IntMap.find_opt(current.label, prog.ctrl) : undefined
 
+  const kont = useMemo(() => (current ? of_list(current.kont) : []), [current])
   const kontHighlights = useMemo(() => {
     if (!current || !prog) return []
-    return current.kont
-      .map((f) => prog.ctrl.get(f.label))
-      .filter((c): c is NonNullable<typeof c> => !!c)
-      .map((c) => c.loc)
-  }, [current, prog])
+    return kont
+      .map((f) => IntMap.find_opt(f.label, prog.ctrl)?.loc)
+      .filter((l): l is NonNullable<typeof l> => !!l)
+  }, [current, kont, prog])
 
   return (
     <div className="flex h-svh flex-col overflow-hidden bg-muted/20">
@@ -432,11 +442,11 @@ function MainArea({
   playing: boolean
   setPlaying: (p: boolean) => void
   trace: Trace | undefined
-  prog: Prog | undefined
+  prog: Program | undefined
   current: Trace["states"][number] | undefined
   lastStep: Trace["steps"][number] | undefined
   nextStep: Trace["steps"][number] | undefined
-  currentCmd: ReturnType<Prog["ctrl"]["get"]> | undefined
+  currentCmd: Cmd.Cmd | undefined
   kontHighlights: Loc[]
   onVisibleIndicesChange: (indices: number[]) => void
   queryText: string
@@ -444,7 +454,9 @@ function MainArea({
 }) {
   const { hovered } = useLabelHover()
   const hoverHighlight =
-    prog && hovered !== null ? (prog.ctrl.get(hovered)?.loc ?? null) : null
+    prog && hovered !== null
+      ? (IntMap.find_opt(hovered, prog.ctrl)?.loc ?? null)
+      : null
 
   return (
     <main className="min-h-0 flex-1 overflow-hidden p-3">

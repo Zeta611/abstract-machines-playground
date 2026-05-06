@@ -18,9 +18,20 @@ import {
 } from "@/components/ui/popover"
 import { Slider } from "@/components/ui/slider"
 import { cn } from "@/lib/utils"
-import { parseTraceQuery, traceQueryMatches } from "@/lib/s/trace-query"
+import {
+  parseTraceQuery,
+  traceQueryMatches,
+  type TraceQueryAst,
+} from "@/lib/s/traceQuery"
 import { showVal } from "@/lib/s/values"
-import type { State, RuleName, Trace, TraceStep } from "@/lib/s/cek"
+import * as Result from "melange/result"
+import {
+  visit_trace_end,
+  type State,
+  type RuleName,
+  type Trace,
+  type TraceStep,
+} from "@/lib/s/cek"
 import { RiQuestionLine } from "@remixicon/react"
 import { useLabelHoverBind } from "./label-hover"
 
@@ -34,6 +45,10 @@ interface Props {
   queryText: string
   setQueryText: (v: string) => void
 }
+
+type QueryParseState =
+  | { ok: true; ast: TraceQueryAst | null }
+  | { ok: false; message: string; at: number }
 
 const RULE_NAMES: RuleName[] = ["LetExp", "LetCall", "Match", "Return"]
 
@@ -102,7 +117,15 @@ export function TraceTimeline({
   const [queryHelpOpen, setQueryHelpOpen] = useState(false)
   const [queryScrollLeft, setQueryScrollLeft] = useState(0)
 
-  const queryParse = useMemo(() => parseTraceQuery(queryText), [queryText])
+  const queryParse = useMemo(
+    (): QueryParseState =>
+      Result.fold(
+        (ast) => ({ ok: true, ast: ast ?? null }),
+        ({ message, at }) => ({ ok: false as const, message, at }),
+        parseTraceQuery(queryText)
+      ),
+    [queryText]
+  )
 
   const visibleIndices = useMemo(() => {
     if (queryParse.ok && queryParse.ast === null) {
@@ -118,7 +141,7 @@ export function TraceTimeline({
       const step = trace.steps[i - 1]
       const state = trace.states[i]
       if (
-        traceQueryMatches(queryParse.ast, {
+        traceQueryMatches(queryParse.ast ?? undefined, {
           index: i,
           rule: step?.rule,
           detail: step?.detail,
@@ -529,26 +552,33 @@ function TimelineRow({
 }
 
 function TerminationBadge({ trace }: { trace: Trace }) {
-  const end = trace.end
-  return (
-    <div className="flex shrink-0 items-center gap-2 text-xs">
-      {end.kind === "final" && (
+  const end = visit_trace_end(trace.end, {
+    final: (value) => ({
+      badge: (
         <Badge className="bg-emerald-600 hover:bg-emerald-600">final</Badge>
-      )}
-      {end.kind === "stuck" && <Badge variant="destructive">stuck</Badge>}
-      {end.kind === "maxed" && (
+      ),
+      text: `value = ${showVal(value)}`,
+    }),
+    stuck: (reason) => ({
+      badge: <Badge variant="destructive">stuck</Badge>,
+      text: reason,
+    }),
+    maxed: (reason) => ({
+      badge: (
         <Badge
           variant="outline"
           className="border-amber-500 text-amber-700 dark:text-amber-300"
         >
           step limit
         </Badge>
-      )}
-      <span className="truncate text-muted-foreground">
-        {end.kind === "final" && `value = ${showVal(end.value)}`}
-        {end.kind === "stuck" && end.reason}
-        {end.kind === "maxed" && end.reason}
-      </span>
+      ),
+      text: reason,
+    }),
+  })
+  return (
+    <div className="flex shrink-0 items-center gap-2 text-xs">
+      {end.badge}
+      <span className="truncate text-muted-foreground">{end.text}</span>
     </div>
   )
 }

@@ -1,11 +1,13 @@
 "use client"
 
 import { useMemo } from "react"
+import type { Val, Env } from "@/lib/s/values"
 import { cn } from "@/lib/utils"
-import { EnvParseError, parseEnv } from "@/lib/s/env-parser"
+import { parseEnv } from "@/lib/s/envParser"
 import { ValueView } from "./value-view"
-import type { Env } from "@/lib/s/values"
 import { CopyButton } from "./copy-button"
+import { StringMap } from "@/lib/s/utils"
+import * as Result from "melange/result"
 
 interface PreviewResult {
   env: Env | null
@@ -14,17 +16,11 @@ interface PreviewResult {
 
 function useEnvPreview(value: string): PreviewResult {
   return useMemo(() => {
-    try {
-      return { env: parseEnv(value), error: null }
-    } catch (e) {
-      const msg =
-        e instanceof EnvParseError
-          ? e.message
-          : e instanceof Error
-            ? e.message
-            : String(e)
-      return { env: null, error: msg }
-    }
+    return Result.fold(
+      (env) => ({ env, error: null }),
+      (error) => ({ env: null, error }),
+      parseEnv(value)
+    )
   }, [value])
 }
 
@@ -54,7 +50,7 @@ export function EnvPreview({
       </div>
     )
   }
-  if (!preview.env || preview.env.size === 0) {
+  if (!preview.env || StringMap.cardinal(preview.env) === 0) {
     if (hideEmpty) return null
     return (
       <div className="group relative rounded border bg-muted/30 px-2 py-2 text-[11px] text-muted-foreground">
@@ -66,7 +62,7 @@ export function EnvPreview({
   return (
     <div className="group relative rounded border bg-muted/30 px-2 py-2 text-xs">
       <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-        {[...preview.env.entries()].map(([k, v]) => (
+        {StringMap.bindings<Val>(preview.env).map(([k, v]) => (
           <div key={k} className="contents">
             <div className="text-emerald-700 dark:text-emerald-300">{k}</div>
             <div className="min-w-0 break-all">

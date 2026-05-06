@@ -7,25 +7,28 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { Separator } from "@/components/ui/separator"
-import { cmdSummary } from "@/lib/s/ast"
-import type { ControlMap } from "@/lib/s/ast"
+import { Cmd, Label } from "@/lib/s/ast"
 import type { State, TraceStep } from "@/lib/s/cek"
 import { EnvView } from "./env-view"
 import { KontView } from "./kont-view"
 import { useLabelHoverBind } from "./label-hover"
 import { ValueView } from "./value-view"
+import { IntMap, Map, StringMap } from "@/lib/s/utils"
+import { of_list } from "melange/array"
 
 interface Props {
   state: State
-  ctrl: ControlMap
+  ctrl: Map<Label, Cmd.Cmd>
   lastStep?: TraceStep
   nextStep?: TraceStep
 }
 
 /** Panel that summarizes one CEK state: control, environment, kontinuation. */
 export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
-  const cmd = ctrl.get(state.label)
+  const cmd = IntMap.find_opt(state.label, ctrl)
   const hoverBind = useLabelHoverBind(state.label)
+  const bindingCount = StringMap.cardinal(state.env)
+  const kont = of_list(state.kont)
 
   return (
     <ResizablePanelGroup orientation="vertical" className="h-full w-full">
@@ -55,7 +58,7 @@ export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
             )}
           </div>
           <div className="mt-1 font-mono text-sm">
-            {cmd ? cmdSummary(cmd) : `(no command for label ${state.label})`}
+            {cmd ? Cmd.summary(cmd) : `(no command for label ${state.label})`}
           </div>
           {lastStep?.value && (
             <div className="mt-2 flex items-center gap-2 text-xs">
@@ -78,7 +81,7 @@ export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
               <b>E</b>nvironment (ρ)
             </span>
             <Badge variant="outline" className="text-[10px]">
-              {state.env.size} binding{state.env.size === 1 ? "" : "s"}
+              {bindingCount} binding{bindingCount === 1 ? "" : "s"}
             </Badge>
           </div>
           <Separator className="mb-2" />
@@ -93,11 +96,11 @@ export function StateView({ state, ctrl, lastStep, nextStep }: Props) {
               <b>K</b>ontinuation (κ)
             </span>
             <Badge variant="outline" className="text-[10px]">
-              depth {state.kont.length}
+              depth {kont.length}
             </Badge>
           </div>
           <Separator className="mb-2" />
-          <KontView kont={state.kont} ctrl={ctrl} />
+          <KontView kont={kont} ctrl={ctrl} />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

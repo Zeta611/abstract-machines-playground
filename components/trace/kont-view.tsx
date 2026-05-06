@@ -3,15 +3,15 @@
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { cmdSummary } from "@/lib/s/ast"
-import type { ControlMap } from "@/lib/s/ast"
+import { Cmd, Label } from "@/lib/s/ast"
 import type { Frame } from "@/lib/s/cek"
 import { EnvView } from "./env-view"
 import { useLabelHoverBind } from "./label-hover"
+import { IntMap, Map } from "@/lib/s/utils"
 
 interface Props {
   kont: Frame[]
-  ctrl: ControlMap
+  ctrl: Map<Label, Cmd.Cmd>
 }
 
 /** Continuation stack. Top of stack (index 0) = next frame to resume. */
@@ -39,13 +39,13 @@ function FrameCard({
   isTop,
 }: {
   frame: Frame
-  ctrl: ControlMap
+  ctrl: Map<Label, Cmd.Cmd>
   position: number
   isTop: boolean
 }) {
   const [open, setOpen] = useState(isTop)
-  const cmd = ctrl.get(frame.label)
-  const summary = cmd ? cmdSummary(cmd) : `(unknown label ${frame.label})`
+  const cmd = IntMap.find_opt(frame.label, ctrl)
+  const summary = cmd ? Cmd.summary(cmd) : `(unknown label ${frame.label})`
   const hoverBind = useLabelHoverBind(frame.label)
 
   return (

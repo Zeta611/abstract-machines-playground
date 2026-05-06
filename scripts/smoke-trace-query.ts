@@ -10,10 +10,30 @@ import {
   parseTraceQuery,
   traceQueryMatches,
   type TraceQueryAst,
-} from "../lib/s/trace-query"
-import type { RuleName } from "../lib/s/cek"
+} from "@/lib/s/traceQuery"
+import { type RuleName } from "@/lib/s/cek"
+import * as Result from "melange/result"
 
 let failed = 0
+
+function matches(
+  ast: TraceQueryAst | null,
+  row: (typeof rows)[keyof typeof rows]
+) {
+  return traceQueryMatches(ast ?? undefined, row)
+}
+
+type QueryParseState =
+  | { ok: true; ast: TraceQueryAst | null }
+  | { ok: false; message: string; at: number }
+
+function normalizeParse(query: string): QueryParseState {
+  return Result.fold(
+    (ast) => ({ ok: true, ast: ast ?? null }),
+    ({ message, at }) => ({ ok: false, message, at }),
+    parseTraceQuery(query)
+  )
+}
 
 function expect(name: string, cond: boolean, detail?: string): void {
   if (cond) {
@@ -25,7 +45,7 @@ function expect(name: string, cond: boolean, detail?: string): void {
 }
 
 function parseOk(query: string): TraceQueryAst | null {
-  const parsed = parseTraceQuery(query)
+  const parsed = normalizeParse(query)
   expect(
     query || "empty query",
     parsed.ok,
@@ -36,7 +56,7 @@ function parseOk(query: string): TraceQueryAst | null {
 }
 
 function parseBad(query: string): void {
-  const parsed = parseTraceQuery(query)
+  const parsed = normalizeParse(query)
   expect(
     `${query} is invalid`,
     !parsed.ok,
@@ -51,42 +71,51 @@ const rows = {
   },
   matchIfz: {
     index: 7,
-    rule: "Match" as RuleName,
+    rule: "Match",
     detail: "| Ifz(e1, e2, e3) matched (branch 5)",
     value: "Ifz(X(), Int(1), Int(2))",
     label: 7,
   },
   matchBranch25: {
     index: 25,
-    rule: "Match" as RuleName,
+    rule: "Match",
     detail: "| Z() matched (branch 0)",
     value: "Z()",
     label: 25,
   },
   letExp5: {
     index: 41,
-    rule: "LetExp" as RuleName,
+    rule: "LetExp",
     value: "True()",
     label: 5,
   },
   return25: {
     index: 31,
-    rule: "Return" as RuleName,
+    rule: "Return",
     detail: "return to let y",
     value: "Int(10)",
     label: 25,
   },
   letCall: {
     index: 12,
-    rule: "LetCall" as RuleName,
+    rule: "LetCall",
     detail: "call eval(3 args) -> let r",
     label: 42,
   },
-}
+} satisfies Record<
+  string,
+  {
+    index: number
+    rule?: RuleName
+    detail?: string
+    value?: string
+    label: number
+  }
+>
 
 console.log("1. empty query")
 {
-  const parsed = parseTraceQuery("")
+  const parsed = normalizeParse("")
   expect("empty parses to null", parsed.ok && parsed.ast === null)
 }
 
@@ -94,114 +123,84 @@ console.log("")
 console.log("2. field filters")
 {
   const rule = parseOk("rule=Match")
-  expect("rule=Match matches Match", traceQueryMatches(rule, rows.matchIfz))
-  expect("rule=Match excludes Return", !traceQueryMatches(rule, rows.return25))
+  expect("rule=Match matches Match", matches(rule, rows.matchIfz))
+  expect("rule=Match excludes Return", !matches(rule, rows.return25))
   expect(
     "rule=match is case-insensitive",
-    traceQueryMatches(parseOk("rule=match"), rows.matchIfz)
+    matches(parseOk("rule=match"), rows.matchIfz)
   )
   expect(
     "rule=mat does not partial-match Match",
-    !traceQueryMatches(parseOk("rule=mat"), rows.matchIfz)
+    !matches(parseOk("rule=mat"), rows.matchIfz)
   )
 
   const detail = parseOk("detail=branch && rule=Match")
-  expect(
-    "detail and rule both match",
-    traceQueryMatches(detail, rows.matchBranch25)
-  )
-  expect(
-    "detail and rule excludes Return",
-    !traceQueryMatches(detail, rows.return25)
-  )
+  expect("detail and rule both match", matches(detail, rows.matchBranch25))
+  expect("detail and rule excludes Return", !matches(detail, rows.return25))
 }
 
 console.log("")
 console.log("3. plain text and labels")
 {
   const text = parseOk("Ifz")
-  expect("plain text searches detail", traceQueryMatches(text, rows.matchIfz))
-  expect("plain text searches value", traceQueryMatches(text, rows.matchIfz))
-  expect(
-    "plain text excludes unrelated rows",
-    !traceQueryMatches(text, rows.letCall)
-  )
+  expect("plain text searches detail", matches(text, rows.matchIfz))
+  expect("plain text searches value", matches(text, rows.matchIfz))
+  expect("plain text excludes unrelated rows", !matches(text, rows.letCall))
 
   const label = parseOk("l=5")
-  expect("label exact match", traceQueryMatches(label, rows.letExp5))
-  expect(
-    "label exact excludes 25",
-    !traceQueryMatches(label, rows.matchBranch25)
-  )
-  expect("label exact excludes 7", !traceQueryMatches(label, rows.matchIfz))
+  expect("label exact match", matches(label, rows.letExp5))
+  expect("label exact excludes 25", !matches(label, rows.matchBranch25))
+  expect("label exact excludes 7", !matches(label, rows.matchIfz))
 
   const labelEqAlias = parseOk("l == 5")
-  expect(
-    "label == alias matches",
-    traceQueryMatches(labelEqAlias, rows.letExp5)
-  )
+  expect("label == alias matches", matches(labelEqAlias, rows.letExp5))
 }
 
 console.log("")
 console.log("4. numeric comparisons")
 {
   const inclusive = parseOk("l >= 0 && l <= 3")
-  expect(
-    "inclusive range matches lower bound",
-    traceQueryMatches(inclusive, rows.start0)
-  )
+  expect("inclusive range matches lower bound", matches(inclusive, rows.start0))
   expect(
     "inclusive range excludes values above upper bound",
-    !traceQueryMatches(inclusive, rows.letExp5)
+    !matches(inclusive, rows.letExp5)
   )
 
   const negated = parseOk("!(l >= 0 && l <= 3)")
   expect(
     "negated range excludes values inside range",
-    !traceQueryMatches(negated, rows.start0)
+    !matches(negated, rows.start0)
   )
   expect(
     "negated range keeps values outside range",
-    traceQueryMatches(negated, rows.letExp5)
+    matches(negated, rows.letExp5)
   )
 
   const strict = parseOk("l > 5 && l < 25")
-  expect(
-    "strict range matches middle value",
-    traceQueryMatches(strict, rows.matchIfz)
-  )
-  expect(
-    "strict range excludes lower bound",
-    !traceQueryMatches(strict, rows.letExp5)
-  )
-  expect(
-    "strict range excludes upper bound",
-    !traceQueryMatches(strict, rows.return25)
-  )
+  expect("strict range matches middle value", matches(strict, rows.matchIfz))
+  expect("strict range excludes lower bound", !matches(strict, rows.letExp5))
+  expect("strict range excludes upper bound", !matches(strict, rows.return25))
 }
 
 console.log("")
 console.log("5. logical operators")
 {
   const or = parseOk("rule=Match || rule=Return")
-  expect("or matches left side", traceQueryMatches(or, rows.matchIfz))
-  expect("or matches right side", traceQueryMatches(or, rows.return25))
-  expect("or excludes neither side", !traceQueryMatches(or, rows.letCall))
+  expect("or matches left side", matches(or, rows.matchIfz))
+  expect("or matches right side", matches(or, rows.return25))
+  expect("or excludes neither side", !matches(or, rows.letCall))
 
   const implicitPrecedence = parseOk("rule=Match || rule=Return && l=25")
   const grouped = parseOk("(rule=Match || rule=Return) && l=25")
   expect(
     "precedence keeps Match row visible",
-    traceQueryMatches(implicitPrecedence, rows.matchIfz)
+    matches(implicitPrecedence, rows.matchIfz)
   )
   expect(
     "parentheses require l=25 for Match row",
-    !traceQueryMatches(grouped, rows.matchIfz)
+    !matches(grouped, rows.matchIfz)
   )
-  expect(
-    "parentheses still match Return l=25",
-    traceQueryMatches(grouped, rows.return25)
-  )
+  expect("parentheses still match Return l=25", matches(grouped, rows.return25))
 }
 
 console.log("")
@@ -210,25 +209,25 @@ console.log("6. negation")
   const notGrouped = parseOk("!(rule=Match && l=7)")
   expect(
     "not grouped excludes matching row",
-    !traceQueryMatches(notGrouped, rows.matchIfz)
+    !matches(notGrouped, rows.matchIfz)
   )
   expect(
     "not grouped keeps non-matching row",
-    traceQueryMatches(notGrouped, rows.matchBranch25)
+    matches(notGrouped, rows.matchBranch25)
   )
 
   const notEquals = parseOk("rule!=Match || l!=25")
   expect(
     "field != excludes row matching both equalities",
-    !traceQueryMatches(notEquals, rows.matchBranch25)
+    !matches(notEquals, rows.matchBranch25)
   )
   expect(
     "field != keeps row with different label",
-    traceQueryMatches(notEquals, rows.matchIfz)
+    matches(notEquals, rows.matchIfz)
   )
   expect(
     "field != keeps row with different rule",
-    traceQueryMatches(notEquals, rows.return25)
+    matches(notEquals, rows.return25)
   )
 }
 

@@ -1,11 +1,11 @@
 "use client"
 
 import { useEffect, useMemo, useRef, type ReactNode } from "react"
-import type { SyntaxNode } from "@lezer/common"
 import { cn } from "@/lib/utils"
 import type { Loc } from "@/lib/s/ast"
-import { sParser } from "@/lib/s/grammar"
+import { SyntaxKind, SyntaxRange, parse } from "@/lib/s/parser"
 import { CopyButton } from "./copy-button"
+import * as Result from "melange/result"
 
 interface Props {
   source: string
@@ -40,7 +40,7 @@ export function SourceView({
         inline: "nearest",
       })
     }
-  }, [highlight?.from, highlight?.to])
+  }, [highlight?.from, highlight?.to_])
 
   useEffect(() => {
     if (hoverRef.current) {
@@ -49,7 +49,7 @@ export function SourceView({
         inline: "nearest",
       })
     }
-  }, [hoverHighlight?.from, hoverHighlight?.to])
+  }, [hoverHighlight?.from, hoverHighlight?.to_])
 
   const traceRanges = buildTraceRanges(
     source.length,
@@ -57,7 +57,15 @@ export function SourceView({
     kontHighlights,
     hoverHighlight ?? null
   )
-  const syntaxRanges = useMemo(() => buildSyntaxRanges(source), [source])
+  const syntaxRanges = useMemo(
+    () =>
+      Result.fold(
+        ({ ranges }) => ranges,
+        () => [],
+        parse(source)
+      ),
+    [source]
+  )
   const lines = Math.max(source.split("\n").length, 1)
 
   return (
@@ -141,17 +149,6 @@ export function SourceView({
 
 type RangeKind = "plain" | "kont" | "current" | "hover"
 type Range = { kind: RangeKind; from: number; to: number }
-type SyntaxKind =
-  | "keyword"
-  | "definition"
-  | "callee"
-  | "identifier"
-  | "constructor"
-  | "number"
-  | "comment"
-  | "operator"
-  | "punctuation"
-type SyntaxRange = { kind: SyntaxKind; from: number; to: number }
 
 /**
  * Build a non-overlapping sequence of ranges that cover [0, length).
@@ -166,13 +163,13 @@ function buildTraceRanges(
   type Cand = { kind: "kont" | "current" | "hover"; from: number; to: number }
   const cands: Cand[] = []
   for (const k of kont) {
-    cands.push({ kind: "kont", from: k.from, to: k.to })
+    cands.push({ kind: "kont", from: k.from, to: k.to_ })
   }
   if (current) {
-    cands.push({ kind: "current", from: current.from, to: current.to })
+    cands.push({ kind: "current", from: current.from, to: current.to_ })
   }
   if (hover) {
-    cands.push({ kind: "hover", from: hover.from, to: hover.to })
+    cands.push({ kind: "hover", from: hover.from, to: hover.to_ })
   }
   for (const c of cands) {
     c.from = Math.max(0, Math.min(length, c.from))
@@ -212,70 +209,6 @@ function buildTraceRanges(
   return out
 }
 
-const KEYWORD_NODES = new Set(["let", "in", "match", "with", "end"])
-const OPERATOR_NODES = new Set(["=", "=>", "|"])
-const PUNCTUATION_NODES = new Set(["(", ")", ","])
-
-function buildSyntaxRanges(source: string): SyntaxRange[] {
-  const ranges: SyntaxRange[] = []
-
-  try {
-    const cursor = sParser().parse(source).cursor()
-    do {
-      const kind = syntaxKind(cursor.node)
-      if (kind && cursor.to > cursor.from) {
-        ranges.push({ kind, from: cursor.from, to: cursor.to })
-      }
-    } while (cursor.next())
-  } catch {
-    return []
-  }
-
-  return normalizeSyntaxRanges(source.length, ranges)
-}
-
-function syntaxKind(node: SyntaxNode): SyntaxKind | null {
-  switch (node.name) {
-    case "LineComment":
-      return "comment"
-    case "Integer":
-      return "number"
-    case "UpperIdent":
-      return "constructor"
-    case "LowerIdent": {
-      const parent = node.parent?.name
-      if (parent === "FunName") return "definition"
-      if (parent === "Name") return "callee"
-      return "identifier"
-    }
-    default:
-      if (KEYWORD_NODES.has(node.name)) return "keyword"
-      if (OPERATOR_NODES.has(node.name)) return "operator"
-      if (PUNCTUATION_NODES.has(node.name)) return "punctuation"
-      return null
-  }
-}
-
-function normalizeSyntaxRanges(
-  length: number,
-  ranges: SyntaxRange[]
-): SyntaxRange[] {
-  const out: SyntaxRange[] = []
-  let cursor = 0
-
-  for (const range of ranges
-    .slice()
-    .sort((a, b) => a.from - b.from || a.to - b.to)) {
-    const from = Math.max(cursor, Math.max(0, Math.min(length, range.from)))
-    const to = Math.max(0, Math.min(length, range.to))
-    if (to <= from) continue
-    out.push({ ...range, from, to })
-    cursor = to
-  }
-
-  return out
-}
-
 function renderSyntaxSpans(
   source: string,
   ranges: SyntaxRange[],
@@ -286,11 +219,11 @@ function renderSyntaxSpans(
   let cursor = from
 
   for (const range of ranges) {
-    if (range.to <= from) continue
+    if (range.to_ <= from) continue
     if (range.from >= to) break
 
     const tokenFrom = Math.max(from, range.from)
-    const tokenTo = Math.min(to, range.to)
+    const tokenTo = Math.min(to, range.to_)
     if (tokenFrom > cursor) {
       out.push(
         <span key={`${cursor}:plain`}>{source.slice(cursor, tokenFrom)}</span>
@@ -318,10 +251,10 @@ function syntaxClassName(kind: SyntaxKind): string {
   switch (kind) {
     case "keyword":
       return "text-teal-700 dark:text-teal-300"
-    case "definition":
+    /*
+    case "function":
       return "text-sky-700 dark:text-sky-300"
-    case "callee":
-      return "text-sky-700 dark:text-sky-300"
+      */
     case "identifier":
       return "text-foreground"
     case "constructor":
@@ -330,8 +263,10 @@ function syntaxClassName(kind: SyntaxKind): string {
       return "text-sky-700 tabular-nums dark:text-sky-300"
     case "comment":
       return "text-muted-foreground"
-    case "operator":
-      return "text-rose-700 dark:text-rose-300"
+    /*
+  case "operator":
+    return "text-rose-700 dark:text-rose-300"
+    */
     case "punctuation":
       return "text-muted-foreground"
   }

@@ -18,9 +18,10 @@
         "name": "next"
       }
     ],
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "melange/*": ["./_build/default/output/node_modules/melange/*"],
+      "melange.js/*": ["./_build/default/output/node_modules/melange.js/*"]
     }
   },
   "include": [
