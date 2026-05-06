@@ -33,40 +33,6 @@ const __ocaml_lex_tables = {
   lex_code: ""
 };
 
-function __ocaml_lex_string_rec(buf, lexbuf, ___ocaml_lex_state) {
-  while (true) {
-    const __ocaml_lex_state = ___ocaml_lex_state;
-    const __ocaml_lex_state$1 = Stdlib__Lexing.engine(__ocaml_lex_tables, __ocaml_lex_state, lexbuf);
-    switch (__ocaml_lex_state$1) {
-      case 0 :
-        return {
-          TAG: /* STRING */ 1,
-          _0: Stdlib__Buffer.contents(buf)
-        };
-      case 1 :
-        const c = Stdlib__Lexing.sub_lexeme_char(lexbuf, lexbuf.lex_start_pos + 1 | 0);
-        Stdlib__Buffer.add_char(buf, c);
-        ___ocaml_lex_state = 20;
-        continue;
-      case 2 :
-        Stdlib__Buffer.add_char(buf, /* '\\' */92);
-        ___ocaml_lex_state = 20;
-        continue;
-      case 3 :
-        return raise_lex(lexbuf, "unterminated string");
-      case 4 :
-        const c$1 = Stdlib__Lexing.sub_lexeme_char(lexbuf, lexbuf.lex_start_pos);
-        Stdlib__Buffer.add_char(buf, c$1);
-        ___ocaml_lex_state = 20;
-        continue;
-      default:
-        Curry._1(lexbuf.refill_buff, lexbuf);
-        ___ocaml_lex_state = __ocaml_lex_state$1;
-        continue;
-    }
-  };
-}
-
 function __ocaml_lex_token_rec(lexbuf, ___ocaml_lex_state) {
   while (true) {
     const __ocaml_lex_state = ___ocaml_lex_state;
@@ -115,6 +81,40 @@ function __ocaml_lex_token_rec(lexbuf, ___ocaml_lex_state) {
         return /* EOF */ 10;
       case 18 :
         return raise_lex(lexbuf, "Unexpected character: " + Stdlib__Lexing.lexeme(lexbuf));
+      default:
+        Curry._1(lexbuf.refill_buff, lexbuf);
+        ___ocaml_lex_state = __ocaml_lex_state$1;
+        continue;
+    }
+  };
+}
+
+function __ocaml_lex_string_rec(buf, lexbuf, ___ocaml_lex_state) {
+  while (true) {
+    const __ocaml_lex_state = ___ocaml_lex_state;
+    const __ocaml_lex_state$1 = Stdlib__Lexing.engine(__ocaml_lex_tables, __ocaml_lex_state, lexbuf);
+    switch (__ocaml_lex_state$1) {
+      case 0 :
+        return {
+          TAG: /* STRING */ 1,
+          _0: Stdlib__Buffer.contents(buf)
+        };
+      case 1 :
+        const c = Stdlib__Lexing.sub_lexeme_char(lexbuf, lexbuf.lex_start_pos + 1 | 0);
+        Stdlib__Buffer.add_char(buf, c);
+        ___ocaml_lex_state = 20;
+        continue;
+      case 2 :
+        Stdlib__Buffer.add_char(buf, /* '\\' */92);
+        ___ocaml_lex_state = 20;
+        continue;
+      case 3 :
+        return raise_lex(lexbuf, "unterminated string");
+      case 4 :
+        const c$1 = Stdlib__Lexing.sub_lexeme_char(lexbuf, lexbuf.lex_start_pos);
+        Stdlib__Buffer.add_char(buf, c$1);
+        ___ocaml_lex_state = 20;
+        continue;
       default:
         Curry._1(lexbuf.refill_buff, lexbuf);
         ___ocaml_lex_state = __ocaml_lex_state$1;

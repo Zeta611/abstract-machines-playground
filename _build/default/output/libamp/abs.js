@@ -11,6 +11,7 @@ import * as Stdlib__Int from "melange/int.js";
 import * as Stdlib__List from "melange/list.js";
 import * as Stdlib__Map from "melange/map.js";
 import * as Stdlib__Option from "melange/option.js";
+import * as Stdlib__Printf from "melange/printf.js";
 import * as Stdlib__Result from "melange/result.js";
 import * as Stdlib__Set from "melange/set.js";
 import * as Stdlib__String from "melange/string.js";
@@ -639,6 +640,26 @@ const AbsEnv = {
   weak_update: weak_update
 };
 
+function WithTop(D) {
+  const bot = Caml_option.some(D.bot);
+  const inject = function (v) {
+    return Caml_option.some(v);
+  };
+  const join = function (x, y) {
+    if (x !== undefined && y !== undefined) {
+      return Caml_option.some(Curry._2(D.join, Caml_option.valFromOption(x), Caml_option.valFromOption(y)));
+    }
+    
+  };
+  return {
+    D: D,
+    bot: bot,
+    inject: inject,
+    top: undefined,
+    join: join
+  };
+}
+
 const M = {
   compare: Stdlib__Int.compare
 };
@@ -653,130 +674,156 @@ const union$3 = include$3.union;
 
 const fold$1 = include$3.fold;
 
-const AbsInt_add = include$3.add;
+const IntSet_add = include$3.add;
 
-const AbsInt_remove = include$3.remove;
+const IntSet_remove = include$3.remove;
 
-const AbsInt_inter = include$3.inter;
+const IntSet_inter = include$3.inter;
 
-const AbsInt_disjoint = include$3.disjoint;
+const IntSet_disjoint = include$3.disjoint;
 
-const AbsInt_diff = include$3.diff;
+const IntSet_diff = include$3.diff;
 
-const AbsInt_cardinal = include$3.cardinal;
+const IntSet_cardinal = include$3.cardinal;
 
-const AbsInt_elements = include$3.elements;
+const IntSet_elements = include$3.elements;
 
-const AbsInt_min_elt = include$3.min_elt;
+const IntSet_min_elt = include$3.min_elt;
 
-const AbsInt_min_elt_opt = include$3.min_elt_opt;
+const IntSet_min_elt_opt = include$3.min_elt_opt;
 
-const AbsInt_max_elt = include$3.max_elt;
+const IntSet_max_elt = include$3.max_elt;
 
-const AbsInt_max_elt_opt = include$3.max_elt_opt;
+const IntSet_max_elt_opt = include$3.max_elt_opt;
 
-const AbsInt_choose = include$3.choose;
+const IntSet_choose = include$3.choose;
 
-const AbsInt_choose_opt = include$3.choose_opt;
+const IntSet_choose_opt = include$3.choose_opt;
 
-const AbsInt_find = include$3.find;
+const IntSet_find = include$3.find;
 
-const AbsInt_find_opt = include$3.find_opt;
+const IntSet_find_opt = include$3.find_opt;
 
-const AbsInt_find_first = include$3.find_first;
+const IntSet_find_first = include$3.find_first;
 
-const AbsInt_find_first_opt = include$3.find_first_opt;
+const IntSet_find_first_opt = include$3.find_first_opt;
 
-const AbsInt_find_last = include$3.find_last;
+const IntSet_find_last = include$3.find_last;
 
-const AbsInt_find_last_opt = include$3.find_last_opt;
+const IntSet_find_last_opt = include$3.find_last_opt;
 
-const AbsInt_iter = include$3.iter;
+const IntSet_iter = include$3.iter;
 
-const AbsInt_map = include$3.map;
+const IntSet_map = include$3.map;
 
-const AbsInt_filter = include$3.filter;
+const IntSet_filter = include$3.filter;
 
-const AbsInt_filter_map = include$3.filter_map;
+const IntSet_filter_map = include$3.filter_map;
 
-const AbsInt_partition = include$3.partition;
+const IntSet_partition = include$3.partition;
 
-const AbsInt_split = include$3.split;
+const IntSet_split = include$3.split;
 
-const AbsInt_is_empty = include$3.is_empty;
+const IntSet_is_empty = include$3.is_empty;
 
-const AbsInt_mem = include$3.mem;
+const IntSet_mem = include$3.mem;
 
-const AbsInt_equal = include$3.equal;
+const IntSet_equal = include$3.equal;
 
-const AbsInt_compare = include$3.compare;
+const IntSet_compare = include$3.compare;
 
-const AbsInt_subset = include$3.subset;
+const IntSet_subset = include$3.subset;
 
-const AbsInt_for_all = include$3.for_all;
+const IntSet_for_all = include$3.for_all;
 
-const AbsInt_exists = include$3.exists;
+const IntSet_exists = include$3.exists;
 
-const AbsInt_to_list = include$3.to_list;
+const IntSet_to_list = include$3.to_list;
 
-const AbsInt_of_list = include$3.of_list;
+const IntSet_of_list = include$3.of_list;
 
-const AbsInt_to_seq_from = include$3.to_seq_from;
+const IntSet_to_seq_from = include$3.to_seq_from;
 
-const AbsInt_to_seq = include$3.to_seq;
+const IntSet_to_seq = include$3.to_seq;
 
-const AbsInt_to_rev_seq = include$3.to_rev_seq;
+const IntSet_to_rev_seq = include$3.to_rev_seq;
 
-const AbsInt_add_seq = include$3.add_seq;
+const IntSet_add_seq = include$3.add_seq;
 
-const AbsInt_of_seq = include$3.of_seq;
+const IntSet_of_seq = include$3.of_seq;
 
-const AbsInt = {
+const IntSet = {
   empty: empty$3,
-  add: AbsInt_add,
+  add: IntSet_add,
   singleton: singleton$2,
-  remove: AbsInt_remove,
+  remove: IntSet_remove,
   union: union$3,
-  inter: AbsInt_inter,
-  disjoint: AbsInt_disjoint,
-  diff: AbsInt_diff,
-  cardinal: AbsInt_cardinal,
-  elements: AbsInt_elements,
-  min_elt: AbsInt_min_elt,
-  min_elt_opt: AbsInt_min_elt_opt,
-  max_elt: AbsInt_max_elt,
-  max_elt_opt: AbsInt_max_elt_opt,
-  choose: AbsInt_choose,
-  choose_opt: AbsInt_choose_opt,
-  find: AbsInt_find,
-  find_opt: AbsInt_find_opt,
-  find_first: AbsInt_find_first,
-  find_first_opt: AbsInt_find_first_opt,
-  find_last: AbsInt_find_last,
-  find_last_opt: AbsInt_find_last_opt,
-  iter: AbsInt_iter,
+  inter: IntSet_inter,
+  disjoint: IntSet_disjoint,
+  diff: IntSet_diff,
+  cardinal: IntSet_cardinal,
+  elements: IntSet_elements,
+  min_elt: IntSet_min_elt,
+  min_elt_opt: IntSet_min_elt_opt,
+  max_elt: IntSet_max_elt,
+  max_elt_opt: IntSet_max_elt_opt,
+  choose: IntSet_choose,
+  choose_opt: IntSet_choose_opt,
+  find: IntSet_find,
+  find_opt: IntSet_find_opt,
+  find_first: IntSet_find_first,
+  find_first_opt: IntSet_find_first_opt,
+  find_last: IntSet_find_last,
+  find_last_opt: IntSet_find_last_opt,
+  iter: IntSet_iter,
   fold: fold$1,
-  map: AbsInt_map,
-  filter: AbsInt_filter,
-  filter_map: AbsInt_filter_map,
-  partition: AbsInt_partition,
-  split: AbsInt_split,
-  is_empty: AbsInt_is_empty,
-  mem: AbsInt_mem,
-  equal: AbsInt_equal,
-  compare: AbsInt_compare,
-  subset: AbsInt_subset,
-  for_all: AbsInt_for_all,
-  exists: AbsInt_exists,
-  to_list: AbsInt_to_list,
-  of_list: AbsInt_of_list,
-  to_seq_from: AbsInt_to_seq_from,
-  to_seq: AbsInt_to_seq,
-  to_rev_seq: AbsInt_to_rev_seq,
-  add_seq: AbsInt_add_seq,
-  of_seq: AbsInt_of_seq,
+  map: IntSet_map,
+  filter: IntSet_filter,
+  filter_map: IntSet_filter_map,
+  partition: IntSet_partition,
+  split: IntSet_split,
+  is_empty: IntSet_is_empty,
+  mem: IntSet_mem,
+  equal: IntSet_equal,
+  compare: IntSet_compare,
+  subset: IntSet_subset,
+  for_all: IntSet_for_all,
+  exists: IntSet_exists,
+  to_list: IntSet_to_list,
+  of_list: IntSet_of_list,
+  to_seq_from: IntSet_to_seq_from,
+  to_seq: IntSet_to_seq,
+  to_rev_seq: IntSet_to_rev_seq,
+  add_seq: IntSet_add_seq,
+  of_seq: IntSet_of_seq,
   bot: empty$3,
   join: union$3
+};
+
+const D = {
+  bot: empty$3,
+  join: union$3
+};
+
+const bot = Caml_option.some(empty$3);
+
+function inject(v) {
+  return Caml_option.some(v);
+}
+
+function join$1(x, y) {
+  if (x !== undefined && y !== undefined) {
+    return Caml_option.some(Curry._2(union$3, Caml_option.valFromOption(x), Caml_option.valFromOption(y)));
+  }
+  
+}
+
+const AbsInt = {
+  D: D,
+  bot: bot,
+  inject: inject,
+  top: undefined,
+  join: join$1
 };
 
 const V$1 = {
@@ -805,7 +852,7 @@ function lookup$1(k, m) {
   return Stdlib__Option.value(param, empty);
 }
 
-function join$1(m1, m2) {
+function join$2(m1, m2) {
   return Curry._3(union$4, (function (param, v1, v2) {
     return Caml_option.some(Curry._2(union, v1, v2));
   }), m1, m2);
@@ -945,13 +992,13 @@ const AbsArgs = {
   V: V$1,
   lookup: lookup$1,
   bot: empty$4,
-  join: join$1,
+  join: join$2,
   weak_update: weak_update$1
 };
 
 const V$2 = {
   bot: empty$4,
-  join: join$1
+  join: join$2
 };
 
 const K$2 = {
@@ -977,16 +1024,16 @@ function lookup$2(k, m) {
   return Stdlib__Option.value(param, empty$4);
 }
 
-function join$2(m1, m2) {
+function join$3(m1, m2) {
   return Curry._3(union$5, (function (param, v1, v2) {
-    return Caml_option.some(join$1(v1, v2));
+    return Caml_option.some(join$2(v1, v2));
   }), m1, m2);
 }
 
 function weak_update$2(k, v, m) {
   return Curry._3(update$2, k, (function (old) {
     if (old !== undefined) {
-      return Caml_option.some(join$1(Caml_option.valFromOption(old), v));
+      return Caml_option.some(join$2(Caml_option.valFromOption(old), v));
     } else {
       return Caml_option.some(v);
     }
@@ -1126,20 +1173,20 @@ const AbsAdt = {
   V: V$2,
   lookup: lookup$2,
   bot: empty$5,
-  join: join$2,
+  join: join$3,
   weak_update: weak_update$2,
   of_tag_args: of_tag_args
 };
 
-const bot = [
-  empty$3,
+const bot$1 = [
+  bot,
   empty$5
 ];
 
-function join$3(param, param$1) {
+function join$4(param, param$1) {
   return [
-    Curry._2(union$3, param[0], param$1[0]),
-    join$2(param[1], param$1[1])
+    join$1(param[0], param$1[0]),
+    join$3(param[1], param$1[1])
   ];
 }
 
@@ -1153,69 +1200,99 @@ function adt_of(v) {
 
 function of_int(n) {
   return [
-    Curry._1(singleton$2, n),
+    Caml_option.some(Curry._1(singleton$2, n)),
     empty$5
   ];
 }
 
 function of_adt(m) {
   return [
-    empty$3,
+    bot,
     m
+  ];
+}
+
+function of_abs_int(i) {
+  return [
+    i,
+    empty$5
   ];
 }
 
 const true__1 = of_tag_args("True", /* [] */ 0);
 
 const true_ = [
-  empty$3,
+  bot,
   true__1
 ];
 
 const false__1 = of_tag_args("False", /* [] */ 0);
 
 const false_ = [
-  empty$3,
+  bot,
   false__1
 ];
 
 function lift_int_binop(f, param, param$1) {
   const y = param$1[0];
+  const x = param[0];
+  if (x === undefined) {
+    return [
+      undefined,
+      empty$5
+    ];
+  }
+  if (y === undefined) {
+    return [
+      undefined,
+      empty$5
+    ];
+  }
+  const ySet = Caml_option.valFromOption(y);
   return Curry._3(fold$1, (function (n) {
     return Curry._2(fold$1, (function (m) {
       const partial_arg = Curry._2(f, n, m);
       return function (param) {
-        return join$3(partial_arg, param);
+        return join$4(partial_arg, param);
       };
-    }), y);
-  }), param[0], bot);
+    }), ySet);
+  }), Caml_option.valFromOption(x), bot$1);
 }
 
 function lift_int_unop(f, param) {
-  return Curry._3(fold$1, (function (n) {
-    const partial_arg = Curry._1(f, n);
-    return function (param) {
-      return join$3(partial_arg, param);
-    };
-  }), param[0], bot);
+  const x = param[0];
+  if (x !== undefined) {
+    return Curry._3(fold$1, (function (n) {
+      const partial_arg = Curry._1(f, n);
+      return function (param) {
+        return join$4(partial_arg, param);
+      };
+    }), Caml_option.valFromOption(x), bot$1);
+  } else {
+    return [
+      undefined,
+      empty$5
+    ];
+  }
 }
 
 function lift_tag_unop(f, param) {
   return Curry._3(fold$2, (function (tag, args, acc) {
-    return join$3(acc, Curry._1(f, [
+    return join$4(acc, Curry._1(f, [
       tag,
       args
     ]));
-  }), param[1], bot);
+  }), param[1], bot$1);
 }
 
 const AbsVal = {
-  bot: bot,
-  join: join$3,
+  bot: bot$1,
+  join: join$4,
   int_of: int_of,
   adt_of: adt_of,
   of_int: of_int,
   of_adt: of_adt,
+  of_abs_int: of_abs_int,
   true_: true_,
   false_: false_,
   lift_int_binop: lift_int_binop,
@@ -1235,19 +1312,19 @@ const find_opt$3 = include$6.find_opt;
 
 function lookup$3(k, m) {
   let param = Curry._2(find_opt$3, k, m);
-  return Stdlib__Option.value(param, bot);
+  return Stdlib__Option.value(param, bot$1);
 }
 
-function join$4(m1, m2) {
+function join$5(m1, m2) {
   return Curry._3(union$6, (function (param, v1, v2) {
-    return Caml_option.some(join$3(v1, v2));
+    return Caml_option.some(join$4(v1, v2));
   }), m1, m2);
 }
 
 function weak_update$3(k, v, m) {
   return Curry._3(update$3, k, (function (old) {
     if (old !== undefined) {
-      return Caml_option.some(join$3(Caml_option.valFromOption(old), v));
+      return Caml_option.some(join$4(Caml_option.valFromOption(old), v));
     } else {
       return Caml_option.some(v);
     }
@@ -1380,16 +1457,16 @@ const AbsVStore = {
   V: AbsVal,
   lookup: lookup$3,
   bot: empty$6,
-  join: join$4,
+  join: join$5,
   weak_update: weak_update$3
 };
 
-const bot$1 = [
+const bot$2 = [
   empty$2,
   empty$1
 ];
 
-function join$5(param, param$1) {
+function join$6(param, param$1) {
   return [
     join(param[0], param$1[0]),
     Curry._2(union$1, param[1], param$1[1])
@@ -1397,8 +1474,8 @@ function join$5(param, param$1) {
 }
 
 const AbsKont = {
-  bot: bot$1,
-  join: join$5
+  bot: bot$2,
+  join: join$6
 };
 
 const include$7 = Stdlib__Map.Make(Ptn$2);
@@ -1413,19 +1490,19 @@ const find_opt$4 = include$7.find_opt;
 
 function lookup$4(k, m) {
   let param = Curry._2(find_opt$4, k, m);
-  return Stdlib__Option.value(param, bot$1);
+  return Stdlib__Option.value(param, bot$2);
 }
 
-function join$6(m1, m2) {
+function join$7(m1, m2) {
   return Curry._3(union$7, (function (param, v1, v2) {
-    return Caml_option.some(join$5(v1, v2));
+    return Caml_option.some(join$6(v1, v2));
   }), m1, m2);
 }
 
 function weak_update$4(k, v, m) {
   return Curry._3(update$4, k, (function (old) {
     if (old !== undefined) {
-      return Caml_option.some(join$5(Caml_option.valFromOption(old), v));
+      return Caml_option.some(join$6(Caml_option.valFromOption(old), v));
     } else {
       return Caml_option.some(v);
     }
@@ -1558,23 +1635,32 @@ const AbsKStore = {
   V: AbsKont,
   lookup: lookup$4,
   bot: empty$7,
-  join: join$6,
+  join: join$7,
   weak_update: weak_update$4
 };
 
-const bot$2 = [
+function joined_lookup(a, m) {
+  return Curry._3(fold, (function (addr) {
+    const partial_arg = lookup$3(addr, m);
+    return function (param) {
+      return join$4(partial_arg, param);
+    };
+  }), a, bot$1);
+}
+
+const bot$3 = [
   empty$6,
   empty$7
 ];
 
-function join$7(param, param$1) {
+function join$8(param, param$1) {
   return [
-    join$4(param[0], param$1[0]),
-    join$6(param[1], param$1[1])
+    join$5(param[0], param$1[0]),
+    join$7(param[1], param$1[1])
   ];
 }
 
-function join$8(param, param$1) {
+function join$9(param, param$1) {
   return [
     join(param[0], param$1[0]),
     Curry._2(union$1, param[1], param$1[1])
@@ -1585,9 +1671,9 @@ const include$8 = Stdlib__Map.Make(Libamp__Ast.Label);
 
 const union$8 = include$8.union;
 
-function join$9(m1, m2) {
+function join$10(m1, m2) {
   return Curry._3(union$8, (function (param, v1, v2) {
-    return Caml_option.some(join$8(v1, v2));
+    return Caml_option.some(join$9(v1, v2));
   }), m1, m2);
 }
 
@@ -1595,29 +1681,29 @@ const include$9 = Stdlib__Map.Make(Ptn);
 
 const union$9 = include$9.union;
 
-function join$10(m1, m2) {
+function join$11(m1, m2) {
   return Curry._3(union$9, (function (param, v1, v2) {
-    return Caml_option.some(join$9(v1, v2));
+    return Caml_option.some(join$10(v1, v2));
   }), m1, m2);
 }
 
 const bot_0 = include$9.empty;
 
-const bot$3 = [
+const bot$4 = [
   bot_0,
-  bot$2
+  bot$3
 ];
 
-function join$11(param, param$1) {
+function join$12(param, param$1) {
   return [
-    join$10(param[0], param$1[0]),
-    join$7(param[1], param$1[1])
+    join$11(param[0], param$1[0]),
+    join$8(param[1], param$1[1])
   ];
 }
 
 const AbsCfg = {
-  bot: bot$3,
-  join: join$11
+  bot: bot$4,
+  join: join$12
 };
 
 function seq(rs) {
@@ -1653,10 +1739,7 @@ function evalPrim(param) {
         const match$1 = match.tl;
         if (match$1 && !match$1.tl) {
           return Stdlib__Result.ok(lift_int_binop((function (n, m) {
-            return [
-              Curry._1(singleton$2, n + m | 0),
-              empty$5
-            ];
+            return of_int(n + m | 0);
           }), match.hd, match$1.hd));
         }
         
@@ -1712,10 +1795,7 @@ function evalPrim(param) {
         const match$8 = match$7.tl;
         if (match$8 && !match$8.tl) {
           return Stdlib__Result.ok(lift_int_binop((function (n, m) {
-            return [
-              Curry._1(singleton$2, Math.imul(n, m)),
-              empty$5
-            ];
+            return of_int(Math.imul(n, m));
           }), match$7.hd, match$8.hd));
         }
         
@@ -1731,7 +1811,7 @@ function evalPrim(param) {
             case "True" :
               return false_;
             default:
-              return bot;
+              return bot$1;
           }
         }), match$9.hd));
       }
@@ -1742,10 +1822,7 @@ function evalPrim(param) {
         const match$11 = match$10.tl;
         if (match$11 && !match$11.tl) {
           return Stdlib__Result.ok(lift_int_binop((function (n, m) {
-            return [
-              Curry._1(singleton$2, n - m | 0),
-              empty$5
-            ];
+            return of_int(n - m | 0);
           }), match$10.hd, match$11.hd));
         }
         
@@ -1762,17 +1839,9 @@ function eval_exp(e, rho, sv, sk) {
   const n = e.desc;
   switch (n.TAG) {
     case /* Num */ 0 :
-      return Stdlib__Result.ok([
-        Curry._1(singleton$2, n._0),
-        empty$5
-      ]);
+      return Stdlib__Result.ok(of_int(n._0));
     case /* Var_ */ 1 :
-      return Stdlib__Result.ok(Curry._3(fold, (function (addr) {
-        const partial_arg = lookup$3(addr, sv);
-        return function (param) {
-          return join$3(partial_arg, param);
-        };
-      }), lookup(n._0, rho), bot));
+      return Stdlib__Result.ok(joined_lookup(lookup(n._0, rho), sv));
     case /* Prim */ 2 :
       const op = n.op;
       return Stdlib__Result.Syntax.let$star(seq(Stdlib__List.map((function (arg) {
@@ -1787,11 +1856,12 @@ function eval_exp(e, rho, sv, sk) {
 }
 
 function abs_allocv(sigma, i) {
-  return [
-    sigma[0],
-    sigma[1],
-    i
-  ];
+  return {
+    TAG: /* Dynamic */ 0,
+    _0: sigma[0],
+    _1: sigma[1],
+    _2: i
+  };
 }
 
 function abs_allock(sigma) {
@@ -1814,6 +1884,15 @@ function let_call_of(param) {
     ];
   }
   
+}
+
+function ferror(reason) {
+  return Stdlib__Printf.ksprintf((function (s) {
+    return {
+      TAG: /* Error */ 1,
+      _0: s
+    };
+  }), reason);
 }
 
 function abs_trans(prog, sigma) {
@@ -1877,10 +1956,44 @@ function abs_trans(prog, sigma) {
           catch (raw_exn){
             const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
             if (exn.MEL_EXN_ID === Stdlib.Invalid_argument) {
-              tmp = {
-                TAG: /* Error */ 1,
-                _0: "arity mismatch when calling " + (callee + (": expected " + (String(Stdlib__List.length(def.params)) + (" args, got " + String(Stdlib__List.length(argVals))))))
-              };
+              tmp = Curry._3(Stdlib__Printf.ksprintf((function (s) {
+                return {
+                  TAG: /* Error */ 1,
+                  _0: s
+                };
+              }), {
+                TAG: /* Format */ 0,
+                _0: {
+                  TAG: /* String_literal */ 11,
+                  _0: "arity mismatch when calling ",
+                  _1: {
+                    TAG: /* String */ 2,
+                    _0: /* No_padding */ 0,
+                    _1: {
+                      TAG: /* String_literal */ 11,
+                      _0: ": expected ",
+                      _1: {
+                        TAG: /* Int */ 4,
+                        _0: /* Int_d */ 0,
+                        _1: /* No_padding */ 0,
+                        _2: /* No_precision */ 0,
+                        _3: {
+                          TAG: /* String_literal */ 11,
+                          _0: " args, got ",
+                          _1: {
+                            TAG: /* Int */ 4,
+                            _0: /* Int_d */ 0,
+                            _1: /* No_padding */ 0,
+                            _2: /* No_precision */ 0,
+                            _3: /* End_of_format */ 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                _1: "arity mismatch when calling %s: expected %d args, got %d"
+              }), callee, Stdlib__List.length(def.params), Stdlib__List.length(argVals));
             } else {
               throw exn;
             }
@@ -1932,7 +2045,7 @@ function abs_trans(prog, sigma) {
           return Curry._1(singleton, param[1]);
         }), valAddrs));
         const v = [
-          empty$3,
+          bot,
           m
         ];
         return {
@@ -1955,12 +2068,7 @@ function abs_trans(prog, sigma) {
           const args = lookup$2(branchTag, v[1]);
           const varAddrArgs = Stdlib__List.mapi((function (i, $$var) {
             const addr = abs_allocv(sigma, i);
-            const arg = Curry._3(fold, (function (addr) {
-              const partial_arg = lookup$3(addr, sv);
-              return function (param) {
-                return join$3(partial_arg, param);
-              };
-            }), lookup$1(i, args), bot);
+            const arg = joined_lookup(lookup$1(i, args), sv);
             return [
               $$var,
               addr,
@@ -1994,12 +2102,15 @@ export {
   VAddr,
   KAddr,
   AbsEnv,
+  WithTop,
+  IntSet,
   AbsInt,
   AbsAdt,
   AbsVal,
   AbsVStore,
   AbsKont,
   AbsKStore,
+  joined_lookup,
   AbsCfg,
   seq,
   evalPrim,
@@ -2008,6 +2119,7 @@ export {
   abs_allock,
   abs_tick,
   let_call_of,
+  ferror,
   abs_trans,
 }
 /* include Not a pure module */

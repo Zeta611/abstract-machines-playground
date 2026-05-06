@@ -35,11 +35,14 @@ module PMap (K : Map.OrderedType) (V : Domain) = struct
     update k (function None -> Some v | Some old -> Some (V.join old v)) m
 end
 
-module Pair (A : Domain) (B : Domain) = struct
-  type t = A.t * B.t
+module Pair (D1 : Domain) (D2 : Domain) = struct
+  module D1 = D1
+  module D2 = D2
 
-  let bot = (A.bot, B.bot)
-  let join (a1, b1) (a2, b2) = (A.join a1 a2, B.join b1 b2)
+  type t = D1.t * D2.t
+
+  let bot = (D1.bot, D2.bot)
+  let join (a1, b1) (a2, b2) = (D1.join a1 a2, D2.join b1 b2)
 end
 
 module Time = struct
@@ -127,21 +130,16 @@ module AbsVal = struct
 end
 
 module AbsVStore = PMap (VAddr.Ptn) (AbsVal)
-module AbsKont = Pair (AbsEnv) (KAddr.Abs)
-module AbsKStore = PMap (KAddr.Ptn) (AbsKont)
+module AbsFrame = Pair (AbsEnv) (KAddr.Abs)
+module AbsKStore = PMap (KAddr.Ptn) (AbsFrame)
+
+type abs_state =
+  Time.Ptn.t * Label.t * AbsEnv.t * AbsVStore.t * AbsKStore.t * KAddr.Abs.t
 
 let joined_lookup (a : VAddr.Abs.t) (m : AbsVStore.t) : AbsVal.t =
   VAddr.Abs.fold
     (fun addr -> AbsVal.join (AbsVStore.lookup addr m))
     a AbsVal.bot
-
-type abs_state =
-  Time.Ptn.t * Label.t * AbsEnv.t * AbsVStore.t * AbsKStore.t * KAddr.Abs.t
-
-module AbsCfg =
-  Pair
-    (PMap (Time.Ptn) (PMap (Label) (Pair (AbsEnv) (KAddr.Abs))))
-       (Pair (AbsVStore) (AbsKStore))
 
 open Result.Syntax
 
@@ -224,7 +222,8 @@ let let_call_of = function
 
 let ferror reason = Printf.ksprintf (fun s -> Error s) reason
 
-let abs_trans (prog : program) ((_, l, rho, sv, sk, ak) as sigma : abs_state) :
+let abs_transition (prog : program)
+    ((_, l, rho, sv, sk, ak) as sigma : abs_state) :
     (abs_state list, string) result =
   let cmd = LabelMap.find l prog.ctrl in
   match cmd.desc with
@@ -350,3 +349,28 @@ let abs_trans (prog : program) ((_, l, rho, sv, sk, ak) as sigma : abs_state) :
             sv',
             sk,
             ak ))
+
+module TimeLabel = struct
+  type t = Time.Ptn.t * Label.t
+
+  let compare = compare
+end
+
+module Frames = PMap (TimeLabel) (AbsFrame)
+module AbsCfg = Pair (Frames) (Pair (AbsVStore) (AbsKStore))
+
+let abs_transfer (prog : program) (cfg : AbsCfg.t) : (AbsCfg.t, string) result =
+  let map, (sv, sk) = cfg in
+  let+ newCfgs =
+    Frames.to_list map
+    |> List.map (fun ((t, l), (rho, ak)) ->
+        let sigma = (t, l, rho, sv, sk, ak) in
+        abs_transition prog sigma)
+    |> seq
+  in
+  List.flatten newCfgs
+  |> List.fold_left
+       (fun cfg ((t, l, rho, sv, sk, ak) : abs_state) ->
+         AbsCfg.join cfg
+           (Frames.weak_update (t, l) (rho, ak) Frames.bot, (sv, sk)))
+       cfg

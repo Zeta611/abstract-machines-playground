@@ -1,7 +1,7 @@
-(ocamllex lexer traceQueryLexer envLexer)
+(ocamllex lexer traceQueryLexer envLexer absEnvLexer)
 
 (menhir
- (modules grammar traceQueryGrammar envGrammar)
+ (modules grammar traceQueryGrammar envGrammar absEnvGrammar)
  (flags --table --inspection))
 
 (library
