@@ -40,7 +40,7 @@ type step_success =
 
 type run_options = { maxSteps : int option }
 
-open Result.Syntax
+let ( let* ) = Result.bind
 
 let visit_trace_end end_ visitor =
   match end_ with

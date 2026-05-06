@@ -82,20 +82,20 @@ type Action =
   | { t: "runSuccess"; r: Runnable }
   | { t: "runFailure"; err: string }
   | {
-    t: "replaceAndRun"
-    source: string
-    envText: string
-    r: Runnable | null
-    err: string | null
-  }
+      t: "replaceAndRun"
+      source: string
+      envText: string
+      r: Runnable | null
+      err: string | null
+    }
   | {
-    t: "importSettings"
-    source: string
-    envText: string
-    queryText: string
-    r: Runnable | null
-    err: string | null
-  }
+      t: "importSettings"
+      source: string
+      envText: string
+      queryText: string
+      r: Runnable | null
+      err: string | null
+    }
 
 function reducer(s: PageState, a: Action): PageState {
   switch (a.t) {
@@ -373,9 +373,10 @@ export default function Page() {
       ? trace.steps[state.cursor]
       : undefined
 
-  const currentCmd = current && prog ? IntMap.find_opt(current.label, prog.ctrl) : undefined
+  const currentCmd =
+    current && prog ? IntMap.find_opt(current.label, prog.ctrl) : undefined
 
-  const kont = useMemo(() => current ? of_list(current.kont) : [], [current])
+  const kont = useMemo(() => (current ? of_list(current.kont) : []), [current])
   const kontHighlights = useMemo(() => {
     if (!current || !prog) return []
     return kont
@@ -453,7 +454,9 @@ function MainArea({
 }) {
   const { hovered } = useLabelHover()
   const hoverHighlight =
-    prog && hovered !== null ? IntMap.find_opt(hovered, prog.ctrl)?.loc ?? null : null
+    prog && hovered !== null
+      ? (IntMap.find_opt(hovered, prog.ctrl)?.loc ?? null)
+      : null
 
   return (
     <main className="min-h-0 flex-1 overflow-hidden p-3">

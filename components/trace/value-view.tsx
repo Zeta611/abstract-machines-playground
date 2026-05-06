@@ -17,21 +17,18 @@ export function ValueView({ value, depth = 0, autoCollapseAt = 4 }: Props) {
       <span className="text-sky-700 tabular-nums dark:text-sky-300">{n}</span>
     ),
     ctor: (payload) =>
-      (payload.args.length === 0) ?
-        (
-          <span className="text-violet-700 dark:text-violet-300">
-            {payload.tag}
-            <span className="text-muted-foreground">()</span>
-          </span>
-        )
-      :
-      (
+      payload.args.length === 0 ? (
+        <span className="text-violet-700 dark:text-violet-300">
+          {payload.tag}
+          <span className="text-muted-foreground">()</span>
+        </span>
+      ) : (
         <CtorValue
           value={payload}
           depth={depth}
           autoCollapseAt={autoCollapseAt}
         />
-      )
+      ),
   })
 }
 

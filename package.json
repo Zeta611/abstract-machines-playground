@@ -4,6 +4,13 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "full:dev": "bun run ocaml:dev && bun run dev",
+    "full:build": "bun run ocaml:build && bun run build",
+    "full:typecheck": "bun run ocaml:build && bun run typecheck --noEmit",
+    "full:format": "bun run ocaml:format && bun run format",
+    "ocaml:dev": "dune build --watch",
+    "ocaml:build": "dune build",
+    "ocaml:format": "dune format",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",

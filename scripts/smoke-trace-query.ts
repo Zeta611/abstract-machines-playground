@@ -16,7 +16,10 @@ import * as Result from "melange/result"
 
 let failed = 0
 
-function matches(ast: TraceQueryAst | null, row: (typeof rows)[keyof typeof rows]) {
+function matches(
+  ast: TraceQueryAst | null,
+  row: (typeof rows)[keyof typeof rows]
+) {
   return traceQueryMatches(ast ?? undefined, row)
 }
 
@@ -164,8 +167,14 @@ console.log("4. numeric comparisons")
   )
 
   const negated = parseOk("!(l >= 0 && l <= 3)")
-  expect("negated range excludes values inside range", !matches(negated, rows.start0))
-  expect("negated range keeps values outside range", matches(negated, rows.letExp5))
+  expect(
+    "negated range excludes values inside range",
+    !matches(negated, rows.start0)
+  )
+  expect(
+    "negated range keeps values outside range",
+    matches(negated, rows.letExp5)
+  )
 
   const strict = parseOk("l > 5 && l < 25")
   expect("strict range matches middle value", matches(strict, rows.matchIfz))
@@ -183,8 +192,14 @@ console.log("5. logical operators")
 
   const implicitPrecedence = parseOk("rule=Match || rule=Return && l=25")
   const grouped = parseOk("(rule=Match || rule=Return) && l=25")
-  expect("precedence keeps Match row visible", matches(implicitPrecedence, rows.matchIfz))
-  expect("parentheses require l=25 for Match row", !matches(grouped, rows.matchIfz))
+  expect(
+    "precedence keeps Match row visible",
+    matches(implicitPrecedence, rows.matchIfz)
+  )
+  expect(
+    "parentheses require l=25 for Match row",
+    !matches(grouped, rows.matchIfz)
+  )
   expect("parentheses still match Return l=25", matches(grouped, rows.return25))
 }
 
@@ -192,13 +207,28 @@ console.log("")
 console.log("6. negation")
 {
   const notGrouped = parseOk("!(rule=Match && l=7)")
-  expect("not grouped excludes matching row", !matches(notGrouped, rows.matchIfz))
-  expect("not grouped keeps non-matching row", matches(notGrouped, rows.matchBranch25))
+  expect(
+    "not grouped excludes matching row",
+    !matches(notGrouped, rows.matchIfz)
+  )
+  expect(
+    "not grouped keeps non-matching row",
+    matches(notGrouped, rows.matchBranch25)
+  )
 
   const notEquals = parseOk("rule!=Match || l!=25")
-  expect("field != excludes row matching both equalities", !matches(notEquals, rows.matchBranch25))
-  expect("field != keeps row with different label", matches(notEquals, rows.matchIfz))
-  expect("field != keeps row with different rule", matches(notEquals, rows.return25))
+  expect(
+    "field != excludes row matching both equalities",
+    !matches(notEquals, rows.matchBranch25)
+  )
+  expect(
+    "field != keeps row with different label",
+    matches(notEquals, rows.matchIfz)
+  )
+  expect(
+    "field != keeps row with different rule",
+    matches(notEquals, rows.return25)
+  )
 }
 
 console.log("")

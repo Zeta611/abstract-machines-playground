@@ -16,13 +16,7 @@ import {
   TRIVIAL,
 } from "@/lib/examples"
 import { parse } from "@/lib/s/parser"
-import {
-  showVal,
-  valEq,
-  vInt,
-  visit,
-  type Val,
-} from "@/lib/s/values"
+import { showVal, valEq, vInt, visit, type Val } from "@/lib/s/values"
 import * as Result from "melange/result"
 
 let failed = 0
@@ -105,13 +99,13 @@ function expectUnknownPrimitive(name: string, src: string): void {
     (message) => {
       throw expect(name, false, `parse error: ${message}`)
     },
-    parse(src))
+    parse(src)
+  )
   const trace = run(program, StringMap.of_array([]), { maxSteps: 10 })
   const end = endView(trace)
   expect(
     name,
-    end.kind === "stuck" &&
-    end.reason.startsWith("unknown primitive"),
+    end.kind === "stuck" && end.reason.startsWith("unknown primitive"),
     end.kind === "stuck" ? end.reason : end.kind
   )
 }
@@ -120,7 +114,9 @@ console.log("1. trivial: main(x) = let y = sub(x, 1) in y, x=3 -> 2")
 {
   const { program } = Result.fold(
     (parseResult) => parseResult,
-    (err) => { throw new Error(`parse error: ${err}`) },
+    (err) => {
+      throw new Error(`parse error: ${err}`)
+    },
     parse(TRIVIAL)
   )
   const env = parseEnvOrThrow("x = 3")
@@ -140,7 +136,9 @@ console.log("2. I_S^T on a T program")
 {
   const { program } = Result.fold(
     (parseResult) => parseResult,
-    (err) => { throw new Error(`parse error: ${err}`) },
+    (err) => {
+      throw new Error(`parse error: ${err}`)
+    },
     parse(INTERPRETER_S_T)
   )
   const env = parseEnvOrThrow(INITIAL_ENV)
@@ -160,13 +158,17 @@ console.log("3. I_S^T: Ifz(X, Int(10), Int(20)) at X=0 -> 10")
 {
   const { program } = Result.fold(
     (parseResult) => parseResult,
-    (err) => { throw new Error(`parse error: ${err}`) },
+    (err) => {
+      throw new Error(`parse error: ${err}`)
+    },
     parse(INTERPRETER_S_T)
   )
   const env = StringMap.of_array([
     [
       "p",
-      parseValueOrThrow("Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"),
+      parseValueOrThrow(
+        "Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"
+      ),
     ],
     ["arg", vInt(0)],
   ])
@@ -183,13 +185,17 @@ console.log("4. I_S^T: Ifz at X=5 -> 20 (else branch)")
 {
   const { program } = Result.fold(
     (parseResult) => parseResult,
-    (err) => { throw new Error(`parse error: ${err}`) },
+    (err) => {
+      throw new Error(`parse error: ${err}`)
+    },
     parse(INTERPRETER_S_T)
   )
   const env = StringMap.of_array([
     [
       "p",
-      parseValueOrThrow("Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"),
+      parseValueOrThrow(
+        "Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"
+      ),
     ],
     ["arg", vInt(5)],
   ])
@@ -209,7 +215,9 @@ console.log("5. I_S^T: recursive T function (identity-ish)")
   //   Use: f(x) = Ifz(x, Int(0), App(Fun(0), Sub(x, Int(1)))).  Then f(3) = 0.
   const { program } = Result.fold(
     (parseResult) => parseResult,
-    (err) => { throw new Error(`parse error: ${err}`) },
+    (err) => {
+      throw new Error(`parse error: ${err}`)
+    },
     parse(INTERPRETER_S_T)
   )
   const env = StringMap.of_array([
@@ -237,7 +245,9 @@ console.log("6. I_S^T: Let binds T variables by xid")
 {
   const { program } = Result.fold(
     (parseResult) => parseResult,
-    (err) => { throw new Error(`parse error: ${err}`) },
+    (err) => {
+      throw new Error(`parse error: ${err}`)
+    },
     parse(INTERPRETER_S_T)
   )
   const env = StringMap.of_array([
@@ -262,7 +272,9 @@ console.log("7. Stuck: undefined variable surfaces as trace.end = stuck")
 {
   const { program } = Result.fold(
     (parseResult) => parseResult,
-    (err) => { throw new Error(`parse error: ${err}`) },
+    (err) => {
+      throw new Error(`parse error: ${err}`)
+    },
     parse(`main() = let y = nope in y`)
   )
   const trace = run(program, StringMap.of_array([]), { maxSteps: 10 })
@@ -278,7 +290,9 @@ console.log("8. Stuck: bad match surfaces cleanly")
 {
   const { program } = Result.fold(
     (parseResult) => parseResult,
-    (err) => { throw new Error(`parse error: ${err}`) },
+    (err) => {
+      throw new Error(`parse error: ${err}`)
+    },
     parse(`main(x) =
   match x with
   | A(a) => a
@@ -308,7 +322,9 @@ console.log("9. Presets all parse and terminate")
   for (const preset of PROGRAM_PRESETS) {
     const { program } = Result.fold(
       (parseResult) => parseResult,
-      (err) => { throw new Error(`parse error: ${err}`) },
+      (err) => {
+        throw new Error(`parse error: ${err}`)
+      },
       parse(preset.source)
     )
     const env = parseEnvOrThrow(preset.envText)

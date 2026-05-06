@@ -3,11 +3,7 @@
 import { useEffect, useMemo, useRef, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
 import type { Loc } from "@/lib/s/ast"
-import {
-  SyntaxKind,
-  SyntaxRange,
-  parse,
-} from "@/lib/s/parser"
+import { SyntaxKind, SyntaxRange, parse } from "@/lib/s/parser"
 import { CopyButton } from "./copy-button"
 import * as Result from "melange/result"
 
@@ -61,12 +57,13 @@ export function SourceView({
     kontHighlights,
     hoverHighlight ?? null
   )
-  const syntaxRanges = useMemo(() =>
-    Result.fold(
-      ({ ranges }) => ranges,
-      () => [],
-      parse(source)
-    ),
+  const syntaxRanges = useMemo(
+    () =>
+      Result.fold(
+        ({ ranges }) => ranges,
+        () => [],
+        parse(source)
+      ),
     [source]
   )
   const lines = Math.max(source.split("\n").length, 1)
@@ -254,7 +251,7 @@ function syntaxClassName(kind: SyntaxKind): string {
   switch (kind) {
     case "keyword":
       return "text-teal-700 dark:text-teal-300"
-      /*
+    /*
     case "function":
       return "text-sky-700 dark:text-sky-300"
       */
