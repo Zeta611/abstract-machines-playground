@@ -8,6 +8,7 @@ type state = { label : Label.t; env : env; kont : frame list }
 type rule_name =
   | LetExp [@mel.as "LetExp"]
   | LetCall [@mel.as "LetCall"]
+  | LetTag [@mel.as "LetTag"]
   | Match [@mel.as "Match"]
   | Return [@mel.as "Return"]
 
@@ -67,9 +68,6 @@ let rec eval_exp (e : Exp.t) (rho : env) : (value, string) result =
       | Some v -> Ok v
       | None -> Error ("undefined variable '" ^ x ^ "'")
       end
-  | Ctor { tag; args } ->
-      let* argVals = args |> Array.map (fun arg -> eval_exp arg rho) |> seq in
-      Ok (vCtor tag argVals)
   | Prim { op; args } ->
       let* argVals = args |> Array.map (fun arg -> eval_exp arg rho) |> seq in
       Prims.evalPrim op argVals
@@ -130,6 +128,12 @@ let step (s : state) (prog : program) : (step_success, string) result =
               (def.body.label, calleeEnv, frame :: s.kont, LetCall)
               "call %s(%d args) -> let %s" callee (Array.length argVals) x
       end
+  | LetTag { x; tag; args; body } ->
+      let* argVals = args |> Array.map (fun arg -> eval_exp arg s.env) |> seq in
+      let v = vCtor tag argVals in
+      mk_step
+        (body.label, StringMap.add x v s.env, s.kont, LetTag)
+        ~value:v "let %s = %s(%d args)" x tag (Array.length argVals)
   | Let_ { x; exp; body } ->
       let* v = eval_exp exp s.env in
       mk_step

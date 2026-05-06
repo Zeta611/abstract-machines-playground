@@ -36,6 +36,11 @@ fun_name:
 cmd:
   | "let" x=LIDENT "=" exp=exp "in" body=cmd
     { let_ $loc x exp body }
+  | "let" x=LIDENT "=" name=UIDENT "(" args=separated_list(",", exp) ")" "in" body=cmd
+    { c $loc (
+        let* args = seq args in
+        let* body = body in
+        M.unit (Cmd.LetTag { tag = name; args = args |> Array.of_list; body = body })) }
   | "match" scrutinee=exp "with" branches=nonempty_list(branch) "end"
     { c $loc (
         let* scrutinee = scrutinee in
@@ -54,7 +59,4 @@ exp:
   | name=fun_name "(" args=separated_list(",", exp) ")"
     { let* args = seq args in
       e $loc (Exp.Prim { op = name; args = args |> Array.of_list }) }
-  | name=UIDENT "(" args=separated_list(",", exp) ")"
-    { let* args = seq args in
-      e $loc (Exp.Ctor { tag = name; args = args |> Array.of_list }) }
   | name=LIDENT { e $loc (Exp.Var_ name) }

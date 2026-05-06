@@ -14,7 +14,7 @@ declare module "@/lib/s/cek" {
     kont: List<Frame>
   }
 
-  export type RuleName = "LetExp" | "LetCall" | "Match" | "Return"
+  export type RuleName = "LetExp" | "LetTag" | "LetCall" | "Match" | "Return"
 
   export interface TraceStep {
     rule: RuleName
