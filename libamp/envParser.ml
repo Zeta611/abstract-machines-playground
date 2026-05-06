@@ -107,7 +107,7 @@ let rec parse_value lex =
             args := parse_value lex :: !args
           done;
           expect_char lex ')'));
-      vCtor name (Array.of_list (List.rev !args))
+      vCtor name (List.rev !args)
 
 let parseValue1 src =
   try

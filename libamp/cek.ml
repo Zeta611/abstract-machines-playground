@@ -49,16 +49,16 @@ let visit_trace_end end_ visitor =
   | Stuck { reason; at } -> visitor.stuck reason at
   | Maxed { reason } -> visitor.maxed reason
 
-let seq (rs : ('a, string) result array) : ('a array, string) result =
-  let* l =
-    Array.fold_left
+let seq (rs : ('a, string) result list) : ('a list, string) result =
+  let+ l =
+    List.fold_left
       (fun acc r ->
         let* xs = acc in
-        let* x = r in
-        Ok (x :: xs))
+        let+ x = r in
+        x :: xs)
       (Ok []) rs
   in
-  Ok (Array.of_list (List.rev l))
+  List.rev l
 
 let rec eval_exp (e : Exp.t) (rho : env) : (value, string) result =
   match e.desc with
@@ -69,7 +69,7 @@ let rec eval_exp (e : Exp.t) (rho : env) : (value, string) result =
       | None -> Error ("undefined variable '" ^ x ^ "'")
       end
   | Prim { op; args } ->
-      let* argVals = args |> Array.map (fun arg -> eval_exp arg rho) |> seq in
+      let* argVals = args |> List.map (fun arg -> eval_exp arg rho) |> seq in
       Prims.evalPrim op argVals
 
 let inject (prog : program) (rho : env) : state =
@@ -115,25 +115,21 @@ let step (s : state) (prog : program) : (step_success, string) result =
       begin match StringMap.find_opt callee prog.defs with
       | None -> Error ("undefined function " ^ callee)
       | Some def ->
-          if Array.length def.params <> Array.length args then
-            ffail "arity mismatch calling '%s': expected %d, got %d" callee
-              (Array.length def.params) (Array.length args)
-          else
-            let* argVals =
-              args |> Array.map (fun arg -> eval_exp arg s.env) |> seq
-            in
-            let calleeEnv = bindMany StringMap.empty def.params argVals in
-            let frame = { label = s.label; env = s.env } in
-            mk_step
-              (def.body.label, calleeEnv, frame :: s.kont, LetCall)
-              "call %s(%d args) -> let %s" callee (Array.length argVals) x
+          let* argVals =
+            args |> List.map (fun arg -> eval_exp arg s.env) |> seq
+          in
+          let calleeEnv = bindMany StringMap.empty def.params argVals in
+          let frame = { label = s.label; env = s.env } in
+          mk_step
+            (def.body.label, calleeEnv, frame :: s.kont, LetCall)
+            "call %s(%d args) -> let %s" callee (List.length argVals) x
       end
   | LetTag { x; tag; args; body } ->
-      let* argVals = args |> Array.map (fun arg -> eval_exp arg s.env) |> seq in
+      let* argVals = args |> List.map (fun arg -> eval_exp arg s.env) |> seq in
       let v = vCtor tag argVals in
       mk_step
         (body.label, StringMap.add x v s.env, s.kont, LetTag)
-        ~value:v "let %s = %s(%d args)" x tag (Array.length argVals)
+        ~value:v "let %s = %s(%d args)" x tag (List.length argVals)
   | Let_ { x; exp; body } ->
       let* v = eval_exp exp s.env in
       mk_step
@@ -144,22 +140,19 @@ let step (s : state) (prog : program) : (step_success, string) result =
       begin match v with
       | Int { n } -> ffail "match on non-constructor value (got int %d)" n
       | Ctor { tag; args } ->
-          let* i =
-            Array.find_index (fun branch -> branch.Cmd.tag = tag) branches
-            |> Option.to_result
-                 ~none:("no matching branch for tag '" ^ tag ^ "'")
-          in
-          let branch = branches.(i) in
-          if Array.length branch.vars <> Array.length args then
-            ffail "branch %s arity %d vs value arity %d" branch.tag
-              (Array.length branch.vars) (Array.length args)
-          else
-            let env' = bindMany s.env branch.vars args in
-            mk_step
-              (branch.body.label, env', s.kont, Match)
-              ~value:v "| %s(%s) matched (branch %d)" branch.tag
-              (String.concat ", " (Array.to_list branch.vars))
-              i
+          List.find_map
+            (fun branch ->
+              if branch.Cmd.tag = tag then
+                let env' = bindMany s.env branch.vars args in
+                mk_step
+                  (branch.body.label, env', s.kont, Match)
+                  ~value:v "%s(%s) matched" branch.tag
+                  (String.concat ", " branch.vars)
+                |> Option.some
+              else None)
+            branches
+          |> Option.to_result ~none:("no matching branch for tag '" ^ tag ^ "'")
+          |> Result.join
       end
 
 let run_impl ?(opts = { maxSteps = None }) (prog : program) (initEnv : env) :

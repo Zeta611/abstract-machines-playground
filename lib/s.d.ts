@@ -48,7 +48,7 @@ declare module "@/lib/s/cek" {
 declare module "@/lib/s/utils" {
   const mapBrand: unique symbol
   export type Map<K, V> = { readonly [mapBrand]: [K, V] }
-  type MapModule<K> = {
+  export type MapModule<K> = {
     of_array<V>(arr: [K, V][]): Map<K, V>
     bindings<V>(map: Map<K, V>): [K, V][]
     cardinal<V>(map: Map<K, V>): number
@@ -61,6 +61,7 @@ declare module "@/lib/s/utils" {
 
 declare module "@/lib/s/values" {
   import type { Map } from "@/lib/s/utils"
+  import type { List } from "melange/list"
 
   const valBrand: unique symbol
 
@@ -71,7 +72,7 @@ declare module "@/lib/s/values" {
 
   export interface CtorPayload {
     tag: string
-    args: Val[]
+    args: List<Val>
   }
 
   export type Env = Map<string, Val>
@@ -105,6 +106,7 @@ declare module "@/lib/s/ast" {
     interface Exp {
       loc: Loc
     }
+    function summary(exp: Exp): string
   }
 
   export namespace Cmd {

@@ -74,6 +74,7 @@ let string_of_rule_name = function
   | Cek.LetCall -> "LetCall"
   | Cek.Match -> "Match"
   | Cek.Return -> "Return"
+  | Cek.LetTag -> "LetTag"
 
 let label_matches (term : term_payload) label =
   match term.op with

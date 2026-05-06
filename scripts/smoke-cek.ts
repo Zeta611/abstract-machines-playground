@@ -16,7 +16,14 @@ import {
   TRIVIAL,
 } from "@/lib/examples"
 import { parse } from "@/lib/s/parser"
-import { showVal, valEq, vInt, visit, type Val } from "@/lib/s/values"
+import {
+  showVal,
+  valEq,
+  vInt,
+  visit,
+  type Val,
+} from "@/lib/s/values"
+import { of_list } from "melange/array"
 import * as Result from "melange/result"
 
 let failed = 0
@@ -369,7 +376,7 @@ console.log("11. Env parser: nested T program literal")
     "shape",
     visit(v, {
       int: () => false,
-      ctor: ({ tag, args }) => tag === "Prog" && args.length === 2,
+      ctor: ({ tag, args }) => tag === "Prog" && of_list(args).length === 2,
     }),
     `got ${showVal(v)}`
   )
