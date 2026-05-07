@@ -42,13 +42,13 @@ import { Slider } from "@/components/ui/slider"
 import { parse } from "@/lib/s/parser"
 import { parseAbsEnvStore } from "@/lib/s/absEnvParser"
 import {
-  abs_inject,
-  abs_transfer,
-  view_cfg,
+  M,
   type AbsCfg,
   type AbsCfgView,
+  type MIntf,
 } from "@/lib/s/abs"
 import { LabelMap, type Label, type Loc, type Program } from "@/lib/s/ast"
+import { of_list } from "melange/array"
 import * as Result from "melange/result"
 import { ABSTRACT_PROGRAM_PRESETS } from "@/lib/examples"
 
@@ -84,6 +84,27 @@ interface RowChangeSummary {
   kstore: string[]
 }
 
+function labelsOfProgram(program: Program): Label[] {
+  return of_list(LabelMap.to_list(program.ctrl)).map(([label]) => label)
+}
+
+function createAnalysis(program: Program): MIntf {
+  const labels = labelsOfProgram(program)
+  return M({
+    ptn_of_label: () => undefined,
+    labels_of_ptn: () => labels,
+    prog: program,
+  })
+}
+
+function labelsFromPattern(labelPtn: string): number[] {
+  return Array.from(labelPtn.matchAll(/L(\d+)/g), (match) => Number(match[1]))
+}
+
+function firstLabelOfFrame(frame: AbsCfgView["frames"][number]): number | null {
+  return labelsFromPattern(frame.label_ptn)[0] ?? null
+}
+
 function summarizeRowChanges(
   previous: AbsCfgView | null,
   current: AbsCfgView | null
@@ -116,8 +137,8 @@ function summarizeRowChanges(
     frames: summarize(
       previous?.frames ?? [],
       current.frames,
-      (row) => String(row.label),
-      (row) => `ℓ=${row.label}`,
+      (row) => `${row.time}:${row.label_ptn}`,
+      (row) => `P=${row.label_ptn}`,
       (row) => JSON.stringify(row)
     ),
     vstore: summarize(
@@ -153,7 +174,8 @@ function tryBuildInitial(
     ({ program }) =>
       Result.fold(
         (init) => {
-          const cfg = abs_inject(program, init)
+          const analysis = createAnalysis(program)
+          const cfg = analysis.abs_inject(init)
           return {
             result: {
               source,
@@ -162,7 +184,7 @@ function tryBuildInitial(
               history: [
                 {
                   cfg,
-                  view: view_cfg(cfg),
+                  view: analysis.view_cfg(cfg),
                   steps: 0,
                   lastStepMs: null,
                   stabilized: false,
@@ -195,7 +217,9 @@ export default function AbstractPage() {
   const [locked, setLocked] = useState(true)
   const [hoveredAddrLabel, setHoveredAddrLabel] = useState<number | null>(null)
   const [activeLabel, setActiveLabel] = useState<number | null>(
-    initial.result?.history[0]?.view.frames[0]?.label ?? null
+    initial.result?.history[0]?.view.frames[0]
+      ? firstLabelOfFrame(initial.result.history[0].view.frames[0])
+      : null
   )
   const activePresetId =
     ABSTRACT_PROGRAM_PRESETS.find(
@@ -216,8 +240,8 @@ export default function AbstractPage() {
         setActiveLabel(null)
         return
       }
-      const labels = result.history[result.cursor].view.frames.map(
-        (frame) => frame.label
+      const labels = result.history[result.cursor].view.frames.flatMap((frame) =>
+        labelsFromPattern(frame.label_ptn)
       )
       if (labels.length === 0) {
         setActiveLabel(null)
@@ -241,7 +265,11 @@ export default function AbstractPage() {
       const next = tryBuildInitial(source, absEnvText)
       setResult(next.result)
       setError(next.error)
-      setActiveLabel(next.result?.history[0]?.view.frames[0]?.label ?? null)
+      setActiveLabel(
+        next.result?.history[0]?.view.frames[0]
+          ? firstLabelOfFrame(next.result.history[0].view.frames[0])
+          : null
+      )
       setHoveredAddrLabel(null)
       setLocked(next.result !== null)
       return
@@ -256,15 +284,13 @@ export default function AbstractPage() {
     setIsPending(true)
     startTransition(() => {
       const started = performance.now()
-      const next = abs_transfer(
-        result.program,
-        result.history[result.cursor].cfg
-      )
+      const analysis = createAnalysis(result.program)
+      const next = analysis.abs_transfer(result.history[result.cursor].cfg)
       const elapsed = performance.now() - started
 
       Result.fold(
-        (cfg) => {
-          const nextView = view_cfg(cfg)
+        (cfg: AbsCfg) => {
+          const nextView = analysis.view_cfg(cfg)
           const baseState = result.history[result.cursor]
           const rowChanges = summarizeRowChanges(baseState.view, nextView)
           const nextState: StepState = {
@@ -305,7 +331,11 @@ export default function AbstractPage() {
     const next = tryBuildInitial(preset.source, preset.absEnvText)
     setResult(next.result)
     setError(next.error)
-    setActiveLabel(next.result?.history[0]?.view.frames[0]?.label ?? null)
+    setActiveLabel(
+      next.result?.history[0]?.view.frames[0]
+        ? firstLabelOfFrame(next.result.history[0].view.frames[0])
+        : null
+    )
     setHoveredAddrLabel(null)
     setLocked(next.result !== null)
   }
@@ -315,7 +345,11 @@ export default function AbstractPage() {
     const next = tryBuildInitial(source, absEnvText)
     setResult(next.result)
     setError(next.error)
-    setActiveLabel(next.result?.history[0]?.view.frames[0]?.label ?? null)
+    setActiveLabel(
+      next.result?.history[0]?.view.frames[0]
+        ? firstLabelOfFrame(next.result.history[0].view.frames[0])
+        : null
+    )
     setHoveredAddrLabel(null)
     if (next.result) {
       setLocked(true)
@@ -439,7 +473,9 @@ function AbstractPageInner({
 }) {
   const { hovered } = useLabelHover()
   const frameLabels =
-    currentState?.view.frames.map((frame) => frame.label) ?? []
+    currentState?.view.frames.flatMap((frame) =>
+      labelsFromPattern(frame.label_ptn)
+    ) ?? []
   const currentLabel = activeLabel ?? frameLabels[0] ?? null
 
   const currentLoc =

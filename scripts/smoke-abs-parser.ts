@@ -8,11 +8,26 @@
 
 import { parse } from "@/lib/s/parser"
 import { parseAbsEnvStore, parseAbsValue1 } from "@/lib/s/absEnvParser"
-import { run_abs, view_cfg } from "@/lib/s/abs"
+import { M, type MIntf } from "@/lib/s/abs"
+import { LabelMap, type Label, type Program } from "@/lib/s/ast"
 import { ABSTRACT_PROGRAM_PRESETS, PROGRAM_PRESETS } from "@/lib/examples"
+import { of_list } from "melange/array"
 import * as Result from "melange/result"
 
 let failed = 0
+
+function labelsOfProgram(program: Program): Label[] {
+  return of_list(LabelMap.to_list(program.ctrl)).map(([label]) => label)
+}
+
+function createAnalysis(program: Program): MIntf {
+  const labels = labelsOfProgram(program)
+  return M({
+    ptn_of_label: () => undefined,
+    labels_of_ptn: () => labels,
+    prog: program,
+  })
+}
 
 function expect(name: string, cond: boolean, detail?: string): void {
   if (cond) {
@@ -103,12 +118,13 @@ console.log("3. abstract run integration")
   )
 
   if (program && init) {
+    const analysis = createAnalysis(program.program)
     const run = expectOk<{ cfg: any; steps: number }>(
       "abstract run completes",
-      run_abs(program.program, init, 12)
+      analysis.run_abs(init, 12)
     )
     if (run) {
-      const view = view_cfg(run.cfg)
+      const view = analysis.view_cfg(run.cfg)
       expect("reachable frames are exposed", view.frames.length > 0)
       expect("run records step count", run.steps > 0)
     }

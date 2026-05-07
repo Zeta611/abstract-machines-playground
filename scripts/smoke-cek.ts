@@ -23,7 +23,7 @@ import {
   visit,
   type Val,
 } from "@/lib/s/values"
-import { of_list } from "melange/array"
+import { of_list, to_list } from "melange/array"
 import * as Result from "melange/result"
 
 let failed = 0
@@ -108,7 +108,7 @@ function expectUnknownPrimitive(name: string, src: string): void {
     },
     parse(src)
   )
-  const trace = run(program, StringMap.of_array([]), { maxSteps: 10 })
+  const trace = run(program, StringMap.of_list(to_list([])), { maxSteps: 10 })
   const end = endView(trace)
   expect(
     name,
@@ -170,7 +170,7 @@ console.log("3. I_S^T: Ifz(X, Int(10), Int(20)) at X=0 -> 10")
     },
     parse(INTERPRETER_S_T)
   )
-  const env = StringMap.of_array([
+  const env = StringMap.of_list(to_list([
     [
       "p",
       parseValueOrThrow(
@@ -178,7 +178,7 @@ console.log("3. I_S^T: Ifz(X, Int(10), Int(20)) at X=0 -> 10")
       ),
     ],
     ["arg", vInt(0)],
-  ])
+  ]))
   const trace = run(program, env, { maxSteps: 5_000 })
   const end = endView(trace)
   expect("terminates", end.kind === "final")
@@ -197,7 +197,7 @@ console.log("4. I_S^T: Ifz at X=5 -> 20 (else branch)")
     },
     parse(INTERPRETER_S_T)
   )
-  const env = StringMap.of_array([
+  const env = StringMap.of_list(to_list([
     [
       "p",
       parseValueOrThrow(
@@ -205,7 +205,7 @@ console.log("4. I_S^T: Ifz at X=5 -> 20 (else branch)")
       ),
     ],
     ["arg", vInt(5)],
-  ])
+  ]))
   const trace = run(program, env, { maxSteps: 5_000 })
   const end = endView(trace)
   expect("terminates", end.kind === "final")
@@ -227,7 +227,7 @@ console.log("5. I_S^T: recursive T function (identity-ish)")
     },
     parse(INTERPRETER_S_T)
   )
-  const env = StringMap.of_array([
+  const env = StringMap.of_list(to_list([
     [
       "p",
       parseValueOrThrow(
@@ -235,7 +235,7 @@ console.log("5. I_S^T: recursive T function (identity-ish)")
       ),
     ],
     ["arg", vInt(0)],
-  ])
+  ]))
   const trace = run(program, env, { maxSteps: 20_000 })
   const end = endView(trace)
   expect("terminates", end.kind === "final")
@@ -257,7 +257,7 @@ console.log("6. I_S^T: Let binds T variables by xid")
     },
     parse(INTERPRETER_S_T)
   )
-  const env = StringMap.of_array([
+  const env = StringMap.of_list(to_list([
     [
       "p",
       parseValueOrThrow(
@@ -265,7 +265,7 @@ console.log("6. I_S^T: Let binds T variables by xid")
       ),
     ],
     ["arg", vInt(2)],
-  ])
+  ]))
   const trace = run(program, env, { maxSteps: 5_000 })
   const end = endView(trace)
   expect("terminates", end.kind === "final")
@@ -284,7 +284,7 @@ console.log("7. Stuck: undefined variable surfaces as trace.end = stuck")
     },
     parse(`main() = let y = nope in y`)
   )
-  const trace = run(program, StringMap.of_array([]), { maxSteps: 10 })
+  const trace = run(program, StringMap.of_list(to_list([])), { maxSteps: 10 })
   const end = endView(trace)
   expect("stuck", end.kind === "stuck")
   if (end.kind === "stuck") {

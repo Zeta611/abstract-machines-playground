@@ -3,6 +3,7 @@
 import type { Env, Val } from "@/lib/s/values"
 import { ValueView } from "./value-view"
 import { StringMap } from "@/lib/s/utils"
+import { of_list } from "melange/array"
 
 interface Props {
   env: Env
@@ -11,7 +12,7 @@ interface Props {
 }
 
 export function EnvView({ env, emptyLabel = "(empty)", highlight }: Props) {
-  const entries = StringMap.bindings<Val>(env)
+  const entries = of_list(StringMap.to_list<Val>(env))
   if (entries.length === 0) {
     return (
       <div className="text-xs text-muted-foreground italic">{emptyLabel}</div>

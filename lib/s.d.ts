@@ -46,11 +46,12 @@ declare module "@/lib/s/cek" {
 }
 
 declare module "@/lib/s/utils" {
+  import type { List } from "melange/list"
   const mapBrand: unique symbol
   export type Map<K, V> = { readonly [mapBrand]: [K, V] }
   export type MapModule<K> = {
-    of_array<V>(arr: [K, V][]): Map<K, V>
-    bindings<V>(map: Map<K, V>): [K, V][]
+    of_list<V>(arr: List<[K, V]>): Map<K, V>
+    to_list<V>(map: Map<K, V>): List<[K, V]>
     cardinal<V>(map: Map<K, V>): number
     find_opt<V>(key: K, map: Map<K, V>): V | undefined
   }
@@ -205,12 +206,15 @@ declare module "@/lib/s/abs" {
 
   export interface AbsKStoreRow {
     addr: string
+    time: string
+    label: string
     env: AbsEnvRow[]
     kont: string[]
   }
 
   export interface AbsFrameRow {
-    label: number
+    time: string
+    label_ptn: string
     env: AbsEnvRow[]
     kont: string[]
   }
@@ -221,17 +225,24 @@ declare module "@/lib/s/abs" {
     kstore: AbsKStoreRow[]
   }
 
-  export function run_abs(
-    prog: Program,
-    init: [AbsEnv, AbsVStore],
-    fuel: number
-  ): Result<AbsRun, string>
-  export function abs_inject(prog: Program, init: [AbsEnv, AbsVStore]): AbsCfg
-  export function abs_transfer(
-    prog: Program,
-    cfg: AbsCfg
-  ): Result<AbsCfg, string>
-  export function view_cfg(cfg: AbsCfg): AbsCfgView
+  const mIntfBrand: unique symbol
+  export interface MIntf {
+    [mIntfBrand]: never
+    run_abs(
+      init: [AbsEnv, AbsVStore],
+      fuel: number
+    ): Result<AbsRun, string>
+    abs_inject(init: [AbsEnv, AbsVStore]): AbsCfg
+    abs_transfer(cfg: AbsCfg): Result<AbsCfg, string>
+    view_cfg(cfg: AbsCfg): AbsCfgView
+  }
+
+  export interface Param<LabelPtn> {
+    ptn_of_label: (label: Label) => LabelPtn
+    labels_of_ptn: (ptn: LabelPtn) => Label[]
+    prog: Program
+  }
+  export function M(p: Param<LabelPtn>): MIntf
 }
 
 declare module "@/lib/s/traceQuery" {

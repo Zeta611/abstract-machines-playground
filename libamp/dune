@@ -7,8 +7,8 @@
 (library
  (name libamp)
  (modes melange byte)
- (libraries menhirLib melange)
+ (libraries menhirLib)
  (flags
-  (:standard -w -30))
+  (:standard -w -30-32))
  (preprocess
   (pps melange.ppx)))

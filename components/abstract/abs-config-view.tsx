@@ -1,6 +1,5 @@
 "use client"
 
-import { useLabelHoverBind } from "@/components/trace/label-hover"
 import { Badge } from "@/components/ui/badge"
 import type {
   AbsCfgView,
@@ -9,13 +8,16 @@ import type {
   AbsKStoreRow,
   AbsVStoreRow,
 } from "@/lib/s/abs"
-import type { Label } from "@/lib/s/ast"
 
 function parseAddrLabel(addr: string): number | null {
   const match = addr.match(/^[vk]\((\d+)(?:,\d+)?\)$/)
   if (!match) return null
   const n = Number(match[1])
   return Number.isFinite(n) ? n : null
+}
+
+function labelsFromPattern(labelPtn: string): number[] {
+  return Array.from(labelPtn.matchAll(/L(\d+)/g), (match) => Number(match[1]))
 }
 
 function AddrBadges({
@@ -133,12 +135,14 @@ function FrameRow({
   onSelectLabel: (label: number) => void
   onHoverAddrLabel?: (label: number | null) => void
 }) {
-  const hoverBind = useLabelHoverBind(row.label as Label)
+  const primaryLabel = labelsFromPattern(row.label_ptn)[0] ?? null
 
   return (
     <button
       type="button"
-      onClick={() => onSelectLabel(row.label)}
+      onClick={() => {
+        if (primaryLabel !== null) onSelectLabel(primaryLabel)
+      }}
       className={[
         "flex w-full flex-col gap-3 border-b px-4 py-3 text-left text-xs last:border-b-0",
         "hover:bg-muted/30 focus:bg-muted/30 focus:outline-none",
@@ -149,19 +153,18 @@ function FrameRow({
         <Badge
           variant={active ? "default" : "outline"}
           className="font-mono text-[10px]"
-          {...hoverBind}
         >
-          ℓ={row.label}
+          P={row.label_ptn}
         </Badge>
       </div>
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+      <div className="space-y-3">
         <div className="min-w-0">
           <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             Env
           </div>
           <EnvCell rows={row.env} onHoverAddrLabel={onHoverAddrLabel} />
         </div>
-        <div className="min-w-0 md:min-w-[8rem]">
+        <div className="min-w-0">
           <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             Kont Addrs
           </div>
@@ -195,9 +198,9 @@ function FramesTable({
     <div>
       {rows.map((row) => (
         <FrameRow
-          key={`${row.label}:${row.kont.join("|")}`}
+          key={`${row.time}:${row.label_ptn}:${row.kont.join("|")}`}
           row={row}
-          active={activeLabel === row.label}
+          active={activeLabel !== null && labelsFromPattern(row.label_ptn).includes(activeLabel)}
           onSelectLabel={onSelectLabel}
           onHoverAddrLabel={onHoverAddrLabel}
         />
