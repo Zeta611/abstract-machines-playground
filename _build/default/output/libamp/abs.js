@@ -2016,8 +2016,9 @@ function M$1(P) {
     const sk = sigma[4];
     const sv = sigma[3];
     const rho = sigma[2];
+    const l = sigma[1];
     const t = sigma[0];
-    const cmd = Curry._2(Libamp__Ast.LabelMap.find, sigma[1], prog.ctrl);
+    const cmd = Curry._2(Libamp__Ast.LabelMap.find, l, prog.ctrl);
     const e = cmd.desc;
     switch (e.TAG) {
       case /* Return */ 0 :
@@ -2025,11 +2026,7 @@ function M$1(P) {
           return Stdlib__List.concat_map((function (ptn_ak) {
             return Stdlib__List.map((function (param) {
               const match = param[1];
-              const l$p = param[0][1];
-              const match$1 = let_call_of(Curry._2(Libamp__Ast.LabelMap.find, l$p, prog.ctrl));
-              if (match$1 === undefined) {
-                return Stdlib.failwith("continuation at " + (String(l$p) + " is not a let-call"));
-              }
+              const match$1 = Stdlib__Option.get(let_call_of(Curry._2(Libamp__Ast.LabelMap.find, param[0][1], prog.ctrl)));
               const lr = match$1[1].label;
               const a0 = abs_allocv(sigma, lr, 0);
               return [
@@ -2132,7 +2129,7 @@ function M$1(P) {
               const ak$p = abs_allock(sigma);
               const sk$p = weak_update$5(ak$p, Curry._2(singleton$3, [
                 t,
-                def.body.label
+                l
               ], [
                 rho,
                 ak

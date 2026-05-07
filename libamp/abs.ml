@@ -362,7 +362,7 @@ module M (P : PARAM) = struct
         let ak' = abs_allock sigma in
         let sk' =
           AbsKStore.weak_update ak'
-            (AbsFrames.singleton (t, def.body.label) (rho, ak))
+            (AbsFrames.singleton (t, l) (rho, ak))
             sk
         in
         [
