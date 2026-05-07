@@ -2194,26 +2194,21 @@ function M$1(P) {
               return;
             }
             const args$1 = args._0;
-            const varAddrArgs = Stdlib__List.mapi((function (i, $$var) {
-              const addr = abs_allocv(sigma, branch.body.label, i + 1 | 0);
-              const arg = joined_lookup(lookup(i, args$1), sv);
+            const varAddrs = Stdlib__List.mapi((function (i, $$var) {
+              const addr = lookup(i, args$1);
               return [
                 $$var,
-                addr,
-                arg
+                addr
               ];
             }), branch.vars);
-            const sv$p = Stdlib__List.fold_left((function (sv, param) {
-              return weak_update$3(param[1], param[2], sv);
-            }), sv, varAddrArgs);
             const rho$p = Stdlib__List.fold_left((function (rho, param) {
-              return weak_update$2(param[0], Curry._1(singleton, param[1]), rho);
-            }), rho, varAddrArgs);
+              return weak_update$2(param[0], param[1], rho);
+            }), rho, varAddrs);
             return [
               undefined,
               branch.body.label,
               rho$p,
-              sv$p,
+              sv,
               sk,
               ak
             ];

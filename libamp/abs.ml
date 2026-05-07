@@ -361,9 +361,7 @@ module M (P : PARAM) = struct
         in
         let ak' = abs_allock sigma in
         let sk' =
-          AbsKStore.weak_update ak'
-            (AbsFrames.singleton (t, l) (rho, ak))
-            sk
+          AbsKStore.weak_update ak' (AbsFrames.singleton (t, l) (rho, ak)) sk
         in
         [
           ( abs_tick sigma (`TL (t, def.body.label)),
@@ -382,29 +380,23 @@ module M (P : PARAM) = struct
             match args with
             | AbsArgs.Bot -> None
             | AbsArgs.V args ->
-                let varAddrArgs =
+                let varAddrs =
                   branch.vars
                   |> List.mapi (fun i var ->
-                      let addr = abs_allocv sigma branch.body.label (i + 1) in
-                      let arg = joined_lookup (AbsAddrList.lookup i args) sv in
-                      (var, addr, arg))
-                in
-                let sv' =
-                  List.fold_left
-                    (fun sv (_, addr, arg) -> AbsVStore.weak_update addr arg sv)
-                    sv varAddrArgs
+                      let addr = AbsAddrList.lookup i args in
+                      (var, addr))
                 in
                 let rho' =
                   List.fold_left
-                    (fun rho (var, addr, _) ->
-                      AbsEnv.weak_update var (VAddr.Abs.singleton addr) rho)
-                    rho varAddrArgs
+                    (fun rho (var, addr) ->
+                      AbsEnv.weak_update var addr rho)
+                    rho varAddrs
                 in
                 Some
                   ( abs_tick sigma (`L branch.body.label),
                     branch.body.label,
                     rho',
-                    sv',
+                    sv,
                     sk,
                     ak ))
 
