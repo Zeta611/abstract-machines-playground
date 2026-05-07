@@ -245,6 +245,14 @@ declare module "@/lib/s/abs" {
   export function M(p: Param<LabelPtn>): MIntf
 }
 
+declare module "@/lib/s/abs_preset" {
+  import type { Program } from "@/lib/s/ast"
+  import type { Param } from "@/lib/s/abs"
+
+  export function all_labels(prog: Program): Param<undefined>
+  export function by_function(prog: Program): Param<string>
+}
+
 declare module "@/lib/s/traceQuery" {
   import type { Result } from "melange/result"
   import type { RuleName } from "@/lib/s/cek"

@@ -47,8 +47,8 @@ import {
   type AbsCfgView,
   type MIntf,
 } from "@/lib/s/abs"
+import { all_labels, by_function } from "@/lib/s/abs_preset"
 import { LabelMap, type Label, type Loc, type Program } from "@/lib/s/ast"
-import { of_list } from "melange/array"
 import * as Result from "melange/result"
 import { ABSTRACT_PROGRAM_PRESETS } from "@/lib/examples"
 
@@ -73,6 +73,7 @@ interface StepState {
 interface RunnableState {
   source: string
   absEnvText: string
+  partitionPresetId: PartitionPresetId
   program: Program
   history: StepState[]
   cursor: number
@@ -84,17 +85,22 @@ interface RowChangeSummary {
   kstore: string[]
 }
 
-function labelsOfProgram(program: Program): Label[] {
-  return of_list(LabelMap.to_list(program.ctrl)).map(([label]) => label)
-}
+type PartitionPresetId = "all-labels" | "by-function"
 
-function createAnalysis(program: Program): MIntf {
-  const labels = labelsOfProgram(program)
-  return M({
-    ptn_of_label: () => undefined,
-    labels_of_ptn: () => labels,
-    prog: program,
-  })
+const PARTITION_PRESETS: { id: PartitionPresetId; name: string }[] = [
+  { id: "all-labels", name: "all labels" },
+  { id: "by-function", name: "by function" },
+]
+
+function createAnalysis(
+  program: Program,
+  partitionPresetId: PartitionPresetId
+): MIntf {
+  return M(
+    partitionPresetId === "by-function"
+      ? by_function(program)
+      : all_labels(program)
+  )
 }
 
 function labelsFromPattern(labelPtn: string): number[] {
@@ -168,18 +174,20 @@ function hasVisibleRowChanges(summary: RowChangeSummary): boolean {
 
 function tryBuildInitial(
   source: string,
-  absEnvText: string
+  absEnvText: string,
+  partitionPresetId: PartitionPresetId
 ): { result: RunnableState | null; error: string | null } {
   return Result.fold(
     ({ program }) =>
       Result.fold(
         (init) => {
-          const analysis = createAnalysis(program)
+          const analysis = createAnalysis(program, partitionPresetId)
           const cfg = analysis.abs_inject(init)
           return {
             result: {
               source,
               absEnvText,
+              partitionPresetId,
               program,
               history: [
                 {
@@ -204,8 +212,10 @@ function tryBuildInitial(
 }
 
 export default function AbstractPage() {
+  const [partitionPresetId, setPartitionPresetId] =
+    useState<PartitionPresetId>("all-labels")
   const initial = useMemo(
-    () => tryBuildInitial(DEFAULT_SOURCE, DEFAULT_ABS_ENV),
+    () => tryBuildInitial(DEFAULT_SOURCE, DEFAULT_ABS_ENV, "all-labels"),
     []
   )
   const [source, setSource] = useState(DEFAULT_SOURCE)
@@ -228,7 +238,8 @@ export default function AbstractPage() {
 
   const sourceDirty = !result || source !== result.source
   const envDirty = !result || absEnvText !== result.absEnvText
-  const dirty = sourceDirty || envDirty
+  const partitionDirty = !result || partitionPresetId !== result.partitionPresetId
+  const dirty = sourceDirty || envDirty || partitionDirty
   const showLocked = locked && result !== null
   const currentState = result ? result.history[result.cursor] : null
   const previousState =
@@ -262,7 +273,7 @@ export default function AbstractPage() {
 
     if (dirty) {
       setPlaying(false)
-      const next = tryBuildInitial(source, absEnvText)
+      const next = tryBuildInitial(source, absEnvText, partitionPresetId)
       setResult(next.result)
       setError(next.error)
       setActiveLabel(
@@ -284,7 +295,7 @@ export default function AbstractPage() {
     setIsPending(true)
     startTransition(() => {
       const started = performance.now()
-      const analysis = createAnalysis(result.program)
+      const analysis = createAnalysis(result.program, result.partitionPresetId)
       const next = analysis.abs_transfer(result.history[result.cursor].cfg)
       const elapsed = performance.now() - started
 
@@ -305,6 +316,7 @@ export default function AbstractPage() {
           setResult({
             source: result.source,
             absEnvText: result.absEnvText,
+            partitionPresetId: result.partitionPresetId,
             program: result.program,
             history: [...historyPrefix, nextState],
             cursor: historyPrefix.length,
@@ -328,7 +340,11 @@ export default function AbstractPage() {
     setPlaying(false)
     setSource(preset.source)
     setAbsEnvText(preset.absEnvText)
-    const next = tryBuildInitial(preset.source, preset.absEnvText)
+    const next = tryBuildInitial(
+      preset.source,
+      preset.absEnvText,
+      partitionPresetId
+    )
     setResult(next.result)
     setError(next.error)
     setActiveLabel(
@@ -342,7 +358,7 @@ export default function AbstractPage() {
 
   const handleReset = () => {
     setPlaying(false)
-    const next = tryBuildInitial(source, absEnvText)
+    const next = tryBuildInitial(source, absEnvText, partitionPresetId)
     setResult(next.result)
     setError(next.error)
     setActiveLabel(
@@ -363,6 +379,25 @@ export default function AbstractPage() {
       ...result,
       cursor: Math.max(0, Math.min(result.history.length - 1, nextCursor)),
     })
+  }
+
+  const handlePartitionPresetChange = (id: string) => {
+    const nextPartitionPresetId = id as PartitionPresetId
+    setPlaying(false)
+    setPartitionPresetId(nextPartitionPresetId)
+    if (!showLocked) {
+      return
+    }
+    const next = tryBuildInitial(source, absEnvText, nextPartitionPresetId)
+    setResult(next.result)
+    setError(next.error)
+    setActiveLabel(
+      next.result?.history[0]?.view.frames[0]
+        ? firstLabelOfFrame(next.result.history[0].view.frames[0])
+        : null
+    )
+    setHoveredAddrLabel(null)
+    setLocked(next.result !== null)
   }
 
   useEffect(() => {
@@ -415,6 +450,8 @@ export default function AbstractPage() {
         setHoveredAddrLabel={setHoveredAddrLabel}
         activePresetId={activePresetId}
         onPresetChange={handlePresetChange}
+        partitionPresetId={partitionPresetId}
+        onPartitionPresetChange={handlePartitionPresetChange}
         currentState={currentState}
         previousState={previousState}
       />
@@ -444,6 +481,8 @@ function AbstractPageInner({
   setHoveredAddrLabel,
   activePresetId,
   onPresetChange,
+  partitionPresetId,
+  onPartitionPresetChange,
   currentState,
   previousState,
 }: {
@@ -468,6 +507,8 @@ function AbstractPageInner({
   setHoveredAddrLabel: (label: number | null) => void
   activePresetId: string
   onPresetChange: (id: string) => void
+  partitionPresetId: PartitionPresetId
+  onPartitionPresetChange: (id: string) => void
   currentState: StepState | null
   previousState: StepState | null
 }) {
@@ -560,6 +601,22 @@ function AbstractPageInner({
                 </SelectItem>
               )}
               {ABSTRACT_PROGRAM_PRESETS.map((preset) => (
+                <SelectItem key={preset.id} value={preset.id}>
+                  {preset.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-muted-foreground">partition</span>
+          <Select
+            value={partitionPresetId}
+            onValueChange={onPartitionPresetChange}
+          >
+            <SelectTrigger size="sm" className="w-36 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PARTITION_PRESETS.map((preset) => (
                 <SelectItem key={preset.id} value={preset.id}>
                   {preset.name}
                 </SelectItem>

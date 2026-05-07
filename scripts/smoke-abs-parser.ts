@@ -9,24 +9,15 @@
 import { parse } from "@/lib/s/parser"
 import { parseAbsEnvStore, parseAbsValue1 } from "@/lib/s/absEnvParser"
 import { M, type MIntf } from "@/lib/s/abs"
-import { LabelMap, type Label, type Program } from "@/lib/s/ast"
+import { all_labels } from "@/lib/s/abs_preset"
+import type { Program } from "@/lib/s/ast"
 import { ABSTRACT_PROGRAM_PRESETS, PROGRAM_PRESETS } from "@/lib/examples"
-import { of_list } from "melange/array"
 import * as Result from "melange/result"
 
 let failed = 0
 
-function labelsOfProgram(program: Program): Label[] {
-  return of_list(LabelMap.to_list(program.ctrl)).map(([label]) => label)
-}
-
 function createAnalysis(program: Program): MIntf {
-  const labels = labelsOfProgram(program)
-  return M({
-    ptn_of_label: () => undefined,
-    labels_of_ptn: () => labels,
-    prog: program,
-  })
+  return M(all_labels(program))
 }
 
 function expect(name: string, cond: boolean, detail?: string): void {
