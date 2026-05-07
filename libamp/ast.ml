@@ -23,16 +23,14 @@ module Exp = struct
     | Num n -> string_of_int n
     | Var_ name -> name
     | Prim { op; args } ->
-        op ^ "("
-        ^ (args |> List.map summary |> String.concat ", ")
-        ^ ")"
+        op ^ "(" ^ (args |> List.map summary |> String.concat ", ") ^ ")"
 end
 
 module Cmd = struct
   type desc =
-    | Return of Exp.t
+    | Return of string
     | Let_ of { x : string; exp : Exp.t; body : t }
-    | LetCall of { x : string; callee : string; args : Exp.t list; body : t }
+    | LetCall of { x : string; callee : string; args : string list; body : t }
     | LetTag of { x : string; tag : string; args : Exp.t list; body : t }
     | Match_ of { scrutinee : Exp.t; branches : branch list }
 
@@ -41,11 +39,11 @@ module Cmd = struct
 
   let summary (c : t) =
     match c.desc with
-    | Return exp -> "return " ^ Exp.summary exp
+    | Return name -> "return " ^ name
     | Let_ { x; exp; _ } -> "let " ^ x ^ " = " ^ Exp.summary exp ^ " in ..."
     | LetCall { x; callee; args; _ } ->
         "let " ^ x ^ " = " ^ callee ^ "("
-        ^ (args |> List.map Exp.summary |> String.concat ", ")
+        ^ (args |> String.concat ", ")
         ^ ") in ..."
     | LetTag { x; tag; args; _ } ->
         "let " ^ x ^ " = " ^ tag ^ "("

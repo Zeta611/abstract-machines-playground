@@ -30,18 +30,18 @@ const Exp = {
 };
 
 function summary$1(c) {
-  const exp = c.desc;
-  switch (exp.TAG) {
+  const name = c.desc;
+  switch (name.TAG) {
     case /* Return */ 0 :
-      return "return " + summary(exp._0);
+      return "return " + name._0;
     case /* Let_ */ 1 :
-      return "let " + (exp.x + (" = " + (summary(exp.exp) + " in ...")));
+      return "let " + (name.x + (" = " + (summary(name.exp) + " in ...")));
     case /* LetCall */ 2 :
-      return "let " + (exp.x + (" = " + (exp.callee + ("(" + (Stdlib__String.concat(", ", Stdlib__List.map(summary, exp.args)) + ") in ...")))));
+      return "let " + (name.x + (" = " + (name.callee + ("(" + (Stdlib__String.concat(", ", name.args) + ") in ...")))));
     case /* LetTag */ 3 :
-      return "let " + (exp.x + (" = " + (exp.tag + ("(" + (Stdlib__String.concat(", ", Stdlib__List.map(summary, exp.args)) + ") in ...")))));
+      return "let " + (name.x + (" = " + (name.tag + ("(" + (Stdlib__String.concat(", ", Stdlib__List.map(summary, name.args)) + ") in ...")))));
     case /* Match_ */ 4 :
-      return "match " + (summary(exp.scrutinee) + " with ...");
+      return "match " + (summary(name.scrutinee) + " with ...");
   }
 }
 

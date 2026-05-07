@@ -46,8 +46,8 @@ cmd:
         let* scrutinee = scrutinee in
         let* branches = seq branches in
         M.unit (Cmd.Match_ { scrutinee = scrutinee; branches })) }
-  | exp=exp
-    { c $loc (let* exp = exp in M.unit (Cmd.Return exp)) }
+  | name=LIDENT
+    { c $loc (M.unit (Cmd.Return name)) }
 
 branch:
   | "|" tag=UIDENT "(" params=separated_list(",", LIDENT) ")" "=>" body=cmd

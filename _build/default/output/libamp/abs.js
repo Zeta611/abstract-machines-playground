@@ -2019,37 +2019,34 @@ function M$1(P) {
     const l = sigma[1];
     const t = sigma[0];
     const cmd = Curry._2(Libamp__Ast.LabelMap.find, l, prog.ctrl);
-    const e = cmd.desc;
-    switch (e.TAG) {
+    const x = cmd.desc;
+    switch (x.TAG) {
       case /* Return */ 0 :
-        return Stdlib__Result.Syntax.let$plus(eval_exp(e._0, rho, sv, sk), (function (v) {
-          return Stdlib__List.concat_map((function (ptn_ak) {
-            return Stdlib__List.map((function (param) {
-              const match = param[1];
-              const match$1 = Stdlib__Option.get(let_call_of(Curry._2(Libamp__Ast.LabelMap.find, param[0][1], prog.ctrl)));
-              const lr = match$1[1].label;
-              const a0 = abs_allocv(sigma, lr, 0);
-              return [
-                undefined,
-                lr,
-                weak_update$2(match$1[0], Curry._1(singleton, a0), match[0]),
-                weak_update$3(a0, v, sv),
-                sk,
-                match[1]
-              ];
-            }), Curry._1(to_list$7, lookup$5(ptn_ak, sk)));
-          }), Curry._1(to_list$6, ak));
-        }));
+        const a = lookup$2(x._0, rho);
+        return Stdlib__Result.ok(Stdlib__List.concat_map((function (ptn_ak) {
+          return Stdlib__List.map((function (param) {
+            const match = param[1];
+            const match$1 = Stdlib__Option.get(let_call_of(Curry._2(Libamp__Ast.LabelMap.find, param[0][1], prog.ctrl)));
+            return [
+              undefined,
+              match$1[1].label,
+              weak_update$2(match$1[0], a, match[0]),
+              sv,
+              sk,
+              match[1]
+            ];
+          }), Curry._1(to_list$7, lookup$5(ptn_ak, sk)));
+        }), Curry._1(to_list$6, ak)));
       case /* Let_ */ 1 :
-        const body = e.body;
-        const x = e.x;
-        return Stdlib__Result.Syntax.let$plus(eval_exp(e.exp, rho, sv, sk), (function (v) {
+        const body = x.body;
+        const x$1 = x.x;
+        return Stdlib__Result.Syntax.let$plus(eval_exp(x.exp, rho, sv, sk), (function (v) {
           const a0 = abs_allocv(sigma, body.label, 0);
           return {
             hd: [
               undefined,
               body.label,
-              weak_update$2(x, Curry._1(singleton, a0), rho),
+              weak_update$2(x$1, Curry._1(singleton, a0), rho),
               weak_update$3(a0, v, sv),
               sk,
               ak
@@ -2058,103 +2055,94 @@ function M$1(P) {
           };
         }));
       case /* LetCall */ 2 :
-        const callee = e.callee;
-        return Stdlib__Result.Syntax.let$star(seq(Stdlib__List.map((function (arg) {
-          return eval_exp(arg, rho, sv, sk);
-        }), e.args)), (function (argVals) {
-          return Stdlib__Result.Syntax.let$star(Stdlib__Option.to_result("undefined function " + callee, Curry._2(Libamp__Utils.StringMap.find_opt, callee, prog.defs)), (function (def) {
-            let tmp;
-            try {
-              tmp = Stdlib__Result.ok(Stdlib__List.mapi((function (i, param) {
-                const addr = abs_allocv(sigma, def.body.label, i + 1 | 0);
-                return [
-                  param[0],
-                  addr,
-                  param[1]
-                ];
-              }), Stdlib__List.combine(def.params, argVals)));
-            }
-            catch (raw_exn){
-              const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
-              if (exn.MEL_EXN_ID === Stdlib.Invalid_argument) {
-                tmp = Curry._3(Stdlib__Printf.ksprintf((function (s) {
-                  return {
-                    TAG: /* Error */ 1,
-                    _0: s
-                  };
-                }), {
-                  TAG: /* Format */ 0,
-                  _0: {
-                    TAG: /* String_literal */ 11,
-                    _0: "arity mismatch when calling ",
+        const args = x.args;
+        const callee = x.callee;
+        return Stdlib__Result.Syntax.let$star(Stdlib__Option.to_result("undefined function " + callee, Curry._2(Libamp__Utils.StringMap.find_opt, callee, prog.defs)), (function (def) {
+          const ak$p = abs_allock(sigma);
+          const sk$p = weak_update$5(ak$p, Curry._2(singleton$3, [
+            t,
+            l
+          ], [
+            rho,
+            ak
+          ]), sk);
+          let tmp;
+          try {
+            tmp = Stdlib__Result.ok(Stdlib__List.fold_left((function (rho, param) {
+              return weak_update$2(param[0], param[1], rho);
+            }), empty$4, Stdlib__List.map((function (param) {
+              return [
+                param[0],
+                lookup$2(param[1], rho)
+              ];
+            }), Stdlib__List.combine(def.params, args))));
+          }
+          catch (raw_exn){
+            const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
+            if (exn.MEL_EXN_ID === Stdlib.Invalid_argument) {
+              tmp = Curry._3(Stdlib__Printf.ksprintf((function (s) {
+                return {
+                  TAG: /* Error */ 1,
+                  _0: s
+                };
+              }), {
+                TAG: /* Format */ 0,
+                _0: {
+                  TAG: /* String_literal */ 11,
+                  _0: "arity mismatch when calling ",
+                  _1: {
+                    TAG: /* String */ 2,
+                    _0: /* No_padding */ 0,
                     _1: {
-                      TAG: /* String */ 2,
-                      _0: /* No_padding */ 0,
+                      TAG: /* String_literal */ 11,
+                      _0: ": expected ",
                       _1: {
-                        TAG: /* String_literal */ 11,
-                        _0: ": expected ",
-                        _1: {
-                          TAG: /* Int */ 4,
-                          _0: /* Int_d */ 0,
-                          _1: /* No_padding */ 0,
-                          _2: /* No_precision */ 0,
-                          _3: {
-                            TAG: /* String_literal */ 11,
-                            _0: " args, got ",
-                            _1: {
-                              TAG: /* Int */ 4,
-                              _0: /* Int_d */ 0,
-                              _1: /* No_padding */ 0,
-                              _2: /* No_precision */ 0,
-                              _3: /* End_of_format */ 0
-                            }
+                        TAG: /* Int */ 4,
+                        _0: /* Int_d */ 0,
+                        _1: /* No_padding */ 0,
+                        _2: /* No_precision */ 0,
+                        _3: {
+                          TAG: /* String_literal */ 11,
+                          _0: " args, got ",
+                          _1: {
+                            TAG: /* Int */ 4,
+                            _0: /* Int_d */ 0,
+                            _1: /* No_padding */ 0,
+                            _2: /* No_precision */ 0,
+                            _3: /* End_of_format */ 0
                           }
                         }
                       }
                     }
-                  },
-                  _1: "arity mismatch when calling %s: expected %d args, got %d"
-                }), callee, Stdlib__List.length(def.params), Stdlib__List.length(argVals));
-              } else {
-                throw exn;
-              }
+                  }
+                },
+                _1: "arity mismatch when calling %s: expected %d args, got %d"
+              }), callee, Stdlib__List.length(def.params), Stdlib__List.length(args));
+            } else {
+              throw exn;
             }
-            return Stdlib__Result.Syntax.let$plus(tmp, (function (varAddrArgs) {
-              const sv$p = Stdlib__List.fold_left((function (sv, param) {
-                return weak_update$3(param[1], param[2], sv);
-              }), sv, varAddrArgs);
-              const rho$p = Stdlib__List.fold_left((function (rho, param) {
-                return weak_update$2(param[0], Curry._1(singleton, param[1]), rho);
-              }), empty$4, varAddrArgs);
-              const ak$p = abs_allock(sigma);
-              const sk$p = weak_update$5(ak$p, Curry._2(singleton$3, [
-                t,
-                l
-              ], [
-                rho,
-                ak
-              ]), sk);
-              return {
-                hd: [
-                  undefined,
-                  def.body.label,
-                  rho$p,
-                  sv$p,
-                  sk$p,
-                  Curry._1(singleton$2, ak$p)
-                ],
-                tl: /* [] */ 0
-              };
-            }));
+          }
+          return Stdlib__Result.Syntax.let$plus(tmp, (function (rho$p) {
+            return {
+              hd: [
+                undefined,
+                def.body.label,
+                rho$p,
+                sv,
+                sk$p,
+                Curry._1(singleton$2, ak$p)
+              ],
+              tl: /* [] */ 0
+            };
           }));
         }));
       case /* LetTag */ 3 :
-        const body$1 = e.body;
-        const tag = e.tag;
-        const x$1 = e.x;
+        const body$1 = x.body;
+        const tag = x.tag;
+        const x$2 = x.x;
         return Stdlib__Result.Syntax.let$plus(seq(Stdlib__List.map((function (arg) {
           return eval_exp(arg, rho, sv, sk);
-        }), e.args)), (function (argVals) {
+        }), x.args)), (function (argVals) {
           const a0 = abs_allocv(sigma, body$1.label, 0);
           const valAddrs = Stdlib__List.mapi((function (i, arg) {
             return [
@@ -2176,7 +2164,7 @@ function M$1(P) {
             hd: [
               undefined,
               body$1.label,
-              weak_update$2(x$1, Curry._1(singleton, a0), rho),
+              weak_update$2(x$2, Curry._1(singleton, a0), rho),
               weak_update$3(a0, v, sv$p),
               sk,
               ak
@@ -2185,8 +2173,8 @@ function M$1(P) {
           };
         }));
       case /* Match_ */ 4 :
-        const branches = e.branches;
-        return Stdlib__Result.Syntax.let$plus(eval_exp(e.scrutinee, rho, sv, sk), (function (v) {
+        const branches = x.branches;
+        return Stdlib__Result.Syntax.let$plus(eval_exp(x.scrutinee, rho, sv, sk), (function (v) {
           return Stdlib__List.filter_map((function (branch) {
             const branchTag = branch.tag;
             const args = lookup$1(branchTag, v[1]);

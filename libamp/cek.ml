@@ -94,8 +94,11 @@ let sfail reason = Error reason
 let step (s : state) (prog : program) : (step_success, string) result =
   let cmd = LabelMap.find s.label prog.ctrl in
   match cmd.desc with
-  | Return exp ->
-      let* v = eval_exp exp s.env in
+  | Return x ->
+      let* v =
+        StringMap.find_opt x s.env
+        |> Option.to_result ~none:("undefined variable '" ^ x ^ "'")
+      in
       begin match s.kont with
       | [] -> Ok (FinalValue { value = v })
       | top :: rest ->
@@ -116,7 +119,11 @@ let step (s : state) (prog : program) : (step_success, string) result =
       | None -> Error ("undefined function " ^ callee)
       | Some def ->
           let* argVals =
-            args |> List.map (fun arg -> eval_exp arg s.env) |> seq
+            args
+            |> List.map (fun arg ->
+                   StringMap.find_opt arg s.env
+                   |> Option.to_result ~none:("undefined variable " ^ arg))
+            |> seq
           in
           let calleeEnv = bindMany StringMap.empty def.params argVals in
           let frame = { label = s.label; env = s.env } in

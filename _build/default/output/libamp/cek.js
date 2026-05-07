@@ -123,10 +123,11 @@ function sfail(reason) {
 
 function step(s, prog) {
   const cmd = Curry._2(Libamp__Ast.LabelMap.find, s.label, prog.ctrl);
-  const exp = cmd.desc;
-  switch (exp.TAG) {
+  const x = cmd.desc;
+  switch (x.TAG) {
     case /* Return */ 0 :
-      return Stdlib__Result.Syntax.let$star(eval_exp(exp._0, s.env), (function (v) {
+      const x$1 = x._0;
+      return Stdlib__Result.Syntax.let$star(Stdlib__Option.to_result("undefined variable '" + (x$1 + "'"), Curry._2(Libamp__Utils.StringMap.find_opt, x$1, s.env)), (function (v) {
         const match = s.kont;
         if (!match) {
           return {
@@ -167,12 +168,12 @@ function step(s, prog) {
         }), x);
       }));
     case /* Let_ */ 1 :
-      const body = exp.body;
-      const x = exp.x;
-      return Stdlib__Result.Syntax.let$star(eval_exp(exp.exp, s.env), (function (v) {
+      const body = x.body;
+      const x$2 = x.x;
+      return Stdlib__Result.Syntax.let$star(eval_exp(x.exp, s.env), (function (v) {
         return Curry._1(mk_step([
           body.label,
-          Curry._3(Libamp__Utils.StringMap.add, x, v, s.env),
+          Curry._3(Libamp__Utils.StringMap.add, x$2, v, s.env),
           s.kont,
           /* LetExp */ "LetExp"
         ], v, {
@@ -187,16 +188,16 @@ function step(s, prog) {
             }
           },
           _1: "%s := ..."
-        }), x);
+        }), x$2);
       }));
     case /* LetCall */ 2 :
-      const callee = exp.callee;
-      const x$1 = exp.x;
+      const callee = x.callee;
+      const x$3 = x.x;
       const def = Curry._2(Libamp__Utils.StringMap.find_opt, callee, prog.defs);
       if (def !== undefined) {
         return Stdlib__Result.Syntax.let$star(seq(Stdlib__List.map((function (arg) {
-          return eval_exp(arg, s.env);
-        }), exp.args)), (function (argVals) {
+          return Stdlib__Option.to_result("undefined variable " + arg, Curry._2(Libamp__Utils.StringMap.find_opt, arg, s.env));
+        }), x.args)), (function (argVals) {
           const calleeEnv = Libamp__Values.bindMany(Libamp__Utils.StringMap.empty, def.params, argVals);
           const frame_label = s.label;
           const frame_env = s.env;
@@ -242,7 +243,7 @@ function step(s, prog) {
               }
             },
             _1: "call %s(%d args) -> let %s"
-          }), callee, Stdlib__List.length(argVals), x$1);
+          }), callee, Stdlib__List.length(argVals), x$3);
         }));
       } else {
         return {
@@ -251,16 +252,16 @@ function step(s, prog) {
         };
       }
     case /* LetTag */ 3 :
-      const body$1 = exp.body;
-      const tag = exp.tag;
-      const x$2 = exp.x;
+      const body$1 = x.body;
+      const tag = x.tag;
+      const x$4 = x.x;
       return Stdlib__Result.Syntax.let$star(seq(Stdlib__List.map((function (arg) {
         return eval_exp(arg, s.env);
-      }), exp.args)), (function (argVals) {
+      }), x.args)), (function (argVals) {
         const v = Libamp__Values.vCtor(tag, argVals);
         return Curry._3(mk_step([
           body$1.label,
-          Curry._3(Libamp__Utils.StringMap.add, x$2, v, s.env),
+          Curry._3(Libamp__Utils.StringMap.add, x$4, v, s.env),
           s.kont,
           /* LetTag */ "LetTag"
         ], v, {
@@ -297,11 +298,11 @@ function step(s, prog) {
             }
           },
           _1: "let %s = %s(%d args)"
-        }), x$2, tag, Stdlib__List.length(argVals));
+        }), x$4, tag, Stdlib__List.length(argVals));
       }));
     case /* Match_ */ 4 :
-      const branches = exp.branches;
-      return Stdlib__Result.Syntax.let$star(eval_exp(exp.scrutinee, s.env), (function (v) {
+      const branches = x.branches;
+      return Stdlib__Result.Syntax.let$star(eval_exp(x.scrutinee, s.env), (function (v) {
         if (v.TAG === /* Int */ 0) {
           return Curry._1(Stdlib__Printf.ksprintf((function (s) {
             return {

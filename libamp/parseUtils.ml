@@ -66,8 +66,21 @@ let let_ loc x (exp : Exp.t M.t) body =
      let* body = body in
      match exp.desc with
      | Prim ({ op; args }) ->
+         let varArgs =
+           args
+           |> List.map (fun arg ->
+                  match arg.Exp.desc with Var_ name -> Some name | _ -> None)
+         in
          let* is_fun = M.is_fun op in
-         if is_fun then M.unit (Cmd.LetCall { x; callee = op; args; body })
+         if is_fun && List.for_all Option.is_some varArgs then
+           M.unit
+             (Cmd.LetCall
+                {
+                  x;
+                  callee = op;
+                  args = varArgs |> List.filter_map Fun.id;
+                  body;
+                })
          else M.unit (Cmd.Let_ { x; exp; body })
      | _ -> M.unit (Cmd.Let_ { x; exp; body }))
 

@@ -4,6 +4,7 @@ import * as Curry from "melange.js/curry.js";
 import * as Libamp__Ast from "./ast.js";
 import * as Libamp__Utils from "./utils.js";
 import * as Stdlib__List from "melange/list.js";
+import * as Stdlib__Option from "melange/option.js";
 
 function unit(x, param, ctrl, label) {
   return [
@@ -191,18 +192,30 @@ function let_(loc, x, exp, body) {
                 ];
               };
             case /* Prim */ 2 :
-              const args = match.args;
               const op = match.op;
+              const varArgs = Stdlib__List.map((function (arg) {
+                const name = arg.desc;
+                switch (name.TAG) {
+                  case /* Var_ */ 1 :
+                    return name._0;
+                  case /* Num */ 0 :
+                  case /* Prim */ 2 :
+                    return;
+                }
+              }), match.args);
               return function (param, param$1, param$2) {
                 return bind((function (param, param$1, param$2) {
                   return is_fun(op, param, param$1, param$2);
                 }), (function (is_fun) {
-                  if (is_fun) {
+                  if (is_fun && Stdlib__List.for_all(Stdlib__Option.is_some, varArgs)) {
+                    const partial_arg_2 = Stdlib__List.filter_map((function (prim) {
+                      return prim;
+                    }), varArgs);
                     const partial_arg = {
                       TAG: /* LetCall */ 2,
                       x: x,
                       callee: op,
-                      args: args,
+                      args: partial_arg_2,
                       body: body
                     };
                     return function (param, param$1, param$2) {

@@ -274,22 +274,22 @@ module M (P : PARAM) = struct
       (abs_state list, string) result =
     let cmd = LabelMap.find l prog.ctrl in
     match cmd.desc with
-    | Return e ->
-        let+ v = eval_exp e rho sv sk in
-        KAddr.Abs.to_list ak
-        |> List.concat_map (fun ptn_ak ->
-            AbsKStore.lookup ptn_ak sk |> AbsFrames.to_list
-            |> List.map (fun ((tr, l'), (rho', ak')) ->
-                let x, Cmd.{ label = lr; _ } =
-                  LabelMap.find l' prog.ctrl |> let_call_of |> Option.get
-                in
-                let a0 = abs_allocv sigma lr 0 in
-                ( abs_tick sigma (`TL (tr, lr)),
-                  lr,
-                  AbsEnv.weak_update x (VAddr.Abs.singleton a0) rho',
-                  AbsVStore.weak_update a0 v sv,
-                  sk,
-                  ak' )))
+    | Return x ->
+        let a = AbsEnv.lookup x rho in
+        Result.ok
+          (KAddr.Abs.to_list ak
+          |> List.concat_map (fun ptn_ak ->
+              AbsKStore.lookup ptn_ak sk |> AbsFrames.to_list
+              |> List.map (fun ((tr, l'), (rho', ak')) ->
+                  let x, Cmd.{ label = lr; _ } =
+                    LabelMap.find l' prog.ctrl |> let_call_of |> Option.get
+                  in
+                  ( abs_tick sigma (`TL (tr, lr)),
+                    lr,
+                    AbsEnv.weak_update x a rho',
+                    sv,
+                    sk,
+                    ak' ))))
     | Let_ { x; exp; body; _ } ->
         let+ v = eval_exp exp rho sv sk in
         let a0 = abs_allocv sigma body.label 0 in
@@ -330,44 +330,31 @@ module M (P : PARAM) = struct
             ak );
         ]
     | LetCall { callee; args; _ } ->
-        let* argVals =
-          args |> List.map (fun arg -> eval_exp arg rho sv sk) |> seq
-        in
         let* def =
           StringMap.find_opt callee prog.defs
           |> Option.to_result ~none:("undefined function " ^ callee)
-        in
-        let+ varAddrArgs =
-          try
-            List.combine def.params argVals
-            |> List.mapi (fun i (param, arg) ->
-                let addr = abs_allocv sigma def.body.label (i + 1) in
-                (param, addr, arg))
-            |> Result.ok
-          with Invalid_argument _ ->
-            ferror "arity mismatch when calling %s: expected %d args, got %d"
-              callee (List.length def.params) (List.length argVals)
-        in
-        let sv' =
-          List.fold_left
-            (fun sv (_, addr, argVal) -> AbsVStore.weak_update addr argVal sv)
-            sv varAddrArgs
-        in
-        let rho' =
-          List.fold_left
-            (fun rho (param, addr, _) ->
-              AbsEnv.weak_update param (VAddr.Abs.singleton addr) rho)
-            AbsEnv.bot varAddrArgs
         in
         let ak' = abs_allock sigma in
         let sk' =
           AbsKStore.weak_update ak' (AbsFrames.singleton (t, l) (rho, ak)) sk
         in
+        let+ rho' =
+          try
+            List.combine def.params args
+            |> List.map (fun (param, arg) -> (param, AbsEnv.lookup arg rho))
+            |> List.fold_left
+                 (fun rho (param, addr) -> AbsEnv.weak_update param addr rho)
+                 AbsEnv.bot
+            |> Result.ok
+          with Invalid_argument _ ->
+            ferror "arity mismatch when calling %s: expected %d args, got %d"
+              callee (List.length def.params) (List.length args)
+        in
         [
           ( abs_tick sigma (`TL (t, def.body.label)),
             def.body.label,
             rho',
-            sv',
+            sv,
             sk',
             KAddr.Abs.singleton ak' );
         ]
@@ -388,8 +375,7 @@ module M (P : PARAM) = struct
                 in
                 let rho' =
                   List.fold_left
-                    (fun rho (var, addr) ->
-                      AbsEnv.weak_update var addr rho)
+                    (fun rho (var, addr) -> AbsEnv.weak_update var addr rho)
                     rho varAddrs
                 in
                 Some

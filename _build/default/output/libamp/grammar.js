@@ -143,29 +143,24 @@ const semantic_action = [
   }),
   (function (_menhir_env) {
     const _menhir_stack = _menhir_env.stack;
-    const _endpos_exp_ = _menhir_stack.endp;
-    const _startpos_exp_ = _menhir_stack.startp;
-    const exp = _menhir_stack.semv;
+    const _endpos_name_ = _menhir_stack.endp;
+    const _startpos_name_ = _menhir_stack.startp;
     const _loc = [
-      _startpos_exp_,
-      _endpos_exp_
+      _startpos_name_,
+      _endpos_name_
     ];
+    const partial_arg = {
+      TAG: /* Return */ 0,
+      _0: _menhir_stack.semv
+    };
     const _v = Libamp__ParseUtils.c(_loc, (function (param, param$1, param$2) {
-      return Libamp__ParseUtils.let$star(exp, (function (exp) {
-        const partial_arg = {
-          TAG: /* Return */ 0,
-          _0: exp
-        };
-        return function (param, param$1, param$2) {
-          return Libamp__ParseUtils.M.unit(partial_arg, param, param$1, param$2);
-        };
-      }), param, param$1, param$2);
+      return Libamp__ParseUtils.M.unit(partial_arg, param, param$1, param$2);
     }));
     return {
       state: _menhir_stack.state,
       semv: _v,
-      startp: _startpos_exp_,
-      endp: _endpos_exp_,
+      startp: _startpos_name_,
+      endp: _endpos_name_,
       next: _menhir_stack.next
     };
   }),
@@ -506,16 +501,16 @@ function token2value(_tok) {
 }
 
 function default_reduction(i) {
-  return MenhirLib__PackedIntArray.get8("\0\x0b\x01\0\x14\0\0\0\0\x16\r\0\0\0\0\0\x07\0\0\x0f\0\b\0\0\x18\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x06\x04\0\0\x03\x02\0\x05\0\x11\n\0\x13", i);
+  return MenhirLib__PackedIntArray.get8("\0\x0b\x01\0\x14\0\0\0\0\x16\r\0\0\0\0\0\x07\0\0\x0f\0\b\0\0\x18\0\0\0\0\0\0\0\0\x06\0\0\0\0\0\0\0\0\x04\0\0\x03\x02\0\x05\0\x11\n\0\x13", i);
 }
 
 function error(i, j) {
-  return MenhirLib__PackedIntArray.get1("\x01\0\0\0\0\0\0\b\0\0\x02\0\x11\0\x10\x02\x01\0\0\0\0\0\x10\0\0\x10\x05\xc0\x01@[.\0\0\x02\0\x11@\0\0\x10\0\0\0\x10\x02\x01@\0\0@\0\b\0 \0\x02\0\x11\0\x10\0\0\x01\x05\xc0\x01\0\0\x10!@\x02\0\x11@\x10\0\0 \x05\xc0\0\0\0\0\0 \x05\xc0\0\0\0\0\0\x04\0\0\b\x04\0\0\0\0\x01\b\0\0", (i << 4) + j | 0);
+  return MenhirLib__PackedIntArray.get1("\x01\0\0\0\0\0\0\b\0\0\x02\0\x11\0\x10\x02\x01\0\0\0\0\0\x10\0\0\x10\x05\x80\x01@R\"\0\0\x02\0\x11@\0\0\x10\0\0\0\x10\x02\x01@\0\0@\0\b\0 \0\x02\0\x11\0\x10\0\0\x01\x05\x80\0\0\x01\0\0\x10!@\x02\0\x11@\x10\0\0 \x05\x80\0\0\0 \x05\x80\0\0\0\0\0\x04\0\0\b\x04\0\0\0\0\x01\b\0\0", (i << 4) + j | 0);
 }
 
 function action(i, j) {
-  const k = MenhirLib__RowDisplacementDecode.decode(MenhirLib__PackedIntArray.get8(" \0\x006\0$\x02\b\x02\0\0L>\x18\x18\x03\0 \x18\0>\0\x1a\x18\0H\x07B@\x02<2\x180&\x18(\x18:4\x18\0\0\x1e\x18\0\0 \0\x07\0\0 \0", i));
-  return MenhirLib__PackedIntArray.get8("!n!!-)!Q\x1e!=!!!\x925Y:\">\x86BJ\x06\x1a\xb2\x96^E\xc2\x8e\x8a\x9e~Vr\xa2jv\x13\x8226", k + j | 0);
+  const k = MenhirLib__RowDisplacementDecode.decode(MenhirLib__PackedIntArray.get8("\b\0\0\x1c\x002\x1e\x06\x1e\0\0F8\x0e\x02\x03\0\x02\x02\0:\0 \x02\0B >:\x1e2*\x0e\0$\x1a\x02\x1e\x02D\x13\x0e\0\x1a\x0e\0\0\x1c\0 \0\0\b\0", i));
+  return MenhirLib__PackedIntArray.get8("!\xa6!\x965)QJ>!B\x06:!\x86\x8aE\"-Yn\x9a\x1e\xb2\x92\x8e\x13\xc2~=^\x1aVrjv\x82\xa226", k + j | 0);
 }
 
 function lhs(i) {
@@ -523,8 +518,8 @@ function lhs(i) {
 }
 
 function $$goto(i, j) {
-  const k = MenhirLib__RowDisplacementDecode.decode(MenhirLib__PackedIntArray.get8("\x0e\0\0\0\0\0J\0\0\0\0\0\0\x18\x05\0\0\0\x03\0\0\0\0\"\0\0J\0\0B\0\x004\0\0B\0\x16\0\0\x0f\0\0\0,\0\0\0\x004\0\0(\0", i));
-  return MenhirLib__PackedIntArray.get8("\x14\x12\n*+\x15\x12\x12\x1a\x17\x03\x04\x14\0\0\x065'\x19\x12\x12\x17*46\x12\0\x17\x065\x123*.\x12\x0b*/2\x0b\x1f\x120,\f\0\0\0\x002", k + j | 0);
+  const k = MenhirLib__RowDisplacementDecode.decode(MenhirLib__PackedIntArray.get8("\x0e\0\0\0\0\0\x02\0@\0\0\0\0\x04\r\0\0\0\x16\0\0\0\0&\0\0(\0\0\x03\0\0,\0\0\0$\0\x03\0\0\x06\0\0&\0\0\0\0&\0\0\x1c\0", i));
+  return MenhirLib__PackedIntArray.get8("\x14\x0b\x12\x0b\x1a(\x1f\x12\f\x17\x03\x04\x144+\x065\x156\x12\x19\x17\x06530\x12\x12,\x17.22/\n", k + j | 0);
 }
 
 const ET = MenhirLib__TableInterpreter.MakeEngineTable({
@@ -688,7 +683,7 @@ function terminal(t) {
           MEL_EXN_ID: "Assert_failure",
           _1: [
             "libamp/grammar.ml",
-            1258,
+            1262,
             12
           ]
         });
@@ -798,7 +793,7 @@ function nonterminal(nt) {
           MEL_EXN_ID: "Assert_failure",
           _1: [
             "libamp/grammar.ml",
-            1288,
+            1292,
             12
           ]
         });
@@ -806,11 +801,11 @@ function nonterminal(nt) {
 }
 
 function lr0_incoming(i) {
-  return MenhirLib__PackedIntArray.get8("\0\x10\x07\t\x1a\x11\x0e\x10\x1e\x05\x05\x0f\b\x18\f\x10\x14\x11\x0e\x03\r\b\x15\x1e\x03\x15\x04\n\x06\x0e\x0f\b \x12\x10\x18\x06\x0e\r\b\x16\x15\x17\x15\x16\x17\x17\x0b\x1c\x19\x0b\x17\x13\t", i);
+  return MenhirLib__PackedIntArray.get8("\0\x10\x07\t\x1a\x11\x0e\x10\x1e\x05\x05\x0f\b\x18\f\x10\x14\x11\x0e\x03\r\b\x15\x1e\x03\x15\x04\n\x06\x0e\x0f\b \x10\x12\x10\x18\x06\x0e\r\b\x16\x17\x15\x16\x17\x17\x0b\x1c\x19\x0b\x17\x13\t", i);
 }
 
 function rhs_data(i) {
-  return MenhirLib__PackedIntArray.get8("\x07\n\x06\x0e\x0f\b \x17\x12\x10\x18\x15\x16\x17\x12\x10\x18\x06\x0e\r\b\x16\x17\f\x15\x04\x0b\x1c\x15\x14\x11\x0e\r\b\x10\x11\x0e\x0f\b\x18\x17\x10\x05\x03\x19\x19\x0b\x13\x13\t\t\x1a\x10\x10\x1e\x05\x15\x15\x1e\x03", i);
+  return MenhirLib__PackedIntArray.get8("\x07\n\x06\x0e\x0f\b \x17\x12\x10\x18\x15\x16\x17\x12\x10\x18\x06\x0e\r\b\x16\x17\f\x15\x04\x0b\x1c\x10\x14\x11\x0e\r\b\x10\x11\x0e\x0f\b\x18\x17\x10\x05\x03\x19\x19\x0b\x13\x13\t\t\x1a\x10\x10\x1e\x05\x15\x15\x1e\x03", i);
 }
 
 function rhs_entry(i) {
@@ -826,11 +821,11 @@ function lr0_core(i) {
 }
 
 function lr0_items_data(i) {
-  return MenhirLib__PackedIntArray.get16("\0\0(\x01\0\x01L\x01L\x02$\x01$\x02T\x01P\x01T\x02T\x030\x01$\x03$\x04$\x05\x10\x01(\x01 \x01\x18\x01\x1c\x01\x1c\x028\x01\x1c\x03\x1c\x04\\\x01X\x01\\\x02\\\x03\x10\x02\x10\x03\x04\x01\x04\x02\x04\x03\x04\x04\x04\x05\x04\x06\f\x01\b\x01\f\x02\b\x02\f\x03\b\x03\f\x04\f\x05\f\x06\f\x07\f\b\x14\x01\f\t\b\x04\b\x05\b\x06\x04\x07\x10\x04\x10\x05@\x01<\x01@\x02$\x06H\x01D\x01H\x02", i);
+  return MenhirLib__PackedIntArray.get16("\0\0(\x01\0\x01L\x01L\x02$\x01$\x02T\x01P\x01T\x02T\x030\x01$\x03$\x04$\x05\x10\x01(\x01 \x01\x18\x01\x1c\x01\x1c\x028\x01\x1c\x03\x1c\x04\\\x01X\x01\\\x02\\\x03\x10\x02\x10\x03\x04\x01\x04\x02\x04\x03\x04\x04\x04\x05\x04\x06\x14\x01\f\x01\b\x01\f\x02\b\x02\f\x03\b\x03\f\x04\f\x05\f\x06\f\x07\f\b\f\t\b\x04\b\x05\b\x06\x04\x07\x10\x04\x10\x05@\x01<\x01@\x02$\x06H\x01D\x01H\x02", i);
 }
 
 function lr0_items_entry(i) {
-  return MenhirLib__PackedIntArray.get8("\0\x01\x02\x03\x04\x05\x06\x07\t\n\x0b\f\r\x0e\x0f\x10\x12\x13\x14\x15\x16\x17\x18\x1a\x1b\x1c\x1d\x1e\x1f !\"#$&(*+,-./012345679:;=>", i);
+  return MenhirLib__PackedIntArray.get8("\0\x01\x02\x03\x04\x05\x06\x07\t\n\x0b\f\r\x0e\x0f\x10\x12\x13\x14\x15\x16\x17\x18\x1a\x1b\x1c\x1d\x1e\x1f !\"#$%')+,-./012345679:;=>", i);
 }
 
 function lr0_items(i) {
@@ -842,7 +837,7 @@ function nullable(i) {
 }
 
 function first(i, j) {
-  return MenhirLib__PackedIntArray.get1("\x01\0\x01@\x01\0\x01\0\x01\0\b\0\x01@\x01\0\x01\0\x01\0\x01@\x05\xc0\b\0", (i << 4) + j | 0);
+  return MenhirLib__PackedIntArray.get1("\x01\0\x01@\x01\0\x01\0\x01\0\b\0\x01@\x01\0\x01\0\x01\0\x01@\x05\x80\b\0", (i << 4) + j | 0);
 }
 
 const include = MenhirLib__InspectionTableInterpreter.Make({
