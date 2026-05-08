@@ -3,4 +3,5 @@
 (melange.emit
  (target output)
  (module_systems esm)
- (libraries libamp menhirLib))
+ (libraries amp_lib_s menhirLib)
+ (promote (until-clean)))

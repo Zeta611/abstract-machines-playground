@@ -3,7 +3,7 @@ opam-version: "2.0"
 depends: [
   "ocaml"
   "dune" {>= "3.20"}
-  "menhir"
+  "menhir" {= "20260203"}
   "melange"
   "odoc" {with-doc}
 ]

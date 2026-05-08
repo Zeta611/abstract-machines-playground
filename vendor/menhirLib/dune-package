@@ -1,8 +1,13 @@
-(lang dune 3.20)
+(lang dune 3.21)
 (name menhirLib)
-(version 20260209)
-(sections (lib .) (libexec .) (doc ../../doc/menhirLib))
-(using melange 1.0)
+(version 20260203)
+(sections
+ (lib
+  /nix/store/676r126wncxlkc9zp5655f2ka9yba9as-ocaml5.4.1-menhirLib-20260203/lib/ocaml/5.4.1/site-lib/menhirLib)
+ (libexec
+  /nix/store/676r126wncxlkc9zp5655f2ka9yba9as-ocaml5.4.1-menhirLib-20260203/lib/ocaml/5.4.1/site-lib/menhirLib)
+ (doc
+  /nix/store/676r126wncxlkc9zp5655f2ka9yba9as-ocaml5.4.1-menhirLib-20260203/share/doc/menhirLib))
 (files
  (lib
   (Convert.ml
@@ -39,7 +44,6 @@
    menhirLib.cmt
    menhirLib.cmx
    menhirLib.cmxa
-   menhirLib.cmj
    menhirLib.ml
    menhirLib__Convert.cmi
    menhirLib__Convert.cmt
@@ -106,7 +110,7 @@
  (plugins (byte menhirLib.cma) (native menhirLib.cmxs))
  (native_archives menhirLib.a)
  (main_module_name MenhirLib)
- (modes byte native melange)
+ (modes byte native)
  (modules
   (wrapped
    (group

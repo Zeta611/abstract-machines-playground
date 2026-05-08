@@ -5,7 +5,7 @@
  (flags --table --inspection))
 
 (library
- (name libamp)
+ (name amp_lib_s)
  (modes melange byte)
  (libraries menhirLib)
  (flags
