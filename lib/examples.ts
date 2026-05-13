@@ -1,10 +1,93 @@
 /**
  * Reference programs used by the playground and smoke tests.
  *
- * `INTERPRETER_S_T` implements the definitional interpreter `I_S^T`
+ * `INTERPRETER_S_T` implements the definitional interpreter `I_S^T`.
+ * `INTERPRETER_S_T_ALPHA_CONV` is alpha-converted for abstract interpretation.
  */
 
 export const INTERPRETER_S_T = `# Interpreter I_S^T for language T.
+#
+# T syntax (encoded as S constructor values):
+#   prog  ::= Prog(defs, exp)
+#   defs  ::= Defs(Fun(int), exp, defs) | Nil()
+#   env   ::= Env(Var(int, int), int, env) | Nil()
+#   exp   ::= Int(int, int) | Var(int, int) | Sub(int, exp, exp) | Mul(int, exp, exp)
+#           | Let(int, Var(int, int), exp, exp) | App(int, Fun(int), exp)
+#           | Ifz(int, exp, exp, exp)
+
+fundef(defs, fid) =
+  match defs with
+  | Defs(f, body, rest) =>
+    match f with
+    | Fun(fid2) =>
+      match iszero(sub(fid, fid2)) with
+      | True() => body
+      | False() => let r = fundef(rest, fid) in r
+      end
+    end
+  end
+
+lookup(env, xid) =
+  match env with
+  | Env(x, val, rest) =>
+    match x with
+    | Var(l, xid2) =>
+      match iszero(sub(xid, xid2)) with
+      | True() => val
+      | False() => let r = lookup(rest, xid) in r
+      end
+    end
+  end
+
+extend(env, x, val) =
+  let r = Env(x, val, env) in r
+
+eval(e, env, defs) =
+  match e with
+  | Int(l, n) => n
+  | Var(l, xid) =>
+    let v = lookup(env, xid) in v
+  | Sub(l, e1, e2) =>
+    let v1 = eval(e1, env, defs) in
+    let v2 = eval(e2, env, defs) in
+    sub(v1, v2)
+  | Mul(l, e1, e2) =>
+    let v1 = eval(e1, env, defs) in
+    let v2 = eval(e2, env, defs) in
+    mul(v1, v2)
+  | Let(l, x, e1, e2) =>
+    let v1 = eval(e1, env, defs) in
+    let new_env = extend(env, x, v1) in
+    let r = eval(e2, new_env, defs) in r
+  | App(l, f, e1) =>
+    match f with
+    | Fun(fid) =>
+      let v = eval(e1, env, defs) in
+      let body = fundef(defs, fid) in
+      let empty_env = Nil() in
+      let x = Var(0, 0) in
+      let call_env = extend(empty_env, x, v) in
+      let r = eval(body, call_env, defs) in r
+    end
+  | Ifz(l, e1, e2, e3) =>
+    let v1 = eval(e1, env, defs) in
+    match iszero(v1) with
+    | True() => let r = eval(e2, env, defs) in r
+    | False() => let r = eval(e3, env, defs) in r
+    end
+  end
+
+main(p, arg) =
+  match p with
+  | Prog(defs, e) =>
+    let empty_env = Nil() in
+    let x = Var(0, 0) in
+    let initial_env = extend(empty_env, x, arg) in
+    let r = eval(e, initial_env, defs) in r
+  end
+`
+
+export const INTERPRETER_S_T_ALPHA_CONV = `# Interpreter I_S^T for language T.
 #
 # T syntax (encoded as S constructor values):
 #   prog  ::= Prog(defs, exp)
@@ -246,7 +329,7 @@ export const ABSTRACT_PROGRAM_PRESETS: AbstractProgramPreset[] = [
   {
     id: "definitional-interpreter-abs",
     name: "definitional interpreter",
-    source: INTERPRETER_S_T,
+    source: INTERPRETER_S_T_ALPHA_CONV,
     absEnvText: INTERPRETER_ABS_ENV,
   },
   {
