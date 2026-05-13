@@ -50,11 +50,11 @@ eval(e, env, defs) =
   | Sub(l, e1, e2) =>
     let v1 = eval(e1, env, defs) in
     let v2 = eval(e2, env, defs) in
-    sub(v1, v2)
+    let r = sub(v1, v2) in r
   | Mul(l, e1, e2) =>
     let v1 = eval(e1, env, defs) in
     let v2 = eval(e2, env, defs) in
-    mul(v1, v2)
+    let r = mul(v1, v2) in r
   | Let(l, x, e1, e2) =>
     let v1 = eval(e1, env, defs) in
     let new_env = extend(env, x, v1) in
@@ -180,8 +180,8 @@ export const TRIVIAL = `main(x) =
 export const INITIAL_ENV = `# A T program computing factorial, encoded as S constructor values.
 #   fact(n) = ifz n then 1 else n * fact(n - 1)
 # Fun(0) is fact; main applies it to the input arg.
-p1 = Prog(Defs(Fun(0), Ifz(10, Var(11, 0), Int(12, 1), Mul(13, Var(14, 0), App(15, Fun(0), Sub(16, Var(17, 0), Int(18, 1))))), Nil()), App(20, Fun(0), Var(21, 0)))
-arg1 = 5
+p = Prog(Defs(Fun(0), Ifz(10, Var(11, 0), Int(12, 1), Mul(13, Var(14, 0), App(15, Fun(0), Sub(16, Var(17, 0), Int(18, 1))))), Nil()), App(20, Fun(0), Var(21, 0)))
+arg = 5
 `
 
 export interface ProgramPreset {
