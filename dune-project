@@ -14,5 +14,5 @@
  (depends
   ocaml
   dune
-  menhir
+  (menhir (= 20260203))
   melange))

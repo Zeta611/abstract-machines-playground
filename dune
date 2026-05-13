@@ -1,4 +1,7 @@
+(vendored_dirs vendor)
+
 (melange.emit
  (target output)
  (module_systems esm)
- (libraries libamp))
+ (libraries amp_lib_s menhirLib)
+ (promote (until-clean)))

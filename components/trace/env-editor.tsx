@@ -7,6 +7,7 @@ import { parseEnv } from "@/lib/s/envParser"
 import { ValueView } from "./value-view"
 import { CopyButton } from "./copy-button"
 import { StringMap } from "@/lib/s/utils"
+import { of_list } from "melange/array"
 import * as Result from "melange/result"
 
 interface PreviewResult {
@@ -62,7 +63,7 @@ export function EnvPreview({
   return (
     <div className="group relative rounded border bg-muted/30 px-2 py-2 text-xs">
       <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-        {StringMap.bindings<Val>(preview.env).map(([k, v]) => (
+        {of_list(StringMap.to_list<Val>(preview.env)).map(([k, v]) => (
           <div key={k} className="contents">
             <div className="text-emerald-700 dark:text-emerald-300">{k}</div>
             <div className="min-w-0 break-all">

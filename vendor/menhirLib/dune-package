@@ -1,0 +1,216 @@
+(lang dune 3.21)
+(name menhirLib)
+(version 20260203)
+(sections
+ (lib
+  /nix/store/676r126wncxlkc9zp5655f2ka9yba9as-ocaml5.4.1-menhirLib-20260203/lib/ocaml/5.4.1/site-lib/menhirLib)
+ (libexec
+  /nix/store/676r126wncxlkc9zp5655f2ka9yba9as-ocaml5.4.1-menhirLib-20260203/lib/ocaml/5.4.1/site-lib/menhirLib)
+ (doc
+  /nix/store/676r126wncxlkc9zp5655f2ka9yba9as-ocaml5.4.1-menhirLib-20260203/share/doc/menhirLib))
+(files
+ (lib
+  (Convert.ml
+   Convert.mli
+   Engine.ml
+   Engine.mli
+   EngineTypes.ml
+   ErrorReports.ml
+   ErrorReports.mli
+   IncrementalEngine.ml
+   InspectionTableFormat.ml
+   InspectionTableInterpreter.ml
+   InspectionTableInterpreter.mli
+   LexerUtil.ml
+   LexerUtil.mli
+   LinearizedArray.ml
+   LinearizedArray.mli
+   META
+   PackedIntArray.ml
+   PackedIntArray.mli
+   Printers.ml
+   Printers.mli
+   RowDisplacementDecode.ml
+   RowDisplacementDecode.mli
+   StaticVersion.ml
+   StaticVersion.mli
+   TableFormat.ml
+   TableInterpreter.ml
+   TableInterpreter.mli
+   dune-package
+   menhirLib.a
+   menhirLib.cma
+   menhirLib.cmi
+   menhirLib.cmt
+   menhirLib.cmx
+   menhirLib.cmxa
+   menhirLib.ml
+   menhirLib__Convert.cmi
+   menhirLib__Convert.cmt
+   menhirLib__Convert.cmti
+   menhirLib__Convert.cmx
+   menhirLib__Engine.cmi
+   menhirLib__Engine.cmt
+   menhirLib__Engine.cmti
+   menhirLib__Engine.cmx
+   menhirLib__EngineTypes.cmi
+   menhirLib__EngineTypes.cmt
+   menhirLib__EngineTypes.cmx
+   menhirLib__ErrorReports.cmi
+   menhirLib__ErrorReports.cmt
+   menhirLib__ErrorReports.cmti
+   menhirLib__ErrorReports.cmx
+   menhirLib__IncrementalEngine.cmi
+   menhirLib__IncrementalEngine.cmt
+   menhirLib__IncrementalEngine.cmx
+   menhirLib__InspectionTableFormat.cmi
+   menhirLib__InspectionTableFormat.cmt
+   menhirLib__InspectionTableFormat.cmx
+   menhirLib__InspectionTableInterpreter.cmi
+   menhirLib__InspectionTableInterpreter.cmt
+   menhirLib__InspectionTableInterpreter.cmti
+   menhirLib__InspectionTableInterpreter.cmx
+   menhirLib__LexerUtil.cmi
+   menhirLib__LexerUtil.cmt
+   menhirLib__LexerUtil.cmti
+   menhirLib__LexerUtil.cmx
+   menhirLib__LinearizedArray.cmi
+   menhirLib__LinearizedArray.cmt
+   menhirLib__LinearizedArray.cmti
+   menhirLib__LinearizedArray.cmx
+   menhirLib__PackedIntArray.cmi
+   menhirLib__PackedIntArray.cmt
+   menhirLib__PackedIntArray.cmti
+   menhirLib__PackedIntArray.cmx
+   menhirLib__Printers.cmi
+   menhirLib__Printers.cmt
+   menhirLib__Printers.cmti
+   menhirLib__Printers.cmx
+   menhirLib__RowDisplacementDecode.cmi
+   menhirLib__RowDisplacementDecode.cmt
+   menhirLib__RowDisplacementDecode.cmti
+   menhirLib__RowDisplacementDecode.cmx
+   menhirLib__StaticVersion.cmi
+   menhirLib__StaticVersion.cmt
+   menhirLib__StaticVersion.cmti
+   menhirLib__StaticVersion.cmx
+   menhirLib__TableFormat.cmi
+   menhirLib__TableFormat.cmt
+   menhirLib__TableFormat.cmx
+   menhirLib__TableInterpreter.cmi
+   menhirLib__TableInterpreter.cmt
+   menhirLib__TableInterpreter.cmti
+   menhirLib__TableInterpreter.cmx))
+ (libexec (menhirLib.cmxs))
+ (doc (LICENSE)))
+(library
+ (name menhirLib)
+ (kind normal)
+ (archives (byte menhirLib.cma) (native menhirLib.cmxa))
+ (plugins (byte menhirLib.cma) (native menhirLib.cmxs))
+ (native_archives menhirLib.a)
+ (main_module_name MenhirLib)
+ (modes byte native)
+ (modules
+  (wrapped
+   (group
+    (alias
+     (obj_name menhirLib)
+     (visibility public)
+     (kind alias)
+     (source (path MenhirLib) (impl (path menhirLib.ml-gen))))
+    (name MenhirLib)
+    (modules
+     (module
+      (obj_name menhirLib__Convert)
+      (visibility public)
+      (source
+       (path Convert)
+       (intf (path Convert.mli))
+       (impl (path Convert.ml))))
+     (module
+      (obj_name menhirLib__Engine)
+      (visibility public)
+      (source (path Engine) (intf (path Engine.mli)) (impl (path Engine.ml))))
+     (module
+      (obj_name menhirLib__EngineTypes)
+      (visibility public)
+      (source (path EngineTypes) (impl (path EngineTypes.ml))))
+     (module
+      (obj_name menhirLib__ErrorReports)
+      (visibility public)
+      (source
+       (path ErrorReports)
+       (intf (path ErrorReports.mli))
+       (impl (path ErrorReports.ml))))
+     (module
+      (obj_name menhirLib__IncrementalEngine)
+      (visibility public)
+      (source (path IncrementalEngine) (impl (path IncrementalEngine.ml))))
+     (module
+      (obj_name menhirLib__InspectionTableFormat)
+      (visibility public)
+      (source
+       (path InspectionTableFormat)
+       (impl (path InspectionTableFormat.ml))))
+     (module
+      (obj_name menhirLib__InspectionTableInterpreter)
+      (visibility public)
+      (source
+       (path InspectionTableInterpreter)
+       (intf (path InspectionTableInterpreter.mli))
+       (impl (path InspectionTableInterpreter.ml))))
+     (module
+      (obj_name menhirLib__LexerUtil)
+      (visibility public)
+      (source
+       (path LexerUtil)
+       (intf (path LexerUtil.mli))
+       (impl (path LexerUtil.ml))))
+     (module
+      (obj_name menhirLib__LinearizedArray)
+      (visibility public)
+      (source
+       (path LinearizedArray)
+       (intf (path LinearizedArray.mli))
+       (impl (path LinearizedArray.ml))))
+     (module
+      (obj_name menhirLib__PackedIntArray)
+      (visibility public)
+      (source
+       (path PackedIntArray)
+       (intf (path PackedIntArray.mli))
+       (impl (path PackedIntArray.ml))))
+     (module
+      (obj_name menhirLib__Printers)
+      (visibility public)
+      (source
+       (path Printers)
+       (intf (path Printers.mli))
+       (impl (path Printers.ml))))
+     (module
+      (obj_name menhirLib__RowDisplacementDecode)
+      (visibility public)
+      (source
+       (path RowDisplacementDecode)
+       (intf (path RowDisplacementDecode.mli))
+       (impl (path RowDisplacementDecode.ml))))
+     (module
+      (obj_name menhirLib__StaticVersion)
+      (visibility public)
+      (source
+       (path StaticVersion)
+       (intf (path StaticVersion.mli))
+       (impl (path StaticVersion.ml))))
+     (module
+      (obj_name menhirLib__TableFormat)
+      (visibility public)
+      (source (path TableFormat) (impl (path TableFormat.ml))))
+     (module
+      (obj_name menhirLib__TableInterpreter)
+      (visibility public)
+      (source
+       (path TableInterpreter)
+       (intf (path TableInterpreter.mli))
+       (impl (path TableInterpreter.ml))))))
+   (wrapped true))))

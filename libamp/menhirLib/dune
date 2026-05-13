@@ -1,7 +1,0 @@
-(library
- (name menhirLib)
- (modules menhirLib)
- (modes byte native melange)
- (libraries melange)
- (flags
-  (:standard -w -67)))

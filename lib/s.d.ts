@@ -1,20 +1,20 @@
 declare module "@/lib/s/cek" {
-  import type { Program } from "@/lib/s/ast"
+  import type { Program, Label } from "@/lib/s/ast"
   import type { Env, Val } from "@/lib/s/values"
   import type { List } from "melange/list"
 
   export interface Frame {
-    label: number
+    label: Label
     env: Env
   }
 
   export interface State {
-    label: number
+    label: Label
     env: Env
     kont: List<Frame>
   }
 
-  export type RuleName = "LetExp" | "LetCall" | "Match" | "Return"
+  export type RuleName = "LetExp" | "LetTag" | "LetCall" | "Match" | "Return"
 
   export interface TraceStep {
     rule: RuleName
@@ -46,11 +46,12 @@ declare module "@/lib/s/cek" {
 }
 
 declare module "@/lib/s/utils" {
+  import type { List } from "melange/list"
   const mapBrand: unique symbol
   export type Map<K, V> = { readonly [mapBrand]: [K, V] }
-  type MapModule<K> = {
-    of_array<V>(arr: [K, V][]): Map<K, V>
-    bindings<V>(map: Map<K, V>): [K, V][]
+  export type MapModule<K> = {
+    of_list<V>(arr: List<[K, V]>): Map<K, V>
+    to_list<V>(map: Map<K, V>): List<[K, V]>
     cardinal<V>(map: Map<K, V>): number
     find_opt<V>(key: K, map: Map<K, V>): V | undefined
   }
@@ -61,6 +62,7 @@ declare module "@/lib/s/utils" {
 
 declare module "@/lib/s/values" {
   import type { Map } from "@/lib/s/utils"
+  import type { List } from "melange/list"
 
   const valBrand: unique symbol
 
@@ -71,7 +73,7 @@ declare module "@/lib/s/values" {
 
   export interface CtorPayload {
     tag: string
-    args: Val[]
+    args: List<Val>
   }
 
   export type Env = Map<string, Val>
@@ -90,9 +92,11 @@ declare module "@/lib/s/values" {
 }
 
 declare module "@/lib/s/ast" {
-  import type { Map } from "@/lib/s/utils"
+  import type { Map, MapModule } from "@/lib/s/utils"
 
-  export type Label = number
+  const labelBrand: unique symbol
+  export type Label = number & { readonly [labelBrand]: never }
+  export const LabelMap: MapModule<Label>
 
   export interface Loc {
     from: number
@@ -103,6 +107,7 @@ declare module "@/lib/s/ast" {
     interface Exp {
       loc: Loc
     }
+    function summary(exp: Exp): string
   }
 
   export namespace Cmd {
@@ -159,6 +164,93 @@ declare module "@/lib/s/envParser" {
 
   export function parseValue1(input: string): Result<Val, string>
   export function parseEnv(input: string): Result<Env, string>
+}
+
+declare module "@/lib/s/absEnvParser" {
+  import type { Result } from "melange/result"
+  import type { AbsEnv, AbsVStore } from "@/lib/s/abs"
+
+  export function parseAbsValue1(input: string): Result<unknown, string>
+  export function parseAbsEnvStore(
+    input: string
+  ): Result<[AbsEnv, AbsVStore], string>
+}
+
+declare module "@/lib/s/abs" {
+  import type { Program } from "@/lib/s/ast"
+  import type { Result } from "melange/result"
+
+  const absEnvBrand: unique symbol
+  const absVStoreBrand: unique symbol
+  const absCfgBrand: unique symbol
+
+  export type AbsEnv = { readonly [absEnvBrand]: never }
+  export type AbsVStore = { readonly [absVStoreBrand]: never }
+  export type AbsCfg = { readonly [absCfgBrand]: never }
+
+  export interface AbsRun {
+    cfg: AbsCfg
+    steps: number
+    stabilized: boolean
+  }
+
+  export interface AbsEnvRow {
+    name: string
+    addrs: string[]
+  }
+
+  export interface AbsVStoreRow {
+    addr: string
+    value: string
+  }
+
+  export interface AbsKStoreRow {
+    addr: string
+    time: string
+    label: string
+    env: AbsEnvRow[]
+    kont: string[]
+  }
+
+  export interface AbsFrameRow {
+    time: string
+    label_ptn: string
+    env: AbsEnvRow[]
+    kont: string[]
+  }
+
+  export interface AbsCfgView {
+    frames: AbsFrameRow[]
+    vstore: AbsVStoreRow[]
+    kstore: AbsKStoreRow[]
+  }
+
+  const mIntfBrand: unique symbol
+  export interface MIntf {
+    [mIntfBrand]: never
+    run_abs(
+      init: [AbsEnv, AbsVStore],
+      fuel: number
+    ): Result<AbsRun, string>
+    abs_inject(init: [AbsEnv, AbsVStore]): AbsCfg
+    abs_transfer(cfg: AbsCfg): Result<AbsCfg, string>
+    view_cfg(cfg: AbsCfg): AbsCfgView
+  }
+
+  export interface Param<LabelPtn> {
+    ptn_of_label: (label: Label) => LabelPtn
+    labels_of_ptn: (ptn: LabelPtn) => Label[]
+    prog: Program
+  }
+  export function M(p: Param<LabelPtn>): MIntf
+}
+
+declare module "@/lib/s/abs_preset" {
+  import type { Program } from "@/lib/s/ast"
+  import type { Param } from "@/lib/s/abs"
+
+  export function all_labels(prog: Program): Param<undefined>
+  export function by_function(prog: Program): Param<string>
 }
 
 declare module "@/lib/s/traceQuery" {

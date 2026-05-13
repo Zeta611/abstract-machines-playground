@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { of_list } from "melange/array"
 import { visit, type CtorPayload, type Val } from "@/lib/s/values"
 import { cn } from "@/lib/utils"
 
@@ -17,7 +18,7 @@ export function ValueView({ value, depth = 0, autoCollapseAt = 4 }: Props) {
       <span className="text-sky-700 tabular-nums dark:text-sky-300">{n}</span>
     ),
     ctor: (payload) =>
-      payload.args.length === 0 ? (
+      of_list(payload.args).length === 0 ? (
         <span className="text-violet-700 dark:text-violet-300">
           {payload.tag}
           <span className="text-muted-foreground">()</span>
@@ -43,6 +44,7 @@ function CtorValue({
 }) {
   const [open, setOpen] = useState(depth < autoCollapseAt)
   const nestedCount = countCtorNodes(value)
+  const args = of_list(value.args)
   return (
     <span>
       <button
@@ -59,14 +61,14 @@ function CtorValue({
       </button>
       {open && (
         <>
-          {value.args.map((a, i) => (
+          {args.map((a, i) => (
             <span key={i}>
               <ValueView
                 value={a}
                 depth={depth + 1}
                 autoCollapseAt={autoCollapseAt}
               />
-              {i < value.args.length - 1 && (
+              {i < args.length - 1 && (
                 <span className="text-muted-foreground">{", "}</span>
               )}
             </span>
@@ -86,5 +88,5 @@ function countNodes(v: Val): number {
 }
 
 function countCtorNodes({ args }: CtorPayload): number {
-  return 1 + args.map(countNodes).reduce((a, b) => a + b, 0)
+  return 1 + of_list(args).map(countNodes).reduce((a, b) => a + b, 0)
 }
