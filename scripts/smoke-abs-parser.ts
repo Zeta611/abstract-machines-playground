@@ -123,7 +123,45 @@ console.log("3. abstract run integration")
 }
 
 console.log("")
-console.log("4. abstract presets parse")
+console.log("4. abstract integer predicates")
+{
+  const source = `main(n) =
+  let e = eq(n, 0) in
+  let l = lt(n, 0) in l
+`
+
+  const program = expectOk<{ program: any }>(
+    "predicate source parses",
+    parse(source)
+  )
+  const init = expectOk<any>(
+    "top integer input parses",
+    parseAbsEnvStore("n = {0|1|2|3|4|5}")
+  )
+
+  if (program && init) {
+    const analysis = createAnalysis(program.program)
+    const run = expectOk<{ cfg: any }>(
+      "predicate abstract run completes",
+      analysis.run_abs(init, 6)
+    )
+    if (run) {
+      const view = analysis.view_cfg(run.cfg)
+      const boolTopRows = view.vstore.filter(
+        (row) =>
+          row.value === "{False | True}" || row.value === "{True | False}"
+      )
+      expect(
+        "eq and lt over integer top produce abstract booleans",
+        boolTopRows.length >= 2,
+        `values: ${view.vstore.map((row) => row.value).join(", ")}`
+      )
+    }
+  }
+}
+
+console.log("")
+console.log("5. abstract presets parse")
 {
   for (const preset of ABSTRACT_PROGRAM_PRESETS) {
     expectOk(`${preset.name} abstract env parses`, parseAbsEnvStore(preset.absEnvText))

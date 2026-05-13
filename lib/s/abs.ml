@@ -137,18 +137,20 @@ module AbsVal = struct
   let of_abs_int i : t = (i, AbsAdt.bot)
   let true_ : t = (AbsInt.bot, AbsAdt.of_tag_args "True" [])
   let false_ : t = (AbsInt.bot, AbsAdt.of_tag_args "False" [])
+  let bool_top : t = join true_ false_
 
-  let lift_int_binop f ((x, _) : t) ((y, _) : t) : t =
+  let lift_int_binop ?(top = of_abs_int AbsInt.top) f ((x, _) : t)
+      ((y, _) : t) : t =
     match (x, y) with
     | V xSet, V ySet ->
         bot
         |> IntSet.fold (fun n -> IntSet.fold (fun m -> join (f n m)) ySet) xSet
-    | _ -> of_abs_int AbsInt.top
+    | _ -> top
 
   let lift_int_test f ((x, _) : t) : t =
     match x with
     | V xSet -> bot |> IntSet.fold (fun n -> join (f n)) xSet
-    | _ -> join true_ false_
+    | _ -> bool_top
 
   let lift_tag_unop f ((_, m) : t) : t =
     bot |> AbsAdt.fold (fun tag args acc -> join acc (f (tag, args))) m
@@ -218,12 +220,12 @@ module M (P : PARAM) = struct
           arg
         |> Result.ok
     | "eq", [ arg1; arg2 ] ->
-        AbsVal.lift_int_binop
+        AbsVal.lift_int_binop ~top:AbsVal.bool_top
           (fun n m -> if n = m then AbsVal.true_ else AbsVal.false_)
           arg1 arg2
         |> Result.ok
     | "lt", [ arg1; arg2 ] ->
-        AbsVal.lift_int_binop
+        AbsVal.lift_int_binop ~top:AbsVal.bool_top
           (fun n m -> if n < m then AbsVal.true_ else AbsVal.false_)
           arg1 arg2
         |> Result.ok
