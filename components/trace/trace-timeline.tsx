@@ -50,7 +50,13 @@ type QueryParseState =
   | { ok: true; ast: TraceQueryAst | null }
   | { ok: false; message: string; at: number }
 
-const RULE_NAMES: RuleName[] = ["LetExp", "LetTag", "LetCall", "Match", "Return"]
+const RULE_NAMES: RuleName[] = [
+  "LetExp",
+  "LetTag",
+  "LetCall",
+  "Match",
+  "Return",
+]
 
 const RULE_TONE: Record<RuleName, string> = {
   LetExp: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",

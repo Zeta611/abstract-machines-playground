@@ -16,13 +16,7 @@ import {
   TRIVIAL,
 } from "@/lib/examples"
 import { parse } from "@/lib/s/parser"
-import {
-  showVal,
-  valEq,
-  vInt,
-  visit,
-  type Val,
-} from "@/lib/s/values"
+import { showVal, valEq, vInt, visit, type Val } from "@/lib/s/values"
 import { of_list, to_list } from "melange/array"
 import * as Result from "melange/result"
 
@@ -170,15 +164,17 @@ console.log("3. I_S^T: Ifz(X, Int(10), Int(20)) at X=0 -> 10")
     },
     parse(INTERPRETER_S_T)
   )
-  const env = StringMap.of_list(to_list([
-    [
-      "p",
-      parseValueOrThrow(
-        "Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"
-      ),
-    ],
-    ["arg", vInt(0)],
-  ]))
+  const env = StringMap.of_list(
+    to_list([
+      [
+        "p",
+        parseValueOrThrow(
+          "Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"
+        ),
+      ],
+      ["arg", vInt(0)],
+    ])
+  )
   const trace = run(program, env, { maxSteps: 5_000 })
   const end = endView(trace)
   expect("terminates", end.kind === "final")
@@ -197,15 +193,17 @@ console.log("4. I_S^T: Ifz at X=5 -> 20 (else branch)")
     },
     parse(INTERPRETER_S_T)
   )
-  const env = StringMap.of_list(to_list([
-    [
-      "p",
-      parseValueOrThrow(
-        "Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"
-      ),
-    ],
-    ["arg", vInt(5)],
-  ]))
+  const env = StringMap.of_list(
+    to_list([
+      [
+        "p",
+        parseValueOrThrow(
+          "Prog(Nil(), Ifz(0, Var(1, 0), Int(2, 10), Int(3, 20)))"
+        ),
+      ],
+      ["arg", vInt(5)],
+    ])
+  )
   const trace = run(program, env, { maxSteps: 5_000 })
   const end = endView(trace)
   expect("terminates", end.kind === "final")
@@ -227,15 +225,17 @@ console.log("5. I_S^T: recursive T function (identity-ish)")
     },
     parse(INTERPRETER_S_T)
   )
-  const env = StringMap.of_list(to_list([
-    [
-      "p",
-      parseValueOrThrow(
-        "Prog(Defs(Fun(0), Ifz(0, Var(1, 0), Int(2, 0), App(3, Fun(0), Sub(4, Var(5, 0), Int(6, 1)))), Nil()), App(7, Fun(0), Int(8, 3)))"
-      ),
-    ],
-    ["arg", vInt(0)],
-  ]))
+  const env = StringMap.of_list(
+    to_list([
+      [
+        "p",
+        parseValueOrThrow(
+          "Prog(Defs(Fun(0), Ifz(0, Var(1, 0), Int(2, 0), App(3, Fun(0), Sub(4, Var(5, 0), Int(6, 1)))), Nil()), App(7, Fun(0), Int(8, 3)))"
+        ),
+      ],
+      ["arg", vInt(0)],
+    ])
+  )
   const trace = run(program, env, { maxSteps: 20_000 })
   const end = endView(trace)
   expect("terminates", end.kind === "final")
@@ -257,15 +257,17 @@ console.log("6. I_S^T: Let binds T variables by xid")
     },
     parse(INTERPRETER_S_T)
   )
-  const env = StringMap.of_list(to_list([
-    [
-      "p",
-      parseValueOrThrow(
-        "Prog(Nil(), Let(0, Var(1, 1), Int(2, 7), Sub(3, Var(4, 1), Var(5, 0))))"
-      ),
-    ],
-    ["arg", vInt(2)],
-  ]))
+  const env = StringMap.of_list(
+    to_list([
+      [
+        "p",
+        parseValueOrThrow(
+          "Prog(Nil(), Let(0, Var(1, 1), Int(2, 7), Sub(3, Var(4, 1), Var(5, 0))))"
+        ),
+      ],
+      ["arg", vInt(2)],
+    ])
+  )
   const trace = run(program, env, { maxSteps: 5_000 })
   const end = endView(trace)
   expect("terminates", end.kind === "final")

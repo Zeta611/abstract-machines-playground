@@ -102,7 +102,10 @@ console.log("3. abstract run integration")
     PROGRAM_PRESETS.find((preset) => preset.id === "factorial")?.source ??
     PROGRAM_PRESETS[0].source
 
-  const program = expectOk<{ program: any }>("factorial source parses", parse(source))
+  const program = expectOk<{ program: any }>(
+    "factorial source parses",
+    parse(source)
+  )
   const init = expectOk<any>(
     "abstract factorial input parses",
     parseAbsEnvStore("n = {0|1|2}")
@@ -164,7 +167,10 @@ console.log("")
 console.log("5. abstract presets parse")
 {
   for (const preset of ABSTRACT_PROGRAM_PRESETS) {
-    expectOk(`${preset.name} abstract env parses`, parseAbsEnvStore(preset.absEnvText))
+    expectOk(
+      `${preset.name} abstract env parses`,
+      parseAbsEnvStore(preset.absEnvText)
+    )
   }
 }
 

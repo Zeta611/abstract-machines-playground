@@ -42,12 +42,7 @@ import {
 import { Slider } from "@/components/ui/slider"
 import { parse } from "@/lib/s/parser"
 import { parseAbsEnvStore } from "@/lib/s/absEnvParser"
-import {
-  M,
-  type AbsCfg,
-  type AbsCfgView,
-  type MIntf,
-} from "@/lib/s/abs"
+import { M, type AbsCfg, type AbsCfgView, type MIntf } from "@/lib/s/abs"
 import { all_labels, by_function } from "@/lib/s/abs_preset"
 import { LabelMap, type Label, type Loc, type Program } from "@/lib/s/ast"
 import * as Result from "melange/result"
@@ -239,7 +234,8 @@ export default function AbstractPage() {
 
   const sourceDirty = !result || source !== result.source
   const envDirty = !result || absEnvText !== result.absEnvText
-  const partitionDirty = !result || partitionPresetId !== result.partitionPresetId
+  const partitionDirty =
+    !result || partitionPresetId !== result.partitionPresetId
   const dirty = sourceDirty || envDirty || partitionDirty
   const showLocked = locked && result !== null
   const currentState = result ? result.history[result.cursor] : null
@@ -252,8 +248,8 @@ export default function AbstractPage() {
         setActiveLabel(null)
         return
       }
-      const labels = result.history[result.cursor].view.frames.flatMap((frame) =>
-        labelsFromPattern(frame.label_ptn)
+      const labels = result.history[result.cursor].view.frames.flatMap(
+        (frame) => labelsFromPattern(frame.label_ptn)
       )
       if (labels.length === 0) {
         setActiveLabel(null)
@@ -570,7 +566,9 @@ function AbstractPageInner({
             aria-hidden="true"
             className="size-6 shrink-0 rounded"
           />
-          <span className="font-semibold">Abstract Abstract Machine Playground</span>
+          <span className="font-semibold">
+            Abstract Abstract Machine Playground
+          </span>
           {dirty && (
             <Badge
               variant="outline"
@@ -646,9 +644,7 @@ function AbstractPageInner({
           ) : (
             <RiPlayLine className="size-3.5" aria-hidden />
           )}
-          <span className="text-xs">
-            {playing ? "Pause 1s" : "Step / 1s"}
-          </span>
+          <span className="text-xs">{playing ? "Pause 1s" : "Step / 1s"}</span>
         </Button>
         <Button
           size="sm"
@@ -656,9 +652,7 @@ function AbstractPageInner({
           disabled={isPending || !showLocked || !result}
         >
           <RiSkipForwardLine className="size-3.5" aria-hidden />
-          <span className="text-xs">
-            {isPending ? "Stepping..." : "Step"}
-          </span>
+          <span className="text-xs">{isPending ? "Stepping..." : "Step"}</span>
         </Button>
         {error && (
           <div className="min-w-0 flex-1 truncate text-xs text-destructive">

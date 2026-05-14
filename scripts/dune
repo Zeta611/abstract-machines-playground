@@ -1,0 +1,4 @@
+(executable
+ (name smoke_s_to_t)
+ (modes byte)
+ (libraries amp_lib_s))

@@ -35,7 +35,7 @@ function AddrBadges({
   emptyLabel?: string
 }) {
   if (addrs.length === 0) {
-    return <span className="italic text-muted-foreground">{emptyLabel}</span>
+    return <span className="text-muted-foreground italic">{emptyLabel}</span>
   }
 
   return (
@@ -70,7 +70,7 @@ function EnvCell({
   onHoverAddrLabel?: (label: number | null) => void
 }) {
   if (rows.length === 0) {
-    return <span className="italic text-muted-foreground">{emptyLabel}</span>
+    return <span className="text-muted-foreground italic">{emptyLabel}</span>
   }
 
   return (
@@ -164,13 +164,13 @@ function FrameRow({
       </div>
       <div className="space-y-3">
         <div className="min-w-0">
-          <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="mb-1 text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
             Env
           </div>
           <EnvCell rows={row.env} onHoverAddrLabel={onHoverAddrLabel} />
         </div>
         <div className="min-w-0">
-          <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="mb-1 text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
             Kont Addrs
           </div>
           <KontCell kont={row.kont} onHoverAddrLabel={onHoverAddrLabel} />
@@ -193,7 +193,7 @@ function FramesTable({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="p-4 text-sm italic text-muted-foreground">
+      <div className="p-4 text-sm text-muted-foreground italic">
         No reachable abstract frames yet.
       </div>
     )
@@ -205,7 +205,10 @@ function FramesTable({
         <FrameRow
           key={`${row.time}:${row.label_ptn}:${row.kont.join("|")}`}
           row={row}
-          active={activeLabel !== null && labelsFromPattern(row.label_ptn).includes(activeLabel)}
+          active={
+            activeLabel !== null &&
+            labelsFromPattern(row.label_ptn).includes(activeLabel)
+          }
           onSelectLabel={onSelectLabel}
           onHoverAddrLabel={onHoverAddrLabel}
         />
@@ -223,7 +226,7 @@ function VStoreTable({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="p-4 text-sm italic text-muted-foreground">
+      <div className="p-4 text-sm text-muted-foreground italic">
         The abstract value store is empty.
       </div>
     )
@@ -231,7 +234,7 @@ function VStoreTable({
 
   return (
     <div className="min-w-[32rem]">
-      <div className="grid grid-cols-[8rem_minmax(16rem,1fr)] border-b bg-muted/40 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+      <div className="grid grid-cols-[8rem_minmax(16rem,1fr)] border-b bg-muted/40 px-3 py-2 text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
         <div>Addr</div>
         <div>Value</div>
       </div>
@@ -257,7 +260,7 @@ function KStoreTable({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="p-4 text-sm italic text-muted-foreground">
+      <div className="p-4 text-sm text-muted-foreground italic">
         The continuation store is empty.
       </div>
     )
@@ -271,17 +274,20 @@ function KStoreTable({
           className="flex flex-col gap-3 border-b px-3 py-2 text-xs last:border-b-0"
         >
           <div>
-            <AddrBadges addrs={[row.addr]} onHoverAddrLabel={onHoverAddrLabel} />
+            <AddrBadges
+              addrs={[row.addr]}
+              onHoverAddrLabel={onHoverAddrLabel}
+            />
           </div>
           <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
             <div className="min-w-0">
-              <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              <div className="mb-1 text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
                 Saved Env
               </div>
               <EnvCell rows={row.env} onHoverAddrLabel={onHoverAddrLabel} />
             </div>
             <div className="min-w-0 md:min-w-[8rem]">
-              <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              <div className="mb-1 text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
                 Saved Kont
               </div>
               <KontCell kont={row.kont} onHoverAddrLabel={onHoverAddrLabel} />
@@ -305,10 +311,7 @@ export function AbsConfigView({
   onHoverAddrLabel?: (label: number | null) => void
 }) {
   return (
-    <ResizablePanelGroup
-      orientation="horizontal"
-      className="min-h-0 flex-1"
-    >
+    <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1">
       <ResizablePanel defaultSize="34%" minSize="15%">
         <PanelShell title="Reachable Frames" count={view.frames.length}>
           <FramesTable

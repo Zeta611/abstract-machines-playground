@@ -255,10 +255,7 @@ declare module "@/lib/s/abs" {
   const mIntfBrand: unique symbol
   export interface MIntf {
     [mIntfBrand]: never
-    run_abs(
-      init: [AbsEnv, AbsVStore],
-      fuel: number
-    ): Result<AbsRun, string>
+    run_abs(init: [AbsEnv, AbsVStore], fuel: number): Result<AbsRun, string>
     abs_inject(init: [AbsEnv, AbsVStore]): AbsCfg
     abs_transfer(cfg: AbsCfg): Result<AbsCfg, string>
     view_cfg(cfg: AbsCfg): AbsCfgView

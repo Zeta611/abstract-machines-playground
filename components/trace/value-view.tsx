@@ -88,5 +88,10 @@ function countNodes(v: Val): number {
 }
 
 function countCtorNodes({ args }: CtorPayload): number {
-  return 1 + of_list(args).map(countNodes).reduce((a, b) => a + b, 0)
+  return (
+    1 +
+    of_list(args)
+      .map(countNodes)
+      .reduce((a, b) => a + b, 0)
+  )
 }
