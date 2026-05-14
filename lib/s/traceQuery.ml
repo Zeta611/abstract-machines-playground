@@ -46,7 +46,8 @@ let parseTraceQuery input =
     | I.Accepted ast -> Stdlib.Ok ast
     | I.HandlingError _ | I.Rejected -> (
         match current with
-        | None -> Stdlib.Error { message = "unexpected end of input"; at = input_len }
+        | None ->
+            Stdlib.Error { message = "unexpected end of input"; at = input_len }
         | Some (EOF, _, _) ->
             Stdlib.Error { message = "unexpected end of input"; at = input_len }
         | Some (token, at, _) ->

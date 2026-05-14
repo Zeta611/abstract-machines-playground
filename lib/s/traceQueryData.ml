@@ -30,7 +30,6 @@ type row = {
 }
 
 type parse_error = { message : string; at : int }
-
 type operator = EqToken | NeqToken | GtToken | GteToken | LtToken | LteToken
 
 exception Query_error of parse_error
@@ -60,8 +59,7 @@ let field_of_string_opt value =
   | _ -> None
 
 let parse_integer_literal value =
-  try Some (int_of_string value) with
-  | Failure _ -> None
+  try Some (int_of_string value) with Failure _ -> None
 
 let make_field_term ~field_name ~operator ~value ~field_at ~op_at ~value_at =
   let field =
@@ -77,6 +75,4 @@ let make_field_term ~field_name ~operator ~value ~field_at ~op_at ~value_at =
     raise_error ~at:value_at
       ("expected integer after " ^ field_name ^ operator_text operator);
   let term = Term { field = Some field; op = comparison_op; value } in
-  match operator with
-  | NeqToken -> Not term
-  | _ -> term
+  match operator with NeqToken -> Not term | _ -> term

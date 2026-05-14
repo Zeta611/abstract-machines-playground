@@ -20,9 +20,7 @@ let ( let* ) = Result.bind
    parse as primitive expressions until user-defined functions are known. *)
 let validate_program (program : Ast.program) : (unit, string) result =
   let fun_names =
-    program.defs
-    |> Utils.StringMap.bindings
-    |> List.map fst
+    program.defs |> Utils.StringMap.bindings |> List.map fst
     |> Utils.StringSet.of_list
   in
   let rec validate_exp (e : Ast.Exp.t) =
@@ -59,8 +57,7 @@ let validate_program (program : Ast.program) : (unit, string) result =
                validate_cmd branch.body)
              (Ok ())
   in
-  program.defs
-  |> Utils.StringMap.bindings
+  program.defs |> Utils.StringMap.bindings
   |> List.fold_left
        (fun acc (_, (def : Ast.def)) ->
          let* () = acc in

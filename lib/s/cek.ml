@@ -121,8 +121,8 @@ let step (s : state) (prog : program) : (step_success, string) result =
           let* argVals =
             args
             |> List.map (fun arg ->
-                   StringMap.find_opt arg s.env
-                   |> Option.to_result ~none:("undefined variable " ^ arg))
+                StringMap.find_opt arg s.env
+                |> Option.to_result ~none:("undefined variable " ^ arg))
             |> seq
           in
           let calleeEnv = bindMany StringMap.empty def.params argVals in
@@ -135,8 +135,8 @@ let step (s : state) (prog : program) : (step_success, string) result =
       let* argVals =
         args
         |> List.map (fun arg ->
-               StringMap.find_opt arg s.env
-               |> Option.to_result ~none:("undefined variable '" ^ arg ^ "'"))
+            StringMap.find_opt arg s.env
+            |> Option.to_result ~none:("undefined variable '" ^ arg ^ "'"))
         |> seq
       in
       let v = vCtor tag argVals in

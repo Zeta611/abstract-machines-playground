@@ -139,8 +139,8 @@ module AbsVal = struct
   let false_ : t = (AbsInt.bot, AbsAdt.of_tag_args "False" [])
   let bool_top : t = join true_ false_
 
-  let lift_int_binop ?(top = of_abs_int AbsInt.top) f ((x, _) : t)
-      ((y, _) : t) : t =
+  let lift_int_binop ?(top = of_abs_int AbsInt.top) f ((x, _) : t) ((y, _) : t)
+      : t =
     match (x, y) with
     | V xSet, V ySet ->
         bot
@@ -325,12 +325,12 @@ module M (P : PARAM) = struct
         in
         Result.ok
           [
-          ( abs_tick sigma (`L body.label),
-            body.label,
-            AbsEnv.weak_update x (VAddr.Abs.singleton a0) rho,
-            AbsVStore.weak_update a0 v sv',
-            sk,
-            ak );
+            ( abs_tick sigma (`L body.label),
+              body.label,
+              AbsEnv.weak_update x (VAddr.Abs.singleton a0) rho,
+              AbsVStore.weak_update a0 v sv',
+              sk,
+              ak );
           ]
     | LetCall { callee; args; _ } ->
         let* def =

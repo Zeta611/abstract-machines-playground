@@ -32,6 +32,7 @@
           buildInputs = [
             pkgs.bun
             ocamlPackages.melange
+            ocamlPackages.ocamlformat
             ocamlPackages.dune_3
             ocamlPackages.findlib
             ocamlPackages.menhir

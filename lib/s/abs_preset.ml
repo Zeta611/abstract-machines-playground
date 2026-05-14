@@ -9,12 +9,15 @@ let rec labels_of_cmd (cmd : Cmd.t) : Label.t list =
         labels_of_cmd body
     | Match_ { branches; _ } ->
         branches
-        |> List.concat_map (fun (branch : Cmd.branch) -> labels_of_cmd branch.body)
+        |> List.concat_map (fun (branch : Cmd.branch) ->
+            labels_of_cmd branch.body)
   in
   cmd.label :: tail
 
 let all_labels (prog : program) : (module Abs.PARAM) =
-  let labels = prog.ctrl |> LabelMap.bindings |> List.map fst |> Array.of_list in
+  let labels =
+    prog.ctrl |> LabelMap.bindings |> List.map fst |> Array.of_list
+  in
   (module struct
     type label_ptn = unit
 
@@ -25,8 +28,7 @@ let all_labels (prog : program) : (module Abs.PARAM) =
 
 let by_function (prog : program) : (module Abs.PARAM) =
   let label_owner =
-    prog.defs
-    |> StringMap.bindings
+    prog.defs |> StringMap.bindings
     |> List.fold_left
          (fun owners (name, def) ->
            labels_of_cmd def.body
@@ -36,15 +38,17 @@ let by_function (prog : program) : (module Abs.PARAM) =
          LabelMap.empty
   in
   let labels_by_function =
-    prog.defs
-    |> StringMap.bindings
-    |> List.map (fun (name, def) -> (name, labels_of_cmd def.body |> Array.of_list))
+    prog.defs |> StringMap.bindings
+    |> List.map (fun (name, def) ->
+        (name, labels_of_cmd def.body |> Array.of_list))
     |> StringMap.of_list
   in
   (module struct
     type label_ptn = string
 
-    let ptn_of_label (label : Label.t) : label_ptn = LabelMap.find label label_owner
+    let ptn_of_label (label : Label.t) : label_ptn =
+      LabelMap.find label label_owner
+
     let labels_of_ptn (name : label_ptn) : Label.t array =
       StringMap.find name labels_by_function
 

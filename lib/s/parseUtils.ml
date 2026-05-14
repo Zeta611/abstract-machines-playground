@@ -2,7 +2,11 @@ open Utils
 open Ast
 
 module M = struct
-  type 'a t = StringSet.t -> Cmd.t LabelMap.t -> Label.t -> Cmd.t LabelMap.t * Label.t * 'a
+  type 'a t =
+    StringSet.t ->
+    Cmd.t LabelMap.t ->
+    Label.t ->
+    Cmd.t LabelMap.t * Label.t * 'a
 
   let unit (x : 'a) : 'a t = fun _ ctrl label -> (ctrl, label, x)
 
@@ -17,7 +21,7 @@ module M = struct
   let alloc : Label.t t = fun _ ctrl (L label) -> (ctrl, L (label + 1), L label)
 
   let put (label : Label.t) (cmd : Cmd.t) : Cmd.t t =
-   fun _ ctrl label' -> (LabelMap.add (label) cmd ctrl, label', cmd)
+   fun _ ctrl label' -> (LabelMap.add label cmd ctrl, label', cmd)
 end
 
 let ( let* ) = M.bind
@@ -65,11 +69,11 @@ let let_ loc x (exp : Exp.t M.t) body =
     (let* exp = exp in
      let* body = body in
      match exp.desc with
-     | Prim ({ op; args }) ->
+     | Prim { op; args } ->
          let varArgs =
            args
            |> List.map (fun arg ->
-                  match arg.Exp.desc with Var_ name -> Some name | _ -> None)
+               match arg.Exp.desc with Var_ name -> Some name | _ -> None)
          in
          let* is_fun = M.is_fun op in
          if is_fun && List.for_all Option.is_some varArgs then

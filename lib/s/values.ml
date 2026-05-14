@@ -28,10 +28,7 @@ let rec showVal = function
   | Int { n } -> string_of_int n
   | Ctor { tag; args } ->
       if List.length args = 0 then tag ^ "()"
-      else
-        tag ^ "("
-        ^ (args |> List.map showVal |> String.concat ", ")
-        ^ ")"
+      else tag ^ "(" ^ (args |> List.map showVal |> String.concat ", ") ^ ")"
 
 let bindMany env xs vs =
   List.fold_left2 (fun env x v -> StringMap.add x v env) env xs vs
