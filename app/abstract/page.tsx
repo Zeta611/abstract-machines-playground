@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import {
   startTransition,
@@ -9,7 +10,7 @@ import {
   useState,
 } from "react"
 import {
-  RiArrowLeftLine,
+  RiGithubFill,
   RiLockLine,
   RiLockUnlockLine,
   RiPauseLine,
@@ -558,40 +559,31 @@ function AbstractPageInner({
   ]
 
   return (
-    <main className="flex h-svh min-h-0 flex-col overflow-hidden bg-background">
-      <header className="flex flex-wrap items-center gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur">
-        <Button asChild size="sm" variant="outline">
-          <Link href="/">
-            <RiArrowLeftLine className="size-4" aria-hidden />
-            <span className="text-xs">Trace Playground</span>
-          </Link>
-        </Button>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="text-sm font-semibold">
-              Abstract Fixpoint Explorer
-            </h1>
-            <Badge variant="outline" className="text-[10px]">
-              abstract transfer
+    <main className="flex h-svh min-h-0 flex-col overflow-hidden bg-muted/20">
+      <header className="flex flex-wrap items-center gap-3 border-b bg-background/70 px-3 py-2 backdrop-blur">
+        <div className="flex min-w-0 items-center gap-2">
+          <Image
+            src="/logo.png"
+            width={24}
+            height={24}
+            alt=""
+            aria-hidden="true"
+            className="size-6 shrink-0 rounded"
+          />
+          <span className="font-semibold">Abstract Abstract Machine Playground</span>
+          {dirty && (
+            <Badge
+              variant="outline"
+              className="border-amber-500 text-[10px] text-amber-700 dark:text-amber-300"
+            >
+              input modified
             </Badge>
-            {dirty && (
-              <Badge
-                variant="outline"
-                className="border-amber-500 text-[10px] text-amber-700 dark:text-amber-300"
-              >
-                input modified
-              </Badge>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Lock the inputs to keep source offsets stable, then step through the
-            abstract transfer while highlighting reachable labels.
-          </p>
+          )}
         </div>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="ml-2 flex items-center gap-2 text-xs">
           <span className="text-muted-foreground">example</span>
           <Select value={activePresetId} onValueChange={onPresetChange}>
-            <SelectTrigger size="sm" className="w-44 text-xs">
+            <SelectTrigger size="sm" className="w-48 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -624,55 +616,77 @@ function AbstractPageInner({
             </SelectContent>
           </Select>
         </div>
+        <Button size="sm" variant="outline" onClick={onReset}>
+          <RiRestartLine className="size-3.5" aria-hidden />
+          <span className="text-xs">Reset</span>
+        </Button>
+        <Button
+          size="sm"
+          variant={showLocked ? "default" : "outline"}
+          onClick={onLockToggle}
+          title={showLocked ? "unlock to edit" : "lock to apply inputs"}
+        >
+          {showLocked ? (
+            <RiLockLine className="size-3.5" aria-hidden />
+          ) : (
+            <RiLockUnlockLine className="size-3.5" aria-hidden />
+          )}
+          <span className="ml-1 text-xs">
+            {showLocked ? "locked" : "unlocked"}
+          </span>
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onTogglePlaying}
+          disabled={!showLocked || !result || !!currentState?.stabilized}
+        >
+          {playing ? (
+            <RiPauseLine className="size-3.5" aria-hidden />
+          ) : (
+            <RiPlayLine className="size-3.5" aria-hidden />
+          )}
+          <span className="text-xs">
+            {playing ? "Pause 1s" : "Step / 1s"}
+          </span>
+        </Button>
+        <Button
+          size="sm"
+          onClick={onStep}
+          disabled={isPending || !showLocked || !result}
+        >
+          <RiSkipForwardLine className="size-3.5" aria-hidden />
+          <span className="text-xs">
+            {isPending ? "Stepping..." : "Step"}
+          </span>
+        </Button>
+        {error && (
+          <div className="min-w-0 flex-1 truncate text-xs text-destructive">
+            {error}
+          </div>
+        )}
         <div className="ml-auto flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={onReset}>
-            <RiRestartLine className="size-3.5" aria-hidden />
-            <span className="text-xs">Reset</span>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/">
+              <span className="text-xs">Trace Playground</span>
+            </Link>
           </Button>
-          <Button
-            size="sm"
-            variant={showLocked ? "default" : "outline"}
-            onClick={onLockToggle}
-            title={showLocked ? "unlock to edit" : "lock to apply inputs"}
-          >
-            {showLocked ? (
-              <RiLockLine className="size-3.5" aria-hidden />
-            ) : (
-              <RiLockUnlockLine className="size-3.5" aria-hidden />
-            )}
-            <span className="text-xs">
-              {showLocked ? "locked" : "unlocked"}
-            </span>
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onTogglePlaying}
-            disabled={!showLocked || !result || !!currentState?.stabilized}
-          >
-            {playing ? (
-              <RiPauseLine className="size-3.5" aria-hidden />
-            ) : (
-              <RiPlayLine className="size-3.5" aria-hidden />
-            )}
-            <span className="text-xs">
-              {playing ? "Pause 1s" : "Step / 1s"}
-            </span>
-          </Button>
-          <Button
-            size="sm"
-            onClick={onStep}
-            disabled={isPending || !showLocked || !result}
-          >
-            <RiSkipForwardLine className="size-3.5" aria-hidden />
-            <span className="text-xs">
-              {isPending ? "Stepping..." : "Step"}
-            </span>
+          <Button asChild size="sm" variant="outline">
+            <a
+              href="https://github.com/Zeta611/abstract-machines-playground"
+              target="_blank"
+              rel="noreferrer"
+              title="Open GitHub repository"
+              aria-label="Open GitHub repository"
+            >
+              <RiGithubFill />
+              <span className="text-xs">GitHub</span>
+            </a>
           </Button>
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 p-3">
+      <div className="min-h-0 flex-1 overflow-hidden p-3">
         <ResizablePanelGroup orientation="horizontal" className="h-full w-full">
           <ResizablePanel defaultSize="34%" minSize="24%">
             <div className="flex h-full min-h-0 flex-col gap-3">
@@ -681,12 +695,12 @@ function AbstractPageInner({
                 className="min-h-0 flex-1"
               >
                 <ResizablePanel defaultSize="68%" minSize="25%">
-                  <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-card p-3">
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="text-xs tracking-wide text-muted-foreground">
+                  <div className="flex h-full min-h-0 flex-col overflow-hidden">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <div className="text-[10px] tracking-wide text-muted-foreground">
                         Program (P)
                       </div>
-                      <Badge variant="secondary" className="text-[10px]">
+                      <Badge variant="outline" className="text-[10px]">
                         reachable labels
                       </Badge>
                     </div>
@@ -705,12 +719,12 @@ function AbstractPageInner({
                 </ResizablePanel>
                 <ResizableHandle className="my-2" />
                 <ResizablePanel defaultSize="32%" minSize="12%">
-                  <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-card p-3">
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="text-xs tracking-wide text-muted-foreground">
+                  <div className="flex h-full min-h-0 flex-col overflow-hidden">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <div className="text-[10px] tracking-wide text-muted-foreground">
                         Abstract Environment / Store Seed
                       </div>
-                      <Badge variant="secondary" className="text-[10px]">
+                      <Badge variant="outline" className="text-[10px]">
                         {`{1|2|Foo(3)}`}
                       </Badge>
                     </div>
@@ -731,7 +745,7 @@ function AbstractPageInner({
           <ResizableHandle className="mx-2" />
           <ResizablePanel defaultSize="66%" minSize="22%">
             <div className="flex h-full min-h-0 flex-col gap-3">
-              <div className="rounded-xl border bg-card px-4 py-3">
+              <div className="rounded border bg-card p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge
                     variant={currentState?.stabilized ? "default" : "secondary"}
@@ -799,15 +813,13 @@ function AbstractPageInner({
                   </div>
                 )}
                 <div className="mt-2 text-xs text-muted-foreground">
-                  {error
-                    ? error
-                    : currentState?.stabilized
-                      ? "The latest transfer step produced no further growth."
-                      : result && result.cursor < result.history.length - 1
-                        ? "Use the slider to revisit explored states, or step from the current position to continue from there."
-                        : playing
-                          ? "Autoplay is advancing one abstract transfer step every second."
-                          : "Click a frame row to focus its label, or hover a label badge to preview its source range."}
+                  {currentState?.stabilized
+                    ? "The latest transfer step produced no further growth."
+                    : result && result.cursor < result.history.length - 1
+                      ? "Use the slider to revisit explored states, or step from the current position to continue from there."
+                      : playing
+                        ? "Autoplay is advancing one abstract transfer step every second."
+                        : "Click a frame row to focus its label, or hover a label badge to preview its source range."}
                 </div>
               </div>
 
@@ -819,7 +831,7 @@ function AbstractPageInner({
                   onHoverAddrLabel={setHoveredAddrLabel}
                 />
               ) : (
-                <div className="flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed bg-card/50 p-6 text-sm text-muted-foreground">
+                <div className="flex min-h-0 flex-1 items-center justify-center rounded border border-dashed bg-card/50 p-6 text-sm text-muted-foreground">
                   Lock a valid program and abstract environment to inspect the
                   abstract configuration.
                 </div>

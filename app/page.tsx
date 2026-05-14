@@ -642,7 +642,7 @@ function Header({
         </div>
         <Button asChild size="sm" variant="outline">
           <Link href="/abstract">
-            <span className="text-xs">Abstract Explorer</span>
+            <span className="text-xs">AAM</span>
           </Link>
         </Button>
         <Button asChild size="sm" variant="outline">
