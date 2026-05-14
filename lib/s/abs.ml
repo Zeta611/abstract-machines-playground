@@ -304,8 +304,8 @@ module M (P : PARAM) = struct
             ak );
         ]
     | LetTag { x; tag; args; body; _ } ->
-        let+ argVals =
-          args |> List.map (fun arg -> eval_exp arg rho sv sk) |> seq
+        let argVals =
+          args |> List.map (fun arg -> joined_lookup (AbsEnv.lookup arg rho) sv)
         in
         let a0 = abs_allocv sigma body.label 0 in
         let valAddrs =
@@ -323,14 +323,15 @@ module M (P : PARAM) = struct
           |> List.map (fun (_, addr) -> VAddr.Abs.singleton addr)
           |> AbsAdt.of_tag_args tag |> AbsVal.of_adt
         in
-        [
+        Result.ok
+          [
           ( abs_tick sigma (`L body.label),
             body.label,
             AbsEnv.weak_update x (VAddr.Abs.singleton a0) rho,
             AbsVStore.weak_update a0 v sv',
             sk,
             ak );
-        ]
+          ]
     | LetCall { callee; args; _ } ->
         let* def =
           StringMap.find_opt callee prog.defs

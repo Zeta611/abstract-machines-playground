@@ -65,7 +65,9 @@ eval(e, env, defs) =
       let v = eval(e1, env, defs) in
       let body = fundef(defs, fid) in
       let empty_env = Nil() in
-      let x = Var(0, 0) in
+      let l0 = 0 in
+      let x0 = 0 in
+      let x = Var(l0, x0) in
       let call_env = extend(empty_env, x, v) in
       let r = eval(body, call_env, defs) in r
     end
@@ -81,7 +83,9 @@ main(p, arg) =
   match p with
   | Prog(defs, e) =>
     let empty_env = Nil() in
-    let x = Var(0, 0) in
+    let l0 = 0 in
+    let x0 = 0 in
+    let x = Var(l0, x0) in
     let initial_env = extend(empty_env, x, arg) in
     let r = eval(e, initial_env, defs) in r
   end
@@ -147,7 +151,9 @@ eval(e1, env3, defs2) =
       let v7 = eval(e8, env3, defs2) in
       let body2 = fundef(defs2, fid3) in
       let env5 = Nil() in
-      let x4 = Var(0, 0) in
+      let l9 = 0 in
+      let x4_id = 0 in
+      let x4 = Var(l9, x4_id) in
       let env6 = extend(env5, x4, v7) in
       let r7 = eval(body2, env6, defs2) in r7
     end
@@ -163,7 +169,9 @@ main(p1, arg1) =
   match p1 with
   | Prog(defs3, e12) =>
     let env7 = Nil() in
-    let x5 = Var(0, 0) in
+    let l10 = 0 in
+    let x5_id = 0 in
+    let x5 = Var(l10, x5_id) in
     let env8 = extend(env7, x5, arg1) in
     let r10 = eval(e12, env8, defs3) in r10
   end

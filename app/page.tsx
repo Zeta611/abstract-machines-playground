@@ -101,9 +101,9 @@ type Action =
 function reducer(s: PageState, a: Action): PageState {
   switch (a.t) {
     case "setSource":
-      return { ...s, source: a.v }
+      return { ...s, source: a.v, error: null }
     case "setEnv":
-      return { ...s, envText: a.v }
+      return { ...s, envText: a.v, error: null }
     case "setQuery":
       return { ...s, queryText: a.v }
     case "setStepLimit":

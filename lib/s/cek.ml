@@ -132,7 +132,13 @@ let step (s : state) (prog : program) : (step_success, string) result =
             "call %s(%d args) -> let %s" callee (List.length argVals) x
       end
   | LetTag { x; tag; args; body } ->
-      let* argVals = args |> List.map (fun arg -> eval_exp arg s.env) |> seq in
+      let* argVals =
+        args
+        |> List.map (fun arg ->
+               StringMap.find_opt arg s.env
+               |> Option.to_result ~none:("undefined variable '" ^ arg ^ "'"))
+        |> seq
+      in
       let v = vCtor tag argVals in
       mk_step
         (body.label, StringMap.add x v s.env, s.kont, LetTag)

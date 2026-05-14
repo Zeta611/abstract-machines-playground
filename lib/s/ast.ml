@@ -31,7 +31,7 @@ module Cmd = struct
     | Return of string
     | Let_ of { x : string; exp : Exp.t; body : t }
     | LetCall of { x : string; callee : string; args : string list; body : t }
-    | LetTag of { x : string; tag : string; args : Exp.t list; body : t }
+    | LetTag of { x : string; tag : string; args : string list; body : t }
     | Match_ of { scrutinee : Exp.t; branches : branch list }
 
   and branch = { tag : string; vars : string list; body : t; loc : loc }
@@ -47,7 +47,7 @@ module Cmd = struct
         ^ ") in ..."
     | LetTag { x; tag; args; _ } ->
         "let " ^ x ^ " = " ^ tag ^ "("
-        ^ (args |> List.map Exp.summary |> String.concat ", ")
+        ^ (args |> String.concat ", ")
         ^ ") in ..."
     | Match_ { scrutinee; _ } -> "match " ^ Exp.summary scrutinee ^ " with ..."
 end
