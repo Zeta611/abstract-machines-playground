@@ -1,6 +1,11 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
 import type {
   AbsCfgView,
   AbsEnvRow,
@@ -112,9 +117,9 @@ function PanelShell({
   children: React.ReactNode
 }) {
   return (
-    <section className="flex min-h-0 flex-col rounded-xl border bg-card">
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <div className="text-sm font-semibold">{title}</div>
+    <section className="flex h-full min-h-0 flex-col rounded border bg-card">
+      <div className="flex items-center justify-between border-b px-3 py-2">
+        <div className="text-xs text-muted-foreground">{title}</div>
         <Badge variant="outline" className="text-[10px]">
           {count} row{count === 1 ? "" : "s"}
         </Badge>
@@ -144,7 +149,7 @@ function FrameRow({
         if (primaryLabel !== null) onSelectLabel(primaryLabel)
       }}
       className={[
-        "flex w-full flex-col gap-3 border-b px-4 py-3 text-left text-xs last:border-b-0",
+        "flex w-full flex-col gap-3 border-b px-3 py-2 text-left text-xs last:border-b-0",
         "hover:bg-muted/30 focus:bg-muted/30 focus:outline-none",
         active ? "bg-emerald-50/70 dark:bg-emerald-950/20" : "",
       ].join(" ")}
@@ -226,14 +231,14 @@ function VStoreTable({
 
   return (
     <div className="min-w-[32rem]">
-      <div className="grid grid-cols-[8rem_minmax(16rem,1fr)] border-b bg-muted/40 px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+      <div className="grid grid-cols-[8rem_minmax(16rem,1fr)] border-b bg-muted/40 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
         <div>Addr</div>
         <div>Value</div>
       </div>
       {rows.map((row) => (
         <div
           key={row.addr}
-          className="grid grid-cols-[8rem_minmax(16rem,1fr)] gap-x-4 border-b px-4 py-3 text-xs last:border-b-0"
+          className="grid grid-cols-[8rem_minmax(16rem,1fr)] gap-x-4 border-b px-3 py-2 text-xs last:border-b-0"
         >
           <AddrBadges addrs={[row.addr]} onHoverAddrLabel={onHoverAddrLabel} />
           <div className="break-words">{row.value}</div>
@@ -263,7 +268,7 @@ function KStoreTable({
       {rows.map((row) => (
         <div
           key={row.addr}
-          className="flex flex-col gap-3 border-b px-4 py-3 text-xs last:border-b-0"
+          className="flex flex-col gap-3 border-b px-3 py-2 text-xs last:border-b-0"
         >
           <div>
             <AddrBadges addrs={[row.addr]} onHoverAddrLabel={onHoverAddrLabel} />
@@ -300,21 +305,32 @@ export function AbsConfigView({
   onHoverAddrLabel?: (label: number | null) => void
 }) {
   return (
-    <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-3">
-      <PanelShell title="Reachable Frames" count={view.frames.length}>
-        <FramesTable
-          rows={view.frames}
-          activeLabel={activeLabel}
-          onSelectLabel={onSelectLabel}
-          onHoverAddrLabel={onHoverAddrLabel}
-        />
-      </PanelShell>
-      <PanelShell title="Value Store" count={view.vstore.length}>
-        <VStoreTable rows={view.vstore} onHoverAddrLabel={onHoverAddrLabel} />
-      </PanelShell>
-      <PanelShell title="Kont Store" count={view.kstore.length}>
-        <KStoreTable rows={view.kstore} onHoverAddrLabel={onHoverAddrLabel} />
-      </PanelShell>
-    </div>
+    <ResizablePanelGroup
+      orientation="horizontal"
+      className="min-h-0 flex-1"
+    >
+      <ResizablePanel defaultSize="34%" minSize="15%">
+        <PanelShell title="Reachable Frames" count={view.frames.length}>
+          <FramesTable
+            rows={view.frames}
+            activeLabel={activeLabel}
+            onSelectLabel={onSelectLabel}
+            onHoverAddrLabel={onHoverAddrLabel}
+          />
+        </PanelShell>
+      </ResizablePanel>
+      <ResizableHandle className="mx-2" />
+      <ResizablePanel defaultSize="33%" minSize="15%">
+        <PanelShell title="Value Store" count={view.vstore.length}>
+          <VStoreTable rows={view.vstore} onHoverAddrLabel={onHoverAddrLabel} />
+        </PanelShell>
+      </ResizablePanel>
+      <ResizableHandle className="mx-2" />
+      <ResizablePanel defaultSize="33%" minSize="15%">
+        <PanelShell title="Kont Store" count={view.kstore.length}>
+          <KStoreTable rows={view.kstore} onHoverAddrLabel={onHoverAddrLabel} />
+        </PanelShell>
+      </ResizablePanel>
+    </ResizablePanelGroup>
   )
 }
