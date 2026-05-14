@@ -1,0 +1,687 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in,a4paper]{geometry}
+
+\usepackage[T1]{fontenc}
+\usepackage{kotex}
+
+\usepackage[tt=false]{libertine}
+\usepackage{zi4}
+
+\usepackage{amssymb,amsthm,mathtools}
+\usepackage{stmaryrd}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, calc, fit}
+
+\usepackage[numbers]{natbib}
+\bibliographystyle{ACM-Reference-Format}
+
+\usepackage{prelude}
+
+\newcommand{\Sub}{\mathsf{Sub}}
+\newcommand{\Mul}{\mathsf{Mul}}
+\newcommand{\App}{\mathsf{App}}
+% \newcommand{\Fun}{\mathsf{Fun}}
+\newcommand{\lookup}{\mathsf{lookup}}
+\newcommand{\subl}{\mathsf{subl}}
+\newcommand{\subr}{\mathsf{subr}}
+\newcommand{\fun}{\mathsf{fun}}
+\newcommand{\ifz}{\mathsf{ifz}}
+
+\usepackage{hyperref}
+
+\title{\textsc{Pearl} Notes\\From S-AM to T-AM through T-Definitional Interpreter}
+\author{Joongwon Ahn, Jay Lee}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Overview}
+This document defines a revised A-normal form (ANF) language with:
+\begin{itemize}
+\item a finite set of global, mutually recursive, non-capturing function definitions,
+\item constructor values such as $\mathsf{some}(3)$ and $\mathsf{cons}(3,\mathsf{nil})$,
+\item first-order pattern matching on constructor tag and arity.
+\end{itemize}
+
+The semantics is given by a small-step abstract machine in the style of the CEK machine from \citet{FlaSabDubFel93Essence}.
+As in that machine, evaluation proceeds with environments and continuations.
+Unlike the usual closure-based presentation, control is represented by labels and a static control map, function application uses global lookup instead of closures, and matching dispatches directly on constructor tag and arity.
+Because the language is pure and constructor values are finite trees, we do not use store indirection: variables are bound directly to values in the environment.
+
+\section{Syntax}
+\[
+x \in \Var
+\qquad
+f \in \Fun
+\qquad
+n \in \Int
+\qquad
+t \in \Tag
+\qquad
+o \in \Prim
+\qquad
+\ell \in \Lab
+\]
+\begin{center}
+\begin{bnf}
+  $P$ : $\Prog$ ::= $\overline{f(\overline{x}) = c;}\ c$
+  ;;
+  $e$ : $\Exp$ ::= $n$ // $x$ // $o(\overline{e})$
+  ;;
+  $c$ : $\Cmd$ ::= $x$
+               | $\textbf{let}\ x = e\ \textbf{in}\ c$
+               | $\textbf{let}\ x = t\langle\overline{x}\rangle\ \textbf{in}\ c$
+               | $\textbf{let}\ x = f(\overline{x})\ \textbf{in}\ c$
+               | $\textbf{match}\ e\ \textbf{with}\ \overline{b}\ \textbf{end}$
+  ;;
+  $b$ ::= $t\langle\overline{x}\rangle \Rightarrow c$
+  ;;
+\end{bnf}
+\end{center}
+
+% We uniquely identify otherwise syntactically identical commands~$c$ in different occurrences by labeling them~$\lbl{\ell}c$, which we omitted above for brevity.
+We uniquely identify syntactically identical commands~$c$ in different occurrences by labeling them~$\lbl{\ell}c$, which we have omitted above for brevity.
+In the remainder of the paper, we usually omit explicit command labels and write \(c\) for \(\lbl{\ell}c\); by slight abuse of notation, we also use \(c\) to denote its associated label \(\ell\) when no confusion arises.
+
+
+\section{CEK}
+Machine states~$\sigma$ combine the current control label~$\ell$, current environment~$\rho$, and current continuation~$\kappa.$
+
+Values~$v$ are the data manipulated by the machine during execution.
+Since the language has neither mutation nor cyclic heap structure, recursive data can be represented directly as inductive values rather than indirectly through addresses and a store.
+
+A continuation frame~$\langle\ell,\rho\rangle$ records the suspended control label~$\ell$ together with the environment~$\rho$ to restore when the current computation returns.
+A continuation is a stack of such frames, with the head of the list denoting the next frame to receive a returned value.
+
+Traces~$\pi$ are finite sequences of states~$\sigma$.
+\begin{center}
+\begin{bnf}(
+  relation = {::=|:in:|:def:},
+  relation-sym-map = {
+    {::=} = {\ensuremath{\Coloneqq}},
+    {:in:} = {\ensuremath{\in}},
+    {:def:} = {\ensuremath{\triangleq}},
+  },
+)[
+  colspec = rrcll,
+]
+  \State :def: $\Lab \times \Env \times \Kont$ ;;
+  \Val :def: $\Int + \Tag \times \Val^*$ ;;
+  \Env :def: $\Var \rightharpoonup \Val$ ;;
+  \Kont :def: $(\Lab \times \Env)^*$ ;;
+  \Trace :def: $\State^*$ ;;
+  $\sigma$ : \State ::= $\langle \ell, \rho, \kappa \rangle$ ;;
+  $v$ : \Val ::= $n$ // $t\langle\overline{v}\rangle$ ;;
+  $\rho$ : \Env ::= $\{\Overline{x \mapsto v }\}$ ;;
+  $\kappa$ : \Kont ::= $[\Overline{\langle \ell, \rho \rangle}]$ ;;
+  $\pi$ : \Trace ::= $[\overline{\sigma}]$ ;;
+\end{bnf}
+\end{center}
+
+We represent Booleans via $\texttt{true} \triangleq \texttt{true}\langle\rangle$ and $\texttt{false} \triangleq \texttt{false}\langle\rangle$.
+
+\section{Operational Semantics}
+\subsection{Evaluation of Expressions}
+The interpretation of expressions is the partial function~$\mathcal{E}\llbracket \cdot \rrbracket \colon \Exp \to \Env \rightharpoonup \Val$ defined by
+\begin{align*}
+\evale{n}{\rho}                &\triangleq n \\
+\evale{x}{\rho}                &\triangleq \rho(x) \\
+\evale{o(\overline{e_i})}{\rho} &\triangleq
+  \mathcal O\llbracket o\rrbracket (\overline{v_i})
+  && \text{where $v_i = \evale{e_i}{\rho}$}
+\end{align*}
+where $\mathcal O\llbracket \cdot \rrbracket \colon \Prim \to \Val^\ast \rightharpoonup \Val$ is the interpretation of primitives $o$.
+
+\subsection{Transition Relation}
+The relation\footnote{We omit $P$ in $\step{P}$ when obvious.}
+\[
+\sigma \step{P} \sigma'
+\]
+means that program $P$ takes one small-step from state $\sigma$ to state $\sigma'$.
+
+\[\SetTblrInner{colsep=3.5pt, rowsep=1pt}
+\begin{tblr}{rll}
+  & \langle y, \rho, \langle \mathbf{let}\ x = f(\overline{z_i})\ \mathbf{in}\ c, \rho' \rangle :: \kappa \rangle & \\
+  \step{} & \langle c, \rho'\{x \mapsto v\}, \kappa \rangle
+  & \textsc{[Return]} \\
+  & \quad\text{where } v = \rho(y) \\[6pt]
+  %
+  & \langle \mathbf{let}\ x = e\ \mathbf{in}\ c, \rho, \kappa \rangle & \\
+  \step{} & \langle c, \rho\{x \mapsto v\}, \kappa \rangle
+  & \textsc{[LetExp]} \\
+  & \quad\text{where } v = \evale{e}{\rho} \\[6pt]
+  %
+  & \langle \mathbf{let}\ x = t\langle\overline{y_i}\rangle\ \mathbf{in}\ c, \rho, \kappa \rangle & \\
+  \step{} & \langle c, \rho\{x \mapsto t\langle\overline{v_i}\rangle\}, \kappa \rangle
+  & \textsc{[LetTag]} \\
+  & \quad\text{where }v_i = \rho(y_i) \\[6pt]
+  %
+  & \langle \mathbf{let}\ x = f(\overline{y_i})\ \mathbf{in}\ c, \rho, \kappa \rangle & \\
+  \step{} & \langle c_f, \{\overline{x_i \mapsto v_i}\}, \langle \mathbf{let}\ x = f(\overline{y_i})\ \mathbf{in}\ c, \rho \rangle :: \kappa \rangle
+  & \textsc{[LetCall]} \\
+  & \quad\text{where }v_i = \rho(y_i),
+    \ \bigl(f(\overline{x_i}) = c_f\bigr) \in P \\[6pt]
+  %
+  & \langle \mathbf{match}\ e\ \mathbf{with}\ \overline{b}, \rho, \kappa \rangle & \\
+  \step{} & \langle c, \rho\{\overline{x_i \mapsto v_i}\}, \kappa \rangle
+  & \textsc{[Match]} \\
+  & \quad\text{where } \evale{e}{\rho} = t \langle \overline{v_i} \rangle,
+    \ \bigl(t\langle\overline{x_i}\rangle \Rightarrow c\bigr) \in \overline{b} \\[6pt]
+  \end{tblr}
+\]
+Note that in the above rules, each label is denoted by its associated command.
+
+The \textsc{Return} rule only needs to inspect suspended call sites:
+\textsc{LetCall} is the only rule that extends the continuation, so every nonempty continuation is headed by a label whose node is a function-binding let.
+Thus the variable to bind is recovered by inspecting the node associated with the suspended label.
+In contrast to the CESK presentation, no fresh address allocation is needed: each binding in the rules above extends the environment directly with the computed value.
+
+
+\subsection{Initial Configuration}
+% Fix a distinguished label $\ell_0 \in \Lab$ such that
+% \[
+% \Lambda_P(\ell_0) \text{ is the node for the main term } e_0.
+% \]
+% Here $\ell_0$ is the entry label of the main term.
+%Evaluation of the program $\overline{f(\overline{x}) = c_f;}\ \lbl{\ell}c$ with initial environment~$\rho$ starts from
+%\[
+%I(P, \rho) \triangleq \langle \lbl{\ell}c, \rho, [] \rangle.
+%\]
+Evaluation of the program $P = \overline{f(\overline{x}) = c;}\ c_0$ with initial environment~$\rho$ starts from
+\[
+\inj(P, \rho) \triangleq \langle c_0, \rho, [] \rangle.
+\]
+The initial environment~$\rho$ supplies the values of the free variables of the main term.
+It can be viewed as the input to the program.
+In the implementation, the parser accepts a list of function definitions and chooses a distinguished
+\texttt{main} function when one exists, otherwise the last definition is used as the entry point.
+This is equivalent to taking the body of that distinguished function as \(c_0\) and the user-supplied
+environment as its initial environment.
+
+\subsection{Trace Semantics}
+Let $\step*{P}$ be the reflexive-transitive closure of $\step{P}$.
+Because the main term is a command of the source language, termination occurs at a state of the form $\langle x, \rho, [] \rangle$ where $x$ is the ``return command'' at the end of the main term.
+Such a state is final: it consists of the label of the last return command, an environment, and an empty continuation.
+No transition rule applies to such states.
+ 
+The value semantics of programs is the partial function
+\[
+\mathcal{V}\llbracket \cdot \rrbracket : \Prog \to \Env \rightharpoonup \Val
+\]
+defined by
+\[
+\mathcal{V}\llbracket P \rrbracket\, \rho \triangleq \rho'(x)
+\qquad\text{where } \inj(P, \rho)\step*{P} \langle x, \rho', [] \rangle.
+\]
+The value semantic function is partial.
+Evaluation may fail to produce a value because execution gets stuck, for example because of an undefined variable or function lookup, an undefined primitive application, or a failed match, or because of an infinite transition sequence.
+ 
+The trace semantics of programs is the function
+\[
+\mathcal{T}\llbracket \cdot \rrbracket : \Prog \to \Env \to \wp(\Trace)
+\]
+defined by
+\[
+\mathcal{T}\llbracket P \rrbracket\, \rho
+\triangleq
+\bigl\{
+\langle \sigma_0,\dots,\sigma_n \rangle
+\mid
+\sigma_0 = \inj(P, \rho)
+\land
+\forall 0 \le i < n,\; \sigma_i \step{P} \sigma_{i+1}
+\bigr\}.
+\]
+Thus $\mathcal{T}\llbracket P \rrbracket\, \rho$ is the set of all finite prefixes of transition sequences starting from $\inj(P,\rho)$.
+The trace semantic function is total; it always returns a set of traces, including traces that end in a stuck state or prefixes of a diverging execution.
+
+
+
+\section{T Definitional Interpreter}
+\begin{lstlisting}
+# prog ::= Prog(defs, exp)
+# defs ::= Defs(Fun(int), exp, defs) | Nil()
+# env  ::= Env(Var(int, int), int, env) | Nil()
+# exp  ::= Int(int, int) | Var(int, int) | Sub(int, exp, exp) | Mul(int, exp, exp)
+#        | Let(int, Var(int, int), exp, exp) | App(int, Fun(int), exp) | Ifz(int, exp, exp, exp)
+
+fundef(defs, fid) =
+  match defs with
+  | Defs(f, body, rest) =>
+    match f with
+    | Fun(fid2) =>
+      match iszero(sub(fid, fid2)) with
+      | True() => body
+      | False() => let r = fundef(rest, fid) in r
+      end
+    end
+  end
+
+lookup(env, xid) =
+  match env with
+  | Env(x, val, rest) =>
+    match x with
+    | Var(l, xid2) =>
+      match iszero(sub(xid, xid2)) with
+      | True() => val
+      | False() => let r = lookup(rest, xid) in r
+      end
+    end
+  end
+
+extend(env, x, val) =
+  let r = Env(x, val, env) in r
+
+eval(e, env, defs) =
+  $\leftindex^{\ell_{\textit{eval}}}{\texttt{match}}$ e with
+  | Int(l, n) => $\leftindex^{\ell_{\textit{intr}}}{\texttt{n}}$
+  | Var(l, xid) => 
+    let v = lookup(env, xid) in $\leftindex^{\ell_{\textit{varr}}}{\texttt{v}}$
+  | Sub(l, e1, e2) =>
+    $\leftindex^{\ell_{\textit{sub1}}}{\texttt{let}}$ v1 = eval(e1, env, defs) in
+    $\leftindex^{\ell_{\textit{sub2}}}{\texttt{let}}$ v2 = eval(e2, env, defs) in
+    let r = sub(v1, v2) in $\leftindex^{\ell_{\textit{subr}}}{\texttt{r}}$
+  | Mul(l, e1, e2) =>
+    $\leftindex^{\ell_{\textit{mul1}}}{\texttt{let}}$ v1 = eval(e1, env, defs) in
+    $\leftindex^{\ell_{\textit{mul2}}}{\texttt{let}}$ v2 = eval(e2, env, defs) in
+    let r = mul(v1, v2) in $\leftindex^{\ell_{\textit{mulr}}}{\texttt{r}}$
+  | Let(l, x, e1, e2) =>
+    $\leftindex^{\ell_{\textit{let1}}}{\texttt{let}}$ v1 = eval(e1, env, defs) in
+    let new_env = extend(env, x, v1) in
+    $\leftindex^{\ell_{\textit{let2}}}{\texttt{let}}$ r = eval(e2, new_env, defs) in $\leftindex^{\ell_{\textit{letr}}}{\texttt{r}}$
+  | App(l, f, e1) =>
+    match f with
+    | Fun(fid) =>
+      $\leftindex^{\ell_{\textit{app1}}}{\texttt{let}}$ v = eval(e1, env, defs) in
+      let body = fundef(defs, fid) in
+      let empty_env = Nil() in
+      let l0 = 0 in
+      let x0 = 0 in
+      let x = Var(l0, x0) in # function parameter as xid 0
+      let call_env = extend(empty_env, x, v) in
+      $\leftindex^{\ell_{\textit{app2}}}{\texttt{let}}$ r = eval(body, call_env, defs) in $\leftindex^{\ell_{\textit{appr}}}{\texttt{r}}$
+    end
+  | Ifz(l, e1, e2, e3) =>
+    $\leftindex^{\ell_{\textit{ifz1}}}{\texttt{let}}$ v1 = eval(e1, env, defs) in
+    match iszero(v1) with
+    | True() => $\leftindex^{\ell_{\textit{ifz2}}}{\texttt{let}}$ r = eval(e2, env, defs) in $\leftindex^{\ell_{\textit{ifz2r}}}{\texttt{r}}$
+    | False() => $\leftindex^{\ell_{\textit{ifz3}}}{\texttt{let}}$ r = eval(e3, env, defs) in $\leftindex^{\ell_{\textit{ifz3r}}}{\texttt{r}}$
+    end
+  end
+
+main(p, arg) =
+  match p with
+  | Prog(defs, e) => 
+    let empty_env = Nil() in
+    let l0 = 0 in
+    let x0 = 0 in
+    let x = Var(l0, x0) in
+    let initial_env = extend(empty_env, x, arg) in
+    $\leftindex^{\ell_{\textit{maineval}}}{\texttt{let}}$ r = eval(e, initial_env, defs) in r
+  end
+\end{lstlisting}
+
+
+\paragraph{Interpreter labels.}
+The following concrete labels are the current parser labels for the S definitional interpreter. The extraction uses the symbolic labels; the numeric labels are only for matching raw S-CEK traces.
+\begin{center}
+\SetTblrInner{colsep=4pt, rowsep=1pt}
+\begin{tblr}{lll}
+\textbf{Symbol} & \textbf{Interpreter point} & \textbf{Label} \\
+$\ell_{\textit{eval}}$ & \texttt{eval}: dispatch match on \texttt{e} & 14 \\
+$\ell_{\textit{intr}}$ & \texttt{Int}: return \texttt{n} & 15 \\
+$\ell_{\textit{varr}}$ & \texttt{Var}: return \texttt{v} & 17 \\
+$\ell_{\textit{subr}}$ & \texttt{Sub}: return \texttt{r} after \texttt{sub(v1,v2)} & 21 \\
+$\ell_{\textit{sub1}}$ & \texttt{Sub}: first recursive \texttt{eval(e1, env, defs)} & 18 \\
+$\ell_{\textit{sub2}}$ & \texttt{Sub}: second recursive \texttt{eval(e2, env, defs)} & 19 \\
+$\ell_{\textit{mulr}}$ & \texttt{Mul}: return \texttt{r} after \texttt{mul(v1,v2)} & 25 \\
+$\ell_{\textit{mul1}}$ & \texttt{Mul}: first recursive \texttt{eval(e1, env, defs)} & 22 \\
+$\ell_{\textit{mul2}}$ & \texttt{Mul}: second recursive \texttt{eval(e2, env, defs)} & 23 \\
+$\ell_{\textit{letr}}$ & \texttt{Let}: return \texttt{r} & 29 \\
+$\ell_{\textit{let1}}$ & \texttt{Let}: first recursive \texttt{eval(e1, env, defs)} & 26 \\
+$\ell_{\textit{let2}}$ & \texttt{Let}: body recursive \texttt{eval(e2, new\_env, defs)} & 28 \\
+$\ell_{\textit{appr}}$ & \texttt{App}: return \texttt{r} & 39 \\
+$\ell_{\textit{app1}}$ & \texttt{App}: argument recursive \texttt{eval(e1, env, defs)} & 31 \\
+$\ell_{\textit{app2}}$ & \texttt{App}: body recursive \texttt{eval(body, call\_env, defs)} & 38 \\
+$\ell_{\textit{ifz2r}}$ & \texttt{Ifz}: then-branch return \texttt{r} & 43 \\
+$\ell_{\textit{ifz3r}}$ & \texttt{Ifz}: else-branch return \texttt{r} & 45 \\
+$\ell_{\textit{ifz1}}$ & \texttt{Ifz}: test recursive \texttt{eval(e1, env, defs)} & 40 \\
+$\ell_{\textit{ifz2}}$ & \texttt{Ifz}: then recursive \texttt{eval(e2, env, defs)} & 42 \\
+$\ell_{\textit{ifz3}}$ & \texttt{Ifz}: else recursive \texttt{eval(e3, env, defs)} & 44 \\
+$\ell_{\textit{maineval}}$ & \texttt{main}: final recursive \texttt{eval(e, initial\_env, defs)} & 52
+\end{tblr}
+\end{center}
+
+
+
+\section{Extracting a T Abstract Machine}
+\[
+  \lfloor \cdot \rfloor : \Val_S \rightharpoonup \Exp_T + \Defs_T + \Env_T
+\]
+
+\begin{align*}
+  \lfloor \texttt{Int}\langle \ell, n \rangle \rfloor &\triangleq \leftindex^{\ell}n \\
+  \lfloor \texttt{Var}\langle \ell, x \rangle \rfloor &\triangleq \leftindex^{\ell}x \\
+  \lfloor \texttt{Sub}\langle \ell, e_1, e_2 \rangle \rfloor &\triangleq \leftindex^{\ell}(\lfloor e_1 \rfloor \texttt{-} \lfloor e_2 \rfloor) \\
+  \lfloor \texttt{Mul}\langle \ell, e_1, e_2 \rangle \rfloor &\triangleq \leftindex^{\ell}(\lfloor e_1 \rfloor \texttt{*} \lfloor e_2 \rfloor) \\
+  \lfloor \texttt{Let}\langle \ell, x, e_1, e_2 \rangle \rfloor &\triangleq \leftindex^{\ell}(\mathsf{let}\ \lfloor x \rfloor_{\mathsf{var}} = \lfloor e_1 \rfloor\ \mathsf{in}\ \lfloor e_2 \rfloor) \\
+  \lfloor \texttt{App}\langle \ell, f, e \rangle \rfloor &\triangleq \leftindex^{\ell}(\lfloor f \rfloor_{\mathsf{fun}}(\lfloor e \rfloor)) \\
+  \lfloor \texttt{Ifz}\langle \ell, e_0, e_1, e_2 \rangle \rfloor &\triangleq \leftindex^{\ell}(\mathsf{ifz}\ \lfloor e_0 \rfloor\ \mathsf{then}\ \lfloor e_1 \rfloor\ \mathsf{else}\ \lfloor e_2 \rfloor) \\
+  \lfloor \texttt{Nil}\langle\rangle \rfloor &\triangleq \varnothing \\
+  \lfloor \texttt{Defs}\langle \texttt{Fun}\langle f\rangle, e, l \rangle \rfloor &\triangleq \lfloor l \rfloor\{f \mapsto \lfloor e \rfloor\} \\
+  \lfloor \texttt{Env}\langle \texttt{Var}\langle \ell,x\rangle, n, l \rangle \rfloor &\triangleq \lfloor l \rfloor\{x \mapsto n\}
+\end{align*}
+The last clause is defined only when the environment payload \(n\) is an encoded integer.
+where helper functions are
+\begin{align*}
+  \lfloor \texttt{Var}\langle \ell, x \rangle \rfloor_{\mathsf{var}} &\triangleq x \\
+  \lfloor \texttt{Fun}\langle f \rangle \rfloor_{\mathsf{fun}} &\triangleq f
+\end{align*}
+
+We can define decoded T-state~$\sigma_T$ as
+\begin{center}
+\begin{bnf}
+  $\sigma_T$ : $\State_T$ ::= $\langle q_T, \rho_T, \kappa_T\rangle$
+  ;;
+  $q_T$ : ::= $e_T$ // $n$
+  ;;
+  $x$ : $\Var_T$ ::= $n$
+  ;;
+  $\rho_T$ : $\Env_T$ ::= $\{\Overline{x \mapsto n}\}$
+  ;;
+\end{bnf}
+\end{center}
+
+Given an initial S-environment \[\rho_S^0 = \{\texttt{p} \mapsto \texttt{Prog}\langle \textit{defs}, e \rangle, \texttt{arg} \mapsto n \},\] we can decode a T-definition table \[D_T \triangleq \lfloor \textit{defs} \rfloor\] and a T-initial state \[\sigma_T^0 \triangleq \langle \lfloor e \rfloor, \{0 \mapsto n\}, []\rangle.\]
+
+We now define state and continutation decoding,
+\[
+  \lfloor \cdot \rfloor : \State_S \rightharpoonup \State_T, \qquad \lfloor \cdot \rfloor : \Kont_S \to \Kont_T
+\]
+as
+\begin{align*}
+  \lfloor \langle \ell_{\textit{eval}}, \rho_S, \kappa_S \rangle \rfloor &\triangleq \langle \lfloor \rho_S(\texttt{e})\rfloor, \lfloor \rho_S(\texttt{env}) \rfloor, \lfloor \kappa_S \rfloor \rangle \\
+  \lfloor \langle \ell, \rho_S, \kappa_S \rangle \rfloor
+  &\triangleq
+  \begin{cases*}
+    \langle \textsf{ret}_\ell(\rho_S), \lfloor \rho_S(\texttt{env}) \rfloor, \lfloor \kappa_S \rfloor \rangle
+      & if $\textsf{ret}_\ell(\rho_S) \ne \bot$ \\
+    \bot
+      & otherwise,
+  \end{cases*}
+\end{align*}
+where
+\begin{align*}
+  \textsf{ret}_{\ell_{\textit{intr}}}(\rho_S) &\triangleq \rho_S(\texttt{n}) \\
+  \textsf{ret}_{\ell_{\textit{varr}}}(\rho_S) &\triangleq \rho_S(\texttt{v}) \\
+  \textsf{ret}_{\ell_{\textit{subr}}}(\rho_S) &\triangleq \rho_S(\texttt{r}) \\
+  \textsf{ret}_{\ell_{\textit{mulr}}}(\rho_S) &\triangleq \rho_S(\texttt{r}) \\
+  \textsf{ret}_{\ell_{\textit{letr}}}(\rho_S) &\triangleq \rho_S(\texttt{r}) \\
+  \textsf{ret}_{\ell_{\textit{appr}}}(\rho_S) &\triangleq \rho_S(\texttt{r}) \\
+  \textsf{ret}_{\ell_{\textit{ifz2r}}}(\rho_S) &\triangleq \rho_S(\texttt{r}) \\
+  \textsf{ret}_{\ell_{\textit{ifz3r}}}(\rho_S) &\triangleq \rho_S(\texttt{r}) \\
+  \textsf{ret}_{\ell}(\rho_S) &\triangleq \bot \qquad\text{otherwise,}
+\end{align*}
+and
+\begin{align*}
+  \lfloor [] \rfloor &\triangleq [] \\
+  \lfloor \langle \ell_{\textit{sub1}}, \rho_S \rangle :: \kappa_S \rfloor &\triangleq \textsf{Sub1}\langle \lfloor \rho_S(\texttt{e2})\rfloor, \lfloor \rho_S(\texttt{env}) \rfloor \rangle :: \lfloor \kappa_S \rfloor \\
+  \lfloor \langle \ell_{\textit{sub2}}, \rho_S \rangle :: \kappa_S \rfloor &\triangleq \textsf{Sub2}\langle \rho_S(\texttt{v1}), \lfloor \rho_S(\texttt{env}) \rfloor \rangle :: \lfloor \kappa_S \rfloor \\
+  \lfloor \langle \ell_{\textit{mul1}}, \rho_S \rangle :: \kappa_S \rfloor &\triangleq \textsf{Mul1}\langle \lfloor \rho_S(\texttt{e2})\rfloor, \lfloor \rho_S(\texttt{env}) \rfloor \rangle :: \lfloor \kappa_S \rfloor \\
+  \lfloor \langle \ell_{\textit{mul2}}, \rho_S \rangle :: \kappa_S \rfloor &\triangleq \textsf{Mul2}\langle \rho_S(\texttt{v1}), \lfloor \rho_S(\texttt{env}) \rfloor \rangle :: \lfloor \kappa_S \rfloor \\
+  \lfloor \langle \ell_{\textit{let1}}, \rho_S \rangle :: \kappa_S \rfloor &\triangleq \textsf{Let}\langle \lfloor \rho_S(\texttt{x})\rfloor_{\mathsf{var}}, \lfloor \rho_S(\texttt{e2})\rfloor, \lfloor \rho_S(\texttt{env}) \rfloor \rangle :: \lfloor \kappa_S \rfloor \\
+  \lfloor \langle \ell_{\textit{let2}}, \rho_S \rangle :: \kappa_S \rfloor &\triangleq \textsf{Restore}\langle \lfloor \rho_S(\texttt{env}) \rfloor \rangle :: \lfloor \kappa_S \rfloor \\
+  \lfloor \langle \ell_{\textit{app1}}, \rho_S \rangle :: \kappa_S \rfloor &\triangleq \textsf{App}\langle \lfloor \rho_S(\texttt{f})\rfloor_{\mathsf{fun}}, \lfloor \rho_S(\texttt{env}) \rfloor \rangle :: \lfloor \kappa_S \rfloor \\
+  \lfloor \langle \ell_{\textit{app2}}, \rho_S \rangle :: \kappa_S \rfloor &\triangleq \textsf{Restore}\langle \lfloor \rho_S(\texttt{env}) \rfloor \rangle :: \lfloor \kappa_S \rfloor \\
+  \lfloor \langle \ell_{\textit{ifz1}}, \rho_S \rangle :: \kappa_S \rfloor &\triangleq \textsf{Ifz}\langle \lfloor \rho_S(\texttt{e2})\rfloor, \lfloor \rho_S(\texttt{e3})\rfloor, \lfloor \rho_S(\texttt{env}) \rfloor \rangle :: \lfloor \kappa_S \rfloor \\
+  \lfloor \langle \ell, \rho_S \rangle :: \kappa_S \rfloor &\triangleq \lfloor \kappa_S \rfloor \qquad \text{otherwise.}
+\end{align*}
+
+Then we have T-transition relation
+\begin{center}
+\SetTblrInner{colsep=1.5pt, rowsep=1pt}
+\begin{tblr}{rrl}
+\textsc{Int} &
+  $\langle \leftindex^\ell n, \rho, \kappa\rangle$ &
+  $\leadsto \langle n, \rho, \kappa\rangle$ \\
+\textsc{Var} &
+  $\langle \leftindex^\ell x, \rho, \kappa\rangle$ &
+  $\leadsto \langle \rho(x), \rho, \kappa\rangle$ \\
+\textsc{Sub1} &
+  $\langle \leftindex^\ell(e_1 \texttt{-} e_2), \rho, \kappa\rangle$ &
+  $\leadsto \langle e_1, \rho, \textsf{Sub1}\langle e_2,\rho\rangle :: \kappa\rangle$ \\
+\textsc{Sub2} &
+  $\langle n_1, \rho', \textsf{Sub1}\langle e_2,\rho\rangle :: \kappa\rangle$ &
+  $\leadsto \langle e_2, \rho, \textsf{Sub2}\langle n_1,\rho\rangle :: \kappa\rangle$ \\
+\textsc{Subr} &
+  $\langle n_2, \rho', \textsf{Sub2}\langle n_1,\rho\rangle :: \kappa\rangle$ &
+  $\leadsto \langle n_1 \texttt{-} n_2, \rho, \kappa\rangle$ \\
+\textsc{Mul1} &
+  $\langle \leftindex^\ell(e_1 \texttt{*} e_2), \rho, \kappa\rangle$ &
+  $\leadsto \langle e_1, \rho, \textsf{Mul1}\langle e_2,\rho\rangle :: \kappa\rangle$ \\
+\textsc{Mul2} &
+  $\langle n_1, \rho', \textsf{Mul1}\langle e_2,\rho\rangle :: \kappa\rangle$ &
+  $\leadsto \langle e_2, \rho, \textsf{Mul2}\langle n_1,\rho\rangle :: \kappa\rangle$ \\
+\textsc{Mulr} &
+  $\langle n_2, \rho', \textsf{Mul2}\langle n_1,\rho\rangle :: \kappa\rangle$ &
+  $\leadsto \langle n_1 \texttt{*} n_2, \rho, \kappa\rangle$ \\
+\textsc{Let1} &
+  $\langle \leftindex^\ell(\mathsf{let}\ x = e_1\ \mathsf{in}\ e_2), \rho, \kappa\rangle$ &
+  $\leadsto \langle e_1, \rho, \textsf{Let}\langle x,e_2,\rho\rangle :: \kappa\rangle$ \\
+\textsc{Let2} &
+  $\langle n, \rho', \textsf{Let}\langle x,e_2,\rho\rangle :: \kappa\rangle$ &
+  $\leadsto \langle e_2, \rho\{x \mapsto n\}, \textsf{Restore}\langle \rho\rangle :: \kappa\rangle$ \\
+\textsc{Restore} &
+  $\langle n, \rho', \textsf{Restore}\langle \rho\rangle :: \kappa\rangle$ &
+  $\leadsto \langle n, \rho, \kappa\rangle$ \\
+\textsc{App1} &
+  $\langle \leftindex^\ell(f(e)), \rho, \kappa\rangle$ &
+  $\leadsto \langle e, \rho, \textsf{App}\langle f,\rho\rangle :: \kappa\rangle$ \\
+\textsc{App2} &
+  $\langle n, \rho', \textsf{App}\langle f,\rho\rangle :: \kappa\rangle$ &
+  $\leadsto \langle D_T(f), \{0 \mapsto n\}, \textsf{Restore}\langle \rho\rangle :: \kappa\rangle$ \\
+\textsc{Ifz1} &
+  $\langle \leftindex^\ell(\mathsf{ifz}\ e_1\ \mathsf{then}\ e_2\ \mathsf{else}\ e_3), \rho, \kappa\rangle$ &
+  $\leadsto \langle e_1, \rho, \textsf{Ifz}\langle e_2,e_3,\rho\rangle :: \kappa\rangle$ \\
+\textsc{Ifz2} &
+  $\langle 0, \rho', \textsf{Ifz}\langle e_2,e_3,\rho\rangle :: \kappa\rangle$ &
+  $\leadsto \langle e_2, \rho, \kappa\rangle$ \\
+\textsc{Ifz3} &
+  $\langle n, \rho', \textsf{Ifz}\langle e_2,e_3,\rho\rangle :: \kappa\rangle$ &
+  $\leadsto \langle e_3, \rho, \kappa\rangle$ \qquad ($n \ne 0$)
+\end{tblr}
+\end{center}
+
+We define the compressed projection of an S-trace
+\[
+  \pi_S = \sigma_S^0,\ldots,\sigma_S^m
+\]
+by
+\[
+  \mathsf{compress}(\pi_S)
+  \triangleq
+  \text{the sequence obtained by mapping each }\sigma_S^i\text{ through }\lfloor\cdot\rfloor,
+\]
+dropping undefined projections, dropping projections whose control is \(\bot\), and dropping adjacent duplicate T-states.
+
+\begin{theorem}[Projection simulation]
+Let \(\pi_S\) be a finite S-CEK trace prefix produced by running the S definitional interpreter on an initial S-environment
+\[
+  \rho_S^0 =
+  \{\texttt{p} \mapsto \texttt{Prog}\langle \textit{defs},e\rangle,\ \texttt{arg} \mapsto n\}.
+\]
+Assume that \(\lfloor \textit{defs}\rfloor\) and \(\lfloor e\rfloor\) are defined, and let
+\[
+  D_T \triangleq \lfloor \textit{defs}\rfloor
+  \qquad
+  \sigma_T^0 \triangleq \langle \lfloor e\rfloor,\{0\mapsto n\},[]\rangle.
+\]
+Assume also that every reached T variable is bound in its decoded environment, every reached function identifier is bound in \(D_T\), every reached T expression evaluation produces an integer, and the S-CEK run does not get stuck. If
+\[
+  \pi_T \triangleq \mathsf{compress}(\pi_S),
+\]
+then \(\pi_T\) is a finite prefix of the T-transition trace generated from \(\sigma_T^0\). That is, if
+\[
+  \pi_T = \epsilon
+  \quad\text{or}\quad
+  \pi_T = \sigma_T^0,\sigma_T^1,\ldots,\sigma_T^k,
+\]
+then in the nonempty case, for every \(0 \le i < k\),
+\[
+  \sigma_T^i \leadsto \sigma_T^{i+1}.
+\]
+Moreover, if \(\pi_S\) terminates with final integer value \(n'\), then \(\pi_T\) ends in a final T-state
+\[
+  \langle n',\rho_T,[]\rangle
+\]
+for some decoded T-environment \(\rho_T\).
+\end{theorem}
+
+\begin{proof}
+Let a visible S-state be one whose label is either \(\ell_{\textit{eval}}\) or one of
+\(\ell_{\textit{intr}}, \ell_{\textit{varr}}, \ell_{\textit{subr}}, \ell_{\textit{mulr}},
+\ell_{\textit{letr}}, \ell_{\textit{appr}}, \ell_{\textit{ifz2r}}, \ell_{\textit{ifz3r}}\).
+All other interpreter states are administrative: they perform dispatch, \texttt{lookup},
+\texttt{fundef}, \texttt{extend}, constructor allocation, or the S-level call/return plumbing
+needed to enter the next recursive \texttt{eval}.
+The function \(\mathsf{compress}\) keeps exactly the decoded visible states, modulo adjacent duplicates.
+
+We first record the decoding invariants used in every case.
+If \(\lfloor e_S\rfloor=e_T\), then each encoded T subexpression of \(e_S\) decodes to the
+corresponding subexpression of \(e_T\); this follows immediately by structural induction on
+the constructors \texttt{Int}, \texttt{Var}, \texttt{Sub}, \texttt{Mul}, \texttt{Let},
+\texttt{App}, and \texttt{Ifz}.
+If \(\lfloor \textit{defs}_S\rfloor=D_T\), then a successful run of
+\texttt{fundef(defs, fid)} returns an encoded body \(b_S\) with \(D_T(\textit{fid})=\lfloor b_S\rfloor\);
+this is induction on the \texttt{Defs}/\texttt{Nil} list and the interpreter's
+\texttt{iszero(sub(fid,fid2))} test.
+If \(\lfloor \textit{env}_S\rfloor=\rho_T\), then a successful run of
+\texttt{lookup(env, xid)} returns the integer \(\rho_T(\textit{xid})\); this is the analogous
+induction on the \texttt{Env}/\texttt{Nil} list.
+Finally, \texttt{extend(env, Var(\_,x), n)} decodes to \(\rho_T\{x\mapsto n\}\).
+
+The continuation decoding is also invariant under administrative S-steps.
+The only S frames that decode to T frames are the suspended recursive \texttt{eval} call sites:
+\(\ell_{\textit{sub1}}\), \(\ell_{\textit{sub2}}\), \(\ell_{\textit{mul1}}\),
+\(\ell_{\textit{mul2}}\), \(\ell_{\textit{let1}}\), \(\ell_{\textit{let2}}\),
+\(\ell_{\textit{app1}}\), \(\ell_{\textit{app2}}\), and \(\ell_{\textit{ifz1}}\).
+Their saved S environments contain exactly the payloads shown in the definition of
+\(\lfloor\kappa_S\rfloor\), so decoding the S continuation gives the T continuation that the
+corresponding T transition pushes or expects.  Frames for \texttt{lookup}, \texttt{fundef},
+\texttt{extend}, branch calls, and constructor setup decode to no T frame and are therefore
+erased by \(\mathsf{compress}\).
+
+Now consider a maximal S execution segment that starts at a visible state, contains no
+intermediate visible state with a distinct projection, and ends at the next kept visible state.
+We show that its two projections are related by one T step.  The proof is by cases on the
+decoded control of the first visible state.
+For \(\leftindex^\ell n\) and \(\leftindex^\ell x\), the interpreter selects the
+\texttt{Int} or \texttt{Var} branch; the latter uses the lookup lemma.  The next kept state is
+\(\langle n,\rho_T,\kappa_T\rangle\) or
+\(\langle \rho_T(x),\rho_T,\kappa_T\rangle\), respectively.
+For \(\texttt{Sub}\) and \(\texttt{Mul}\), the first recursive \texttt{eval} call pushes
+\(\textsf{Sub1}\) or \(\textsf{Mul1}\), the second call replaces it by
+\(\textsf{Sub2}\) or \(\textsf{Mul2}\), and the primitive result state returns the arithmetic
+integer.  These are exactly rules \textsc{Sub1}, \textsc{Sub2}, \textsc{Subr},
+\textsc{Mul1}, \textsc{Mul2}, and \textsc{Mulr}.
+For \(\texttt{Let}\), the first recursive call pushes \(\textsf{Let}\); the successful
+\texttt{extend} administrative segment decodes the body environment to \(\rho_T\{x\mapsto n\}\)
+and pushes \(\textsf{Restore}\), and the later return under \(\ell_{\textit{let2}}\) performs
+the \textsc{Restore} step.
+For \(\texttt{App}\), the argument call pushes \(\textsf{App}\); \texttt{fundef} supplies
+\(D_T(f)\), constructor setup creates \(\{0\mapsto n\}\), and the body call pushes
+\(\textsf{Restore}\), matching \textsc{App1} and \textsc{App2}.
+For \(\texttt{Ifz}\), the test call pushes \(\textsf{Ifz}\), and the following
+\texttt{iszero} dispatch chooses the decoded then expression when the returned value is \(0\)
+and the else expression otherwise, matching \textsc{Ifz1}, \textsc{Ifz2}, and
+\textsc{Ifz3}.
+These cases exhaust the T controls reachable from decoded interpreter states.
+
+The theorem follows by induction on adjacent pairs in \(\mathsf{compress}(\pi_S)\).
+The empty projection case is immediate.  In the nonempty case, the first kept state is the
+first recursive \texttt{eval} of the decoded program body from the decoded initial environment,
+so it is \(\sigma_T^0\).  Each induction step applies the local simulation argument above.
+If the S trace terminates with final integer value \(n'\), the last visible S return has empty
+decoded continuation and decoded control \(n'\), hence the final projected T-state is
+\(\langle n',\rho_T,[]\rangle\) for its decoded environment \(\rho_T\).
+\end{proof}
+
+
+
+\paragraph{Worked example: factorial at $n=1$.}
+Use the encoded T program
+\[
+  \texttt{Prog}\langle
+    \texttt{Defs}\langle \texttt{Fun}\langle 0\rangle, e_f, \texttt{Nil}\langle\rangle\rangle,
+    e_0
+  \rangle
+\]
+where
+\[
+\begin{gathered}
+  x_0 \triangleq 0,\qquad f_0 \triangleq 0,\qquad
+  \rho_1 \triangleq \{0\mapsto 1\},\qquad
+  \rho_0 \triangleq \{0\mapsto 0\} \\
+  d \triangleq \leftindex^{16}(\leftindex^{17}x_0 \texttt{-} \leftindex^{18}1),\qquad
+  a \triangleq \leftindex^{15}(f_0(d)) \\
+  b \triangleq \leftindex^{13}(\leftindex^{14}x_0 \texttt{*} a),\qquad
+  c \triangleq \leftindex^{10}(\mathsf{ifz}\ \leftindex^{11}x_0\ \mathsf{then}\ \leftindex^{12}1\ \mathsf{else}\ b) \\
+  e_f \triangleq c,\qquad
+  e_0 \triangleq \leftindex^{20}(f_0(\leftindex^{21}x_0))
+\end{gathered}
+\]
+Thus
+\[
+  D_T = \{0\mapsto e_f\}
+  \qquad
+  \sigma_T^0 = \langle e_0,\rho_1,[]\rangle.
+\]
+The raw S-CEK run for this input has
+\[
+  \texttt{states=103}
+  \qquad
+  \texttt{steps=102}
+  \qquad
+  \texttt{end=final value=1}.
+\]
+In the projected table below, labelled numerals such as $\leftindex^{12}1$ are T expressions, while bare numerals such as $1$ are returned values.
+\begin{center}
+\SetTblrInner{colsep=1.5pt, rowsep=1pt}
+\begin{tblr}{rllll}
+\textbf{\#} & \textbf{S-state} & \textbf{$q_T$} & \textbf{$\rho_T$} & \textbf{$\kappa_T$} \\
+0 & $S_9$ & $e_0$ & $\rho_1$ & $[]$ \\
+1 & $S_{12}$ & $\leftindex^{21}x_0$ & $\rho_1$ & $\textsf{App}\langle f_0,\rho_1\rangle$ \\
+2 & $S_{18}$ & $1$ & $\rho_1$ & $\textsf{App}\langle f_0,\rho_1\rangle$ \\
+3 & $S_{32}$ & $c$ & $\rho_1$ & $\textsf{Restore}\langle \rho_1\rangle$ \\
+4 & $S_{34}$ & $\leftindex^{11}x_0$ & $\rho_1$ & $\textsf{Ifz}\langle \leftindex^{12}1,b,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+5 & $S_{40}$ & $1$ & $\rho_1$ & $\textsf{Ifz}\langle \leftindex^{12}1,b,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+6 & $S_{43}$ & $b$ & $\rho_1$ & $\textsf{Restore}\langle \rho_1\rangle$ \\
+7 & $S_{45}$ & $\leftindex^{14}x_0$ & $\rho_1$ & $\textsf{Mul1}\langle a,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+8 & $S_{51}$ & $1$ & $\rho_1$ & $\textsf{Mul1}\langle a,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+9 & $S_{53}$ & $a$ & $\rho_1$ & $\textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+10 & $S_{56}$ & $d$ & $\rho_1$ & $\textsf{App}\langle f_0,\rho_1\rangle :: \textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+11 & $S_{58}$ & $\leftindex^{17}x_0$ & $\rho_1$ & $\textsf{Sub1}\langle \leftindex^{18}1,\rho_1\rangle :: \textsf{App}\langle f_0,\rho_1\rangle :: \textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+12 & $S_{64}$ & $1$ & $\rho_1$ & $\textsf{Sub1}\langle \leftindex^{18}1,\rho_1\rangle :: \textsf{App}\langle f_0,\rho_1\rangle :: \textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+13 & $S_{66}$ & $\leftindex^{18}1$ & $\rho_1$ & $\textsf{Sub2}\langle 1,\rho_1\rangle :: \textsf{App}\langle f_0,\rho_1\rangle :: \textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+14 & $S_{67}$ & $1$ & $\rho_1$ & $\textsf{Sub2}\langle 1,\rho_1\rangle :: \textsf{App}\langle f_0,\rho_1\rangle :: \textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+15 & $S_{69}$ & $0$ & $\rho_1$ & $\textsf{App}\langle f_0,\rho_1\rangle :: \textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+16 & $S_{83}$ & $c$ & $\rho_0$ & $\textsf{Restore}\langle \rho_1\rangle :: \textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+17 & $S_{85}$ & $\leftindex^{11}x_0$ & $\rho_0$ & $\textsf{Ifz}\langle \leftindex^{12}1,b,\rho_0\rangle :: \textsf{Restore}\langle \rho_1\rangle :: \textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+18 & $S_{91}$ & $0$ & $\rho_0$ & $\textsf{Ifz}\langle \leftindex^{12}1,b,\rho_0\rangle :: \textsf{Restore}\langle \rho_1\rangle :: \textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+19 & $S_{94}$ & $\leftindex^{12}1$ & $\rho_0$ & $\textsf{Restore}\langle \rho_1\rangle :: \textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+20 & $S_{95}$ & $1$ & $\rho_0$ & $\textsf{Restore}\langle \rho_1\rangle :: \textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+21 & $S_{97}$ & $1$ & $\rho_1$ & $\textsf{Mul2}\langle 1,\rho_1\rangle :: \textsf{Restore}\langle \rho_1\rangle$ \\
+22 & $S_{99}$ & $1$ & $\rho_1$ & $\textsf{Restore}\langle \rho_1\rangle$ \\
+23 & $S_{101}$ & $1$ & $\rho_1$ & $[]$
+\end{tblr}
+\end{center}
+Rows 0--2 evaluate the top-level application argument. Rows 3--6 enter the first factorial body under the top-level restore frame and select the nonzero branch. Rows 7--15 evaluate the multiplication's left operand and the recursive-call argument $x_0\texttt{-}1$. Rows 16--20 enter the recursive factorial body with $\rho_0$ and select the base case. Rows 21--23 restore the recursive caller environment, finish the pending multiplication, restore the top-level caller environment, and end in $\langle 1,\rho_1,[]\rangle$.
+
+
+
+
+\bibliography{refs}
+
+\end{document}

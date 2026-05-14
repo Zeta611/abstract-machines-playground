@@ -166,6 +166,33 @@ declare module "@/lib/s/envParser" {
   export function parseEnv(input: string): Result<Env, string>
 }
 
+declare module "@/lib/s/s_to_t" {
+  import type { Program } from "@/lib/s/ast"
+  import type { Trace } from "@/lib/s/cek"
+  import type { Result } from "melange/result"
+
+  const extractedTraceBrand: unique symbol
+  export type ExtractedTrace = { readonly [extractedTraceBrand]: never }
+
+  export interface ProjectedRowView {
+    source_index: number
+    control: string
+    env: string
+    kont: string[]
+  }
+
+  export function extract_trace(
+    prog: Program,
+    trace: Trace
+  ): Result<ExtractedTrace, string>
+  export function verify_trace(
+    prog: Program,
+    trace: Trace
+  ): Result<void, string>
+  export function view_trace(trace: ExtractedTrace): ProjectedRowView[]
+  export function projected_length(trace: ExtractedTrace): number
+}
+
 declare module "@/lib/s/absEnvParser" {
   import type { Result } from "melange/result"
   import type { AbsEnv, AbsVStore } from "@/lib/s/abs"

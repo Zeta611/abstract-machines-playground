@@ -1,0 +1,74 @@
+\newtheorem{theorem}{Theorem}
+
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily,
+  mathescape
+}
+
+\usepackage{relsize}
+\usepackage{leftindex}
+\usepackage{tabularray}
+\usepackage{simplebnf}
+\usepackage{suffix}
+\usepackage{stmaryrd}
+
+\DeclareFontFamily{U}{mathb}{\hyphenchar\font45}
+\DeclareFontShape{U}{mathb}{m}{n}{
+      <5> <6> <7> <8> <9> <10> gen * mathb
+      <10.95> mathb10 <12> <14.4> <17.28> <20.74> <24.88> mathb12
+      }{}
+\DeclareSymbolFont{mathb}{U}{mathb}{m}{n}
+\DeclareFontSubstitution{U}{mathb}{m}{n}
+
+\DeclareMathSymbol{\sqsubsetneq}{3}{mathb}{'210}
+\DeclareMathSymbol{\sqsubseteq}{3}{mathb}{'204}
+
+% variant generators
+\newcommand*{\abs}[1]{#1^\sharp} % abstract domain e.g. \abs{State}
+\newcommand*{\ptn}[1]{{\widehat#1}} % partitioning index e.g. \ptn{Label}
+
+% semantic domains
+\newcommand\Var{\textsf{Var}}
+\newcommand\Fun{\textsf{Fun}}
+\newcommand\Tag{\textsf{Tag}}
+\newcommand\Int{\textsf{Int}}
+\newcommand\Prim{\textsf{Prim}}
+\newcommand\Lab{\textsf{Label}}
+\newcommand\Prog{\textsf{Prog}}
+\newcommand\Cmd{\textsf{Cmd}}
+\newcommand\Exp{\textsf{Exp}}
+\newcommand\Defs{\textsf{Defs}}
+\newcommand\Val{\textsf{Value}}
+\newcommand\Env{\textsf{Env}}
+\newcommand\Sto{\textsf{Store}}
+\newcommand\Addr{\textsf{Addr}}
+\newcommand\Kont{\textsf{Kont}}
+\newcommand\State{\textsf{State}}
+\WithSuffix{\newcommand}\State*{\overline{\textsf{State}}}
+\newcommand\Trace{\textsf{Trace}}
+\newcommand\Time{\textsf{Time}}
+\newcommand\Tabel{\textsf{Tabel}}
+
+% operators
+\newcommand\dom{\mathop{\text{dom}}}
+
+\newcommand\FV{\mathit{FV}}
+
+\newcommand\inj{\textsf{inj}}
+\newcommand\tick{\textsf{tick}}
+\newcommand\alloc{\textsf{alloc}}
+
+\newcommand*{\evale}[2]{\mathcal{E}\llbracket #1 \rrbracket\, #2}
+\newcommand*{\lookupfun}[2]{#1(#2)}
+
+\WithSuffix{\newcommand*}\abs\evale[1]{\abs{\mathcal{E}\llbracket #1 \rrbracket}}
+
+
+% misc
+\newcommand*\Overline[1]{\overline{\vphantom{l}#1}}
+\newcommand*{\step}[1]{\overset{#1}{\rightsquigarrow}}
+\WithSuffix{\newcommand*}\step*[1]{\mathrel{{\overset{#1}{\rightsquigarrow^{\mathrlap{\smash{*}}}}}\hphantom{{}^*}}}
+\WithSuffix{\newcommand*}\abs\step[1]{\mathrel{{\overset{#1}{\rightsquigarrow^{\mathrlap{\smash{\sharp}}}}}\hphantom{{}^\sharp}}}
+\newcommand*{\lbl}[1]{\raise.4ex\vbox{\hbox{\smaller[1.5]$#1$\kern0.5pt}\kern0pt}}
+\WithSuffix\newcommand\CESK*{${}^\tau\text{CESK}^\star$}
